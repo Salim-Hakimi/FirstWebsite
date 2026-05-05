@@ -14,6 +14,131 @@
     --fx-radius: 8px;
 }
 
+.simple-login-page {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    background: #f4f6f8;
+    padding: 24px;
+}
+
+.simple-login-card {
+    width: min(100%, 390px);
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #ffffff;
+    padding: 28px;
+    box-shadow: 0 14px 40px rgba(15, 23, 42, .08);
+}
+
+.simple-login-head {
+    margin-bottom: 22px;
+    text-align: center;
+}
+
+.simple-login-logo {
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    margin: 0 auto 12px;
+    border-radius: 8px;
+    background: #123f32;
+    color: #ffffff;
+    font-weight: 800;
+}
+
+.simple-login-head h1 {
+    margin: 0;
+    color: #111827;
+    font-size: 28px;
+    line-height: 1.2;
+}
+
+.simple-login-head p {
+    margin: 6px 0 0;
+    color: #6b7280;
+    font-size: 14px;
+}
+
+.simple-login-form,
+.simple-login-actions {
+    display: grid;
+    gap: 14px;
+}
+
+.simple-login-field {
+    display: grid;
+    gap: 7px;
+    color: #111827;
+    font-weight: 700;
+}
+
+.simple-login-field input {
+    width: 100%;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #111827;
+    padding: 12px 13px;
+    outline: none;
+}
+
+.simple-login-field input:focus {
+    border-color: #123f32;
+    box-shadow: 0 0 0 3px rgba(18, 63, 50, .12);
+}
+
+.simple-login-field small {
+    color: #b91c1c;
+    font-size: 12px;
+}
+
+.simple-login-remember {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    gap: 8px;
+    color: #374151;
+    font-size: 14px;
+}
+
+.simple-login-remember input {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: #123f32;
+}
+
+.simple-login-button {
+    min-height: 46px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #123f32;
+    border-radius: 8px;
+    background: #123f32;
+    color: #ffffff;
+    padding: 10px 16px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.simple-login-button.secondary {
+    background: #ffffff;
+    color: #123f32;
+}
+
+.simple-login-message {
+    margin-bottom: 16px;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    background: #f0fdf4;
+    color: #14532d;
+    padding: 11px 12px;
+    font-size: 14px;
+}
+
 .fanous-admin-login-shell {
     min-height: 100vh;
     display: grid;
