@@ -377,6 +377,24 @@
     line-height: 1.5;
 }
 
+.fanous-login-remember {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    gap: 10px;
+    color: #9aa4bf;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.fanous-login-remember input {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: #0090e7;
+}
+
 .fanous-login-submit,
 .fanous-login-secondary {
     min-height: 48px;
