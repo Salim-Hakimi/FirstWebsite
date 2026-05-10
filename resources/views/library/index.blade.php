@@ -488,7 +488,9 @@
                     <p class="card-description"><span data-i18n="availableCopies">Available copies</span>: {{ $availableCopyCount }}</p>
                     <div class="preview-list">
                         @forelse ($books as $book)
-                            @php($statusMeta = $bookStatusMeta[$book->status] ?? ['key' => 'statusUnknown', 'label' => $book->status])
+                            @php
+                                $statusMeta = $bookStatusMeta[$book->status] ?? ['key' => 'statusUnknown', 'label' => $book->status];
+                            @endphp
                             <div class="preview-item border-bottom">
                                 <div class="preview-thumbnail"><div class="preview-icon bg-success"><span>B</span></div></div>
                                 <div class="preview-item-content">

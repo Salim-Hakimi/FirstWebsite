@@ -89,7 +89,9 @@
 
             <div class="student-timeline-list">
                 @forelse ($crowdedRooms as $room)
-                    @php($rate = $room->capacity > 0 ? round(($room->occupied_beds / $room->capacity) * 100) : 0)
+                    @php
+                        $rate = $room->capacity > 0 ? round(($room->occupied_beds / $room->capacity) * 100) : 0;
+                    @endphp
                     <div class="admin-room-row">
                         <div>
                             <strong>Room {{ $room->room_number }}</strong>

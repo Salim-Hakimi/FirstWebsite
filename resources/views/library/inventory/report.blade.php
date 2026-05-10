@@ -154,7 +154,9 @@
 
         <div class="student-timeline-list">
             @forelse ($copies as $copy)
-                @php($meta = $statusMeta[$copy->status] ?? ['label' => $copy->status, 'class' => 'badge-outline-secondary'])
+                @php
+                    $meta = $statusMeta[$copy->status] ?? ['label' => $copy->status, 'class' => 'badge-outline-secondary'];
+                @endphp
                 <div class="student-timeline-item">
                     <span class="student-timeline-icon">C</span>
                     <div>

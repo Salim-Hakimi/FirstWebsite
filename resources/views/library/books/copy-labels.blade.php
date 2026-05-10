@@ -97,7 +97,9 @@
 
     <section class="label-sheet">
         @forelse ($labels as $label)
-            @php($copy = $label['copy'])
+            @php
+                $copy = $label['copy'];
+            @endphp
             <article class="copy-label">
                 <div>
                     <strong>{{ $book->title }}</strong>
