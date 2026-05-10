@@ -103,9 +103,17 @@
                                 <span class="preview-icon bg-info"><span>V</span></span>
                                 <strong data-i18n="viewMembers">View members</strong>
                             </button>
-                            <a class="library-action-tile" href="#recent-library-loans">
+                            <button class="library-action-tile" type="button" data-library-panel-trigger="return-library-copy" aria-controls="return-library-copy" aria-expanded="false">
                                 <span class="preview-icon bg-danger"><span>R</span></span>
                                 <strong data-i18n="markReturned">Mark returned</strong>
+                            </button>
+                            <a class="library-action-tile" href="{{ route('library.fee-reminders.index') }}">
+                                <span class="preview-icon bg-warning"><span>F</span></span>
+                                <strong>Fee reminders</strong>
+                            </a>
+                            <a class="library-action-tile" href="{{ route('library.inventory.report') }}">
+                                <span class="preview-icon bg-secondary"><span>I</span></span>
+                                <strong>Inventory report</strong>
                             </a>
                         </div>
                     </div>
@@ -158,11 +166,20 @@
                             @endforelse
 
                             @foreach ($expiringMembers->take(3) as $member)
+                                @php
+                                    $feeFine = max((int) $member->monthly_fee_fine_amount, $member->calculatedMonthlyFine());
+                                    $feeBalance = (int) $member->membership_fee + $feeFine;
+                                    $isOverdueFee = $member->next_payment_due_at && $member->next_payment_due_at->isPast();
+                                @endphp
                                 <div class="preview-item border-bottom">
                                     <div class="preview-thumbnail"><div class="preview-icon bg-warning"><span>F</span></div></div>
                                     <div class="preview-item-content">
                                         <p class="preview-subject mb-1">{{ $member->full_name }}</p>
-                                        <p class="text-muted mb-0"><span data-i18n="nextDue">Next due</span>: {{ $member->next_payment_due_at?->format('Y-m-d') ?: 'N/A' }}</p>
+                                        <p class="text-muted mb-0">
+                                            <span data-i18n="nextDue">Next due</span>: {{ $member->next_payment_due_at?->format('Y-m-d') ?: 'N/A' }}
+                                            - {{ $isOverdueFee ? 'Overdue' : 'Reminder' }}
+                                            - {{ number_format($feeBalance) }} AFN
+                                        </p>
                                     </div>
                                     <a class="btn btn-outline-secondary btn-sm" href="{{ route('library.members.show', $member) }}" data-i18n="profile">Profile</a>
                                 </div>
@@ -328,11 +345,58 @@
                                         @endforeach
                                     </select>
                                 </div>
+                                <div class="col-md-3 form-group">
+                                    <label>Copy barcode / code</label>
+                                    <input class="form-control" name="copy_code" list="available-copy-codes" placeholder="Scan or enter copy code" required>
+                                    <datalist id="available-copy-codes">
+                                        @foreach ($availableBooks as $book)
+                                            @foreach ($book->availableCopies as $copy)
+                                                <option value="{{ $copy->copy_code }}">{{ $book->title }} - {{ $copy->shelf_code ?: 'No shelf' }}</option>
+                                            @endforeach
+                                        @endforeach
+                                    </datalist>
+                                </div>
                                 <div class="col-md-3 form-group"><label data-i18n="borrowedAt">Borrowed at</label><input class="form-control" name="borrowed_at" type="date" value="{{ now()->format('Y-m-d') }}" required></div>
                                 <div class="col-md-3 form-group"><label data-i18n="dueAt">Due at</label><input class="form-control" name="due_at" type="date" value="{{ now()->addDays(7)->format('Y-m-d') }}"></div>
                                 <div class="col-md-3 form-group"><label data-i18n="conditionOut">Condition out</label><input class="form-control" name="condition_out"></div>
                                 <div class="col-md-6 form-group"><label data-i18n="notes">Notes</label><input class="form-control" name="notes"></div>
                                 <div class="col-12"><button class="btn btn-primary" type="submit" data-i18n="saveLoan">Save loan</button></div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 grid-margin stretch-card library-form-panel" id="return-library-copy" data-library-panel>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="library-form-head">
+                            <div>
+                                <h4 class="card-title">Return by barcode</h4>
+                                <p class="card-description">Scan a copy label to find the active loan and mark the book as returned.</p>
+                            </div>
+                            <button class="btn btn-dark btn-sm" type="button" data-library-panel-close data-i18n="close">Close</button>
+                        </div>
+                        <form method="POST" action="{{ route('library.loans.return-by-copy') }}">
+                            @csrf
+                            <div class="row">
+                                <div class="col-md-4 form-group">
+                                    <label>Copy barcode / code</label>
+                                    <input class="form-control @error('copy_code') is-invalid @enderror" name="copy_code" value="{{ old('copy_code') }}" placeholder="Scan returned copy" required autofocus>
+                                    @error('copy_code') <span class="text-danger small">{{ $message }}</span> @enderror
+                                </div>
+                                <div class="col-md-3 form-group"><label data-i18n="returnedAt">Returned at</label><input class="form-control" name="returned_at" type="date" value="{{ now()->format('Y-m-d') }}" required></div>
+                                <div class="col-md-2 form-group"><label data-i18n="fineAmount">Fine</label><input class="form-control" name="fine_amount" type="number" min="0" value="0"></div>
+                                <div class="col-md-3 form-group">
+                                    <label>Return status</label>
+                                    <select class="form-control" name="return_status">
+                                        <option value="available">Good / available</option>
+                                        <option value="damaged">Damaged</option>
+                                        <option value="lost">Lost</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3 form-group"><label data-i18n="conditionIn">Condition in</label><input class="form-control" name="condition_in" placeholder="Good / damaged"></div>
+                                <div class="col-12"><button class="btn btn-primary" type="submit">Return copy</button></div>
                             </div>
                         </form>
                     </div>
@@ -364,11 +428,12 @@
                             @endforeach
                         </select>
                         <button class="btn btn-primary" type="submit" data-i18n="search">Search</button>
+                        <a class="btn btn-outline-secondary" href="{{ route('library.members.export', request()->only(['q', 'status'])) }}">CSV</a>
                         <a class="btn btn-dark" href="{{ route('library.index') }}" data-i18n="clear">Clear</a>
                     </form>
 
                     <div class="library-member-grid mb-4">
-                        @forelse ($members->take(6) as $member)
+                        @forelse ($members as $member)
                             @php
                                 $card = $member->membershipCards->first();
                                 $statusMeta = $memberStatusMeta[$member->status] ?? ['key' => 'statusUnknown', 'label' => $member->status];
@@ -386,8 +451,13 @@
                                     </div>
                                 </div>
                                 <div class="library-member-meta">
+                                    <span><strong data-i18n="father">Father</strong>{{ $member->father_name ?: 'N/A' }}</span>
+                                    <span><strong data-i18n="idTazkira">ID / Tazkira</strong>{{ $member->tazkira_number ?: 'N/A' }}</span>
                                     <span><strong data-i18n="phoneNumber">Phone number</strong>{{ $member->phone }}</span>
+                                    <span><strong data-i18n="expiry">Expiry</strong>{{ $member->membership_expires_at?->format('Y-m-d') ?? ($card?->expires_at?->format('Y-m-d') ?? 'N/A') }}</span>
+                                    <span><strong data-i18n="payment">Payment</strong><em data-i18n="{{ $member->payment_status === 'paid' ? 'paid' : 'unpaid' }}">{{ $member->payment_status === 'paid' ? 'Paid' : 'Unpaid' }}</em></span>
                                     <span><strong data-i18n="nextDue">Next due</strong>{{ $member->next_payment_due_at?->format('Y-m-d') ?? 'N/A' }}</span>
+                                    <span><strong>Fee balance</strong>{{ number_format($member->monthlyFeeBalance()) }} AFN</span>
                                     <span><strong data-i18n="status">Status</strong><em data-i18n="{{ $statusMeta['key'] }}">{{ $statusMeta['label'] }}</em></span>
                                 </div>
                                 <div class="library-member-actions">
@@ -405,74 +475,6 @@
                         @endforelse
                     </div>
 
-                    <div class="table-responsive">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th data-i18n="member">Member</th>
-                                    <th data-i18n="codeAndExpiry">Code and expiry</th>
-                                    <th data-i18n="contact">Contact</th>
-                                    <th data-i18n="payment">Payment</th>
-                                    <th data-i18n="status">Status</th>
-                                    <th data-i18n="action">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse ($members as $member)
-                                    @php
-                                        $card = $member->membershipCards->first();
-                                        $statusMeta = $memberStatusMeta[$member->status] ?? ['key' => 'statusUnknown', 'label' => $member->status];
-                                    @endphp
-                                    <tr>
-                                        <td>{{ $loop->iteration }}</td>
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                @if ($member->profile_photo_path)
-                                                    <img class="user-table-avatar user-table-avatar-img" src="{{ asset('storage/'.$member->profile_photo_path) }}" alt="{{ $member->full_name }}">
-                                                @else
-                                                    <div class="user-table-avatar">{{ strtoupper(substr($member->full_name, 0, 1)) }}</div>
-                                                @endif
-                                                <div>
-                                                    <span class="font-weight-bold">{{ $member->full_name }}</span>
-                                                    <div class="text-muted small"><span data-i18n="father">Father</span>: {{ $member->father_name }} · <span data-i18n="idTazkira">ID / Tazkira</span>: {{ $member->tazkira_number ?: 'N/A' }}</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            {{ $member->member_code ?: 'N/A' }}
-                                            <div class="text-muted small"><span data-i18n="expiry">Expiry</span>: {{ $member->membership_expires_at?->format('Y-m-d') ?? ($card?->expires_at?->format('Y-m-d') ?? 'N/A') }}</div>
-                                        </td>
-                                        <td>
-                                            {{ $member->phone }}
-                                            <div class="text-muted small">
-                                                @if ($member->email)
-                                                    {{ $member->email }}
-                                                @else
-                                                    <span data-i18n="noEmail">No email</span>
-                                                @endif
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span data-i18n="{{ $member->payment_status === 'paid' ? 'paid' : 'unpaid' }}">{{ $member->payment_status === 'paid' ? 'Paid' : 'Unpaid' }}</span>
-                                            <div class="text-muted small"><span data-i18n="nextDue">Next due</span>: {{ $member->next_payment_due_at?->format('Y-m-d') ?? 'N/A' }}</div>
-                                        </td>
-                                        <td><span class="badge badge-outline-primary" data-i18n="{{ $statusMeta['key'] }}">{{ $statusMeta['label'] }}</span></td>
-                                        <td>
-                                            <div class="d-flex flex-wrap">
-                                                <a class="btn btn-primary btn-sm mr-2" href="{{ route('library.members.show', $member) }}" data-i18n="profile">Profile</a>
-                                                @if ($canWriteLibrary)
-                                                    <a class="btn btn-outline-secondary btn-sm" href="{{ route('library.members.edit', $member) }}" data-i18n="edit">Edit</a>
-                                                @endif
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr><td colspan="7" class="text-center text-muted py-4" data-i18n="noLibraryMembersFound">No library members were found.</td></tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
                 </div>
             </div>
         </div>
@@ -499,10 +501,13 @@
                                         @endif
                                         · <span data-i18n="shelfCode">Shelf code</span>: {{ $book->shelf_code ?: 'N/A' }}
                                     </p>
-                                    <p class="text-muted mb-0">{{ $book->available_copies }}/{{ $book->total_copies }} <span data-i18n="available">available</span> · <span data-i18n="{{ $statusMeta['key'] }}">{{ $statusMeta['label'] }}</span></p>
+                                    <p class="text-muted mb-0">{{ $book->available_copies }}/{{ $book->total_copies }} <span data-i18n="available">available</span> - {{ $book->copies_count ?? 0 }} physical copies - <span data-i18n="{{ $statusMeta['key'] }}">{{ $statusMeta['label'] }}</span></p>
                                 </div>
                                 @if ($canWriteLibrary)
-                                    <a class="btn btn-outline-secondary btn-sm" href="{{ route('library.books.edit', $book) }}" data-i18n="edit">Edit</a>
+                                    <div class="student-profile-actions">
+                                        <a class="btn btn-outline-secondary btn-sm" href="{{ route('library.books.edit', $book) }}" data-i18n="edit">Edit</a>
+                                        <a class="btn btn-outline-secondary btn-sm" href="{{ route('library.books.copy-labels', $book) }}">Labels</a>
+                                    </div>
                                 @endif
                             </div>
                         @empty
@@ -519,18 +524,26 @@
                     <h4 class="card-title" data-i18n="recentLoans">Recent loans</h4>
                     <div class="preview-list">
                         @forelse ($loans as $loan)
-                            @php($statusMeta = $loanStatusMeta[$loan->status] ?? ['key' => 'statusUnknown', 'label' => $loan->status])
+                            @php
+                                $statusMeta = $loanStatusMeta[$loan->status] ?? ['key' => 'statusUnknown', 'label' => $loan->status];
+                                $isLateLoan = in_array($loan->status, ['borrowed', 'late'], true) && $loan->due_at && $loan->due_at->isPast();
+                            @endphp
                             <div class="preview-item border-bottom">
-                                <div class="preview-thumbnail"><div class="preview-icon {{ $loan->status === 'returned' ? 'bg-success' : 'bg-warning' }}"><span>L</span></div></div>
+                                <div class="preview-thumbnail"><div class="preview-icon {{ $loan->status === 'returned' ? 'bg-success' : ($isLateLoan ? 'bg-danger' : 'bg-warning') }}"><span>L</span></div></div>
                                 <div class="preview-item-content">
                                     <p class="preview-subject mb-1">{{ $loan->member?->full_name }} - {{ $loan->book?->title }}</p>
-                                    <p class="text-muted mb-0">{{ $loan->borrowed_at?->format('Y-m-d') }} <span data-i18n="to">to</span> {{ $loan->due_at?->format('Y-m-d') ?? 'N/A' }} · <span data-i18n="{{ $statusMeta['key'] }}">{{ $statusMeta['label'] }}</span></p>
+                                    <p class="text-muted mb-0">{{ $loan->borrowed_at?->format('Y-m-d') }} <span data-i18n="to">to</span> {{ $loan->due_at?->format('Y-m-d') ?? 'N/A' }} - Copy {{ $loan->copy?->copy_code ?: 'N/A' }} - <span data-i18n="{{ $statusMeta['key'] }}">{{ $isLateLoan ? 'Late' : $statusMeta['label'] }}</span></p>
                                     @if ($canWriteLibrary && $loan->status !== 'returned')
                                         <form method="POST" action="{{ route('library.loans.return', $loan) }}" class="library-return-form mt-3">
                                             @csrf
                                             @method('PUT')
                                             <input class="form-control" name="returned_at" type="date" value="{{ now()->format('Y-m-d') }}" required>
                                             <input class="form-control" name="fine_amount" type="number" min="0" value="0" data-i18n-placeholder="fineAmount" placeholder="Fine amount">
+                                            <select class="form-control" name="return_status">
+                                                <option value="available">Good</option>
+                                                <option value="damaged">Damaged</option>
+                                                <option value="lost">Lost</option>
+                                            </select>
                                             <input class="form-control" name="condition_in" data-i18n-placeholder="conditionIn" placeholder="Condition in">
                                             <button class="btn btn-primary" type="submit" data-i18n="markReturned">Mark returned</button>
                                         </form>

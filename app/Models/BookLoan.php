@@ -10,6 +10,7 @@ class BookLoan extends Model
     protected $fillable = [
         'library_member_id',
         'book_id',
+        'book_copy_id',
         'recorded_by',
         'loan_code',
         'borrowed_at',
@@ -39,6 +40,11 @@ class BookLoan extends Model
     public function book(): BelongsTo
     {
         return $this->belongsTo(Book::class);
+    }
+
+    public function copy(): BelongsTo
+    {
+        return $this->belongsTo(BookCopy::class, 'book_copy_id');
     }
 
     public function recordedBy(): BelongsTo

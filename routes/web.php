@@ -76,6 +76,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/students/{student}', [DormStudentController::class, 'update'])->name('students.update');
         Route::put('/students/{student}/admit', [DormStudentController::class, 'admit'])->name('students.admit');
         Route::post('/students/{student}/card', [DormStudentController::class, 'issueCard'])->name('students.card.issue');
+        Route::get('/students/{student}/registration-receipt', [DormStudentController::class, 'registrationReceipt'])->name('students.registration.receipt');
 
     });
 
@@ -101,6 +102,10 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('role:'.implode(',', User::libraryViewerRoles()))->group(function () {
         Route::get('/library', [LibraryController::class, 'index'])->name('library.index');
+        Route::get('/library/inventory', [LibraryController::class, 'inventoryReport'])->name('library.inventory.report');
+        Route::get('/library/inventory/export', [LibraryController::class, 'inventoryExport'])->name('library.inventory.export');
+        Route::get('/library/fee-reminders', [LibraryController::class, 'feeReminders'])->name('library.fee-reminders.index');
+        Route::get('/library/members-export', [LibraryController::class, 'membersExport'])->name('library.members.export');
         Route::get('/library/members/{member}', [LibraryController::class, 'showMember'])->name('library.members.show');
     });
 
@@ -109,10 +114,16 @@ Route::middleware('auth')->group(function () {
         Route::get('/members/{member}/edit', [LibraryController::class, 'editMember'])->name('members.edit');
         Route::put('/members/{member}', [LibraryController::class, 'updateMember'])->name('members.update');
         Route::post('/members/{member}/card', [LibraryController::class, 'issueMemberCard'])->name('members.card.issue');
+        Route::post('/members/{member}/monthly-payment', [LibraryController::class, 'recordMonthlyPayment'])->name('members.monthly-payment.store');
+        Route::get('/members/{member}/monthly-payment/receipt', [LibraryController::class, 'monthlyPaymentReceipt'])->name('members.monthly-payment.receipt');
+        Route::post('/members/{member}/fee-reminder', [LibraryController::class, 'markFeeReminderSent'])->name('members.fee-reminder.store');
         Route::post('/books', [LibraryController::class, 'storeBook'])->name('books.store');
         Route::get('/books/{book}/edit', [LibraryController::class, 'editBook'])->name('books.edit');
+        Route::get('/books/{book}/copy-labels', [LibraryController::class, 'copyLabels'])->name('books.copy-labels');
         Route::put('/books/{book}', [LibraryController::class, 'updateBook'])->name('books.update');
+        Route::put('/book-copies/{copy}', [LibraryController::class, 'updateBookCopy'])->name('book-copies.update');
         Route::post('/loans', [LibraryController::class, 'storeLoan'])->name('loans.store');
+        Route::post('/loans/return-by-copy', [LibraryController::class, 'returnLoanByCopy'])->name('loans.return-by-copy');
         Route::get('/loans/{loan}/edit', [LibraryController::class, 'editLoan'])->name('loans.edit');
         Route::put('/loans/{loan}', [LibraryController::class, 'updateLoan'])->name('loans.update');
         Route::put('/loans/{loan}/return', [LibraryController::class, 'returnLoan'])->name('loans.return');

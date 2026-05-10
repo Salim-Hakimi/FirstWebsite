@@ -22,188 +22,213 @@
             \App\Models\User::STATUS_PENDING => ['key' => 'statusPending', 'label' => 'Pending'],
             \App\Models\User::STATUS_SUSPENDED => ['key' => 'statusSuspended', 'label' => 'Suspended'],
         ];
+        $followUpTotal = $waitingStudents + $onHoldStudents + $pendingUsers + $overdueLoans->count();
     @endphp
 
-    <div class="row">
-        <div class="col-12 grid-margin stretch-card">
-            <div class="card corona-gradient-card">
-                <div class="card-body py-0 px-0 px-sm-3">
-                    <div class="row align-items-center">
-                        <div class="col-12 col-md-8 py-4 px-4">
-                            <h3 class="mb-1" data-i18n="fanousMainAdminDashboard">Fanous Main Admin Dashboard</h3>
-                            <p class="mb-0 text-white-50" data-i18n="adminDashboardDescription">Manage users, dorm rooms, students, finance, representatives, and library records from one database-driven control room.</p>
-                        </div>
-                        <div class="col-12 col-md-4 text-md-right px-4 pb-4 pb-md-0">
-                            <a href="{{ route('admin.users.create') }}" class="btn btn-outline-light btn-rounded" data-i18n="createStaffAccount">Create staff account</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-xl-3 col-sm-6 grid-margin stretch-card">
-            <div class="card">
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-9">
-                            <div class="d-flex align-items-center align-self-start">
-                                <h3 class="mb-0">{{ $totalUsers }}</h3>
-                                <p class="text-success ml-2 mb-0 font-weight-medium" data-i18n="staff">staff</p>
-                            </div>
-                        </div>
-                        <div class="col-3">
-                            <div class="icon icon-box-success">
-                                <span class="metric-icon">U</span>
-                            </div>
-                        </div>
-                    </div>
-                    <h6 class="text-muted font-weight-normal" data-i18n="totalUsers">Total users</h6>
-                </div>
-            </div>
+    <section class="admin-command-center">
+        <div>
+            <span class="student-command-kicker">Management overview</span>
+            <h1>Fanous control room</h1>
+            <p>Today’s operational picture for dorm capacity, admissions, registration payments, library activity, and staff access.</p>
         </div>
 
-        <div class="col-xl-3 col-sm-6 grid-margin stretch-card">
-            <div class="card">
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-9">
-                            <div class="d-flex align-items-center align-self-start">
-                                <h3 class="mb-0">{{ $activeUsers }}</h3>
-                                <p class="text-success ml-2 mb-0 font-weight-medium" data-i18n="active">active</p>
-                            </div>
-                        </div>
-                        <div class="col-3">
-                            <div class="icon icon-box-success">
-                                <span class="metric-icon">A</span>
-                            </div>
-                        </div>
-                    </div>
-                    <h6 class="text-muted font-weight-normal" data-i18n="activeAccounts">Active accounts</h6>
+        <div class="admin-command-actions">
+            <a class="btn btn-primary" href="{{ route('dorm.students.index') }}">Open students</a>
+            <a class="btn btn-outline-light" href="{{ route('library.index') }}">Open library</a>
+            <a class="btn btn-outline-light" href="{{ route('admin.users.create') }}">Create staff</a>
+        </div>
+    </section>
+
+    <section class="student-insight-grid admin-insight-grid">
+        <article class="student-insight-card is-primary">
+            <span>Dorm occupancy</span>
+            <strong>{{ $occupancyRate }}%</strong>
+            <p>{{ $occupiedBeds }} of {{ $totalBeds }} beds used</p>
+        </article>
+        <article class="student-insight-card">
+            <span>Active students</span>
+            <strong>{{ $activeStudents }}</strong>
+            <p>{{ $waitingStudents }} waiting, {{ $onHoldStudents }} on hold</p>
+        </article>
+        <article class="student-insight-card">
+            <span>Library activity</span>
+            <strong>{{ $activeLoans }}</strong>
+            <p>{{ $overdueLoans->count() }} overdue loans</p>
+        </article>
+        <article class="student-insight-card">
+            <span>Follow-up queue</span>
+            <strong>{{ $followUpTotal }}</strong>
+            <p>Admissions, staff access, and overdue books</p>
+        </article>
+    </section>
+
+    <section class="admin-dashboard-grid">
+        <div class="student-workspace-panel admin-span-2">
+            <div class="student-panel-head">
+                <div>
+                    <span class="student-panel-label">Capacity</span>
+                    <h2>Rooms and beds</h2>
+                    <p>{{ $totalRooms }} rooms, {{ $freeBeds }} free beds, {{ $occupiedBeds }} occupied beds.</p>
+                </div>
+                <a class="btn btn-outline-secondary btn-sm" href="{{ route('dorm.rooms.index') }}">Manage rooms</a>
+            </div>
+
+            <div class="admin-capacity-layout">
+                <div class="admin-occupancy-ring" style="--value: {{ $occupancyRate }}">
+                    <strong>{{ $occupancyRate }}%</strong>
+                    <span>occupied</span>
+                </div>
+
+                <div class="admin-mini-grid">
+                    <span><strong>{{ $totalBeds }}</strong>Total beds</span>
+                    <span><strong>{{ $occupiedBeds }}</strong>Used beds</span>
+                    <span><strong>{{ $freeBeds }}</strong>Free beds</span>
+                    <span><strong>{{ $totalRooms }}</strong>Rooms</span>
                 </div>
             </div>
-        </div>
 
-        <div class="col-xl-3 col-sm-6 grid-margin stretch-card">
-            <div class="card">
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-9">
-                            <div class="d-flex align-items-center align-self-start">
-                                <h3 class="mb-0">{{ $pendingUsers }}</h3>
-                                <p class="text-warning ml-2 mb-0 font-weight-medium" data-i18n="review">review</p>
-                            </div>
+            <div class="student-timeline-list">
+                @forelse ($crowdedRooms as $room)
+                    @php($rate = $room->capacity > 0 ? round(($room->occupied_beds / $room->capacity) * 100) : 0)
+                    <div class="admin-room-row">
+                        <div>
+                            <strong>Room {{ $room->room_number }}</strong>
+                            <p>{{ $room->occupied_beds }} / {{ $room->capacity }} beds used</p>
                         </div>
-                        <div class="col-3">
-                            <div class="icon icon-box-warning">
-                                <span class="metric-icon">P</span>
-                            </div>
-                        </div>
+                        <div class="admin-progress"><span style="width: {{ min(100, $rate) }}%"></span></div>
+                        <a class="btn btn-outline-secondary btn-sm" href="{{ route('dorm.rooms.show', $room) }}">Open</a>
                     </div>
-                    <h6 class="text-muted font-weight-normal" data-i18n="pendingAccounts">Pending accounts</h6>
-                </div>
+                @empty
+                    <div class="student-directory-empty">No crowded rooms right now.</div>
+                @endforelse
             </div>
         </div>
 
-        <div class="col-xl-3 col-sm-6 grid-margin stretch-card">
-            <div class="card">
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-9">
-                            <div class="d-flex align-items-center align-self-start">
-                                <h3 class="mb-0">6</h3>
-                                <p class="text-success ml-2 mb-0 font-weight-medium" data-i18n="modules">modules</p>
-                            </div>
-                        </div>
-                        <div class="col-3">
-                            <div class="icon icon-box-success">
-                                <span class="metric-icon">M</span>
-                            </div>
-                        </div>
-                    </div>
-                    <h6 class="text-muted font-weight-normal" data-i18n="mainModules">Main modules</h6>
+        <aside class="student-workspace-panel">
+            <div class="student-panel-head">
+                <div>
+                    <span class="student-panel-label">This month</span>
+                    <h2>Registration payments</h2>
+                    <p>Only the amounts collected by management during dorm admission.</p>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <div class="row">
-        <div class="col-md-8 grid-margin stretch-card">
-            <div class="card">
-                <div class="card-body">
-                    <div class="d-flex flex-row justify-content-between">
-                        <h4 class="card-title mb-1" data-i18n="managementPanels">Management panels</h4>
-                        <p class="text-muted mb-1" data-i18n="activeRoutes">Active routes</p>
-                    </div>
+            <div class="admin-finance-stack">
+                <span><strong>{{ number_format($monthlyGuaranteeDeposits) }}</strong>Guarantee deposits</span>
+                <span><strong>{{ number_format($monthlyDormRegistrationFees) }}</strong>Dorm expense fees</span>
+                <span><strong>{{ number_format($monthlyDormCardFees) }}</strong>Card fees</span>
+                <span class="is-positive"><strong>{{ number_format($monthlyRegistrationIncome) }}</strong>{{ $monthlyRegistrationCount }} paid registrations</span>
+            </div>
 
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="preview-list">
-                                @foreach ([
-                                    ['labelKey' => 'usersAndRoles', 'label' => 'Users & Roles', 'bodyKey' => 'createStaffAccountsRolesAndAccessStatus', 'body' => 'Create staff accounts, roles, and access status.', 'url' => route('admin.users.index'), 'icon' => 'U', 'color' => 'bg-primary'],
-                                    ['labelKey' => 'dormRooms', 'label' => 'Dorm Rooms', 'bodyKey' => 'manageRoomCapacityOccupancyAndRoomStatus', 'body' => 'Manage room capacity, occupancy, and room status.', 'url' => route('dorm.rooms.index'), 'icon' => 'R', 'color' => 'bg-success'],
-                                    ['labelKey' => 'dormStudents', 'label' => 'Dorm Students', 'bodyKey' => 'openStudentRecordsDocumentsCardsAndRoomDetails', 'body' => 'Open student records, documents, cards, and room details.', 'url' => route('dorm.students.index'), 'icon' => 'S', 'color' => 'bg-info'],
-                                    ['labelKey' => 'representative', 'label' => 'Representative', 'bodyKey' => 'recordMonthlyFeesElectricityWaterFinesAndRepresentativeExpenses', 'body' => 'Record monthly fees, electricity, water, fines, and representative expenses.', 'url' => route('representative.index'), 'icon' => 'R', 'color' => 'bg-warning'],
-                                    ['labelKey' => 'financeReport', 'label' => 'Finance report', 'bodyKey' => 'reviewCollectionsExpensesAndBalances', 'body' => 'Review collections, expenses, and balances.', 'url' => route('purchaser.report'), 'icon' => 'F', 'color' => 'bg-danger'],
-                                    ['labelKey' => 'library', 'label' => 'Library', 'bodyKey' => 'manageMembersBooksLoansAndReturns', 'body' => 'Manage members, books, loans, and returns.', 'url' => route('library.index'), 'icon' => 'L', 'color' => 'bg-warning'],
-                                ] as $item)
-                                    <a class="preview-item border-bottom" href="{{ $item['url'] }}">
-                                        <div class="preview-thumbnail">
-                                            <div class="preview-icon {{ $item['color'] }}">
-                                                <span>{{ $item['icon'] }}</span>
-                                            </div>
-                                        </div>
-                                        <div class="preview-item-content d-sm-flex flex-grow">
-                                            <div class="flex-grow">
-                                                <h6 class="preview-subject" data-i18n="{{ $item['labelKey'] }}">{{ $item['label'] }}</h6>
-                                                <p class="text-muted mb-0" data-i18n="{{ $item['bodyKey'] }}">{{ $item['body'] }}</p>
-                                            </div>
-                                            <div class="shortcut-action text-sm-right pt-2 pt-sm-0">
-                                                <p class="text-muted" data-i18n="open">Open</p>
-                                            </div>
-                                        </div>
-                                    </a>
-                                @endforeach
-                            </div>
-                        </div>
-                    </div>
+            <div class="admin-command-actions mt-3">
+                <a class="btn btn-primary btn-sm" href="{{ route('dorm.students.create') }}">Register student</a>
+                <a class="btn btn-outline-secondary btn-sm" href="{{ route('dorm.students.index') }}">Student records</a>
+            </div>
+        </aside>
+    </section>
+
+    <section class="admin-dashboard-grid">
+        <div class="student-workspace-panel">
+            <div class="student-panel-head">
+                <div>
+                    <span class="student-panel-label">Admissions</span>
+                    <h2>Recent students</h2>
+                    <p>Latest registered dorm student records.</p>
                 </div>
+                <a class="btn btn-outline-secondary btn-sm" href="{{ route('dorm.students.index') }}">View all</a>
+            </div>
+
+            <div class="student-timeline-list">
+                @forelse ($recentStudents as $student)
+                    <div class="student-timeline-item">
+                        <span class="student-timeline-icon">S</span>
+                        <div>
+                            <strong>{{ $student->full_name }}</strong>
+                            <p>{{ ucfirst(str_replace('_', ' ', $student->status)) }} · {{ $student->education_place ?: 'Education not recorded' }}</p>
+                        </div>
+                        <a class="btn btn-outline-secondary btn-sm" href="{{ route('dorm.students.show', $student) }}">Profile</a>
+                    </div>
+                @empty
+                    <div class="student-directory-empty">No students have been registered yet.</div>
+                @endforelse
             </div>
         </div>
 
-        <div class="col-md-4 grid-margin stretch-card">
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title" data-i18n="recentUsers">Recent users</h4>
-
-                    <div class="preview-list">
-                        @forelse ($recentUsers as $user)
-                            <div class="preview-item border-bottom">
-                                <div class="preview-thumbnail">
-                                    <div class="preview-icon bg-dark rounded-circle">
-                                        <span>{{ strtoupper(substr($user->name, 0, 1)) }}</span>
-                                    </div>
-                                </div>
-                                <div class="preview-item-content">
-                                    <p class="preview-subject mb-1">{{ $user->name }}</p>
-                                    @php
-                                        $roleMeta = $roleTranslations[$user->role] ?? ['key' => 'roleUser', 'label' => $user->role];
-                                        $statusMeta = $statusTranslations[$user->status] ?? ['key' => 'statusUnknown', 'label' => $user->status];
-                                    @endphp
-                                    <p class="text-muted mb-0">
-                                        <span data-i18n="{{ $roleMeta['key'] }}">{{ $roleMeta['label'] }}</span>
-                                        <span aria-hidden="true">&middot;</span>
-                                        <span data-i18n="{{ $statusMeta['key'] }}">{{ $statusMeta['label'] }}</span>
-                                    </p>
-                                </div>
-                            </div>
-                        @empty
-                            <p class="text-muted mb-0" data-i18n="noUsersCreatedYet">No users have been created yet.</p>
-                        @endforelse
-                    </div>
+        <div class="student-workspace-panel">
+            <div class="student-panel-head">
+                <div>
+                    <span class="student-panel-label">Library</span>
+                    <h2>Overdue books</h2>
+                    <p>{{ $libraryMembers }} active members, {{ $bookTitles }} titles, {{ $availableBooks }} available copies.</p>
                 </div>
+                <a class="btn btn-outline-secondary btn-sm" href="{{ route('library.index') }}">Library</a>
+            </div>
+
+            <div class="student-timeline-list">
+                @forelse ($overdueLoans as $loan)
+                    <div class="student-timeline-item">
+                        <span class="student-timeline-icon">L</span>
+                        <div>
+                            <strong>{{ $loan->member?->full_name ?: 'Unknown member' }}</strong>
+                            <p>{{ $loan->book?->title ?: 'Unknown book' }} · Due {{ $loan->due_at?->format('Y-m-d') ?: 'N/A' }}</p>
+                        </div>
+                        @if ($loan->member)
+                            <a class="btn btn-outline-secondary btn-sm" href="{{ route('library.members.show', $loan->member) }}">Profile</a>
+                        @endif
+                    </div>
+                @empty
+                    <div class="student-directory-empty">No overdue books right now.</div>
+                @endforelse
             </div>
         </div>
-    </div>
+
+        <div class="student-workspace-panel">
+            <div class="student-panel-head">
+                <div>
+                    <span class="student-panel-label">Staff</span>
+                    <h2>Recent users</h2>
+                    <p>{{ $activeUsers }} active accounts, {{ $pendingUsers }} waiting for review.</p>
+                </div>
+                <a class="btn btn-outline-secondary btn-sm" href="{{ route('admin.users.index') }}">Users</a>
+            </div>
+
+            <div class="student-timeline-list">
+                @forelse ($recentUsers as $user)
+                    @php
+                        $roleMeta = $roleTranslations[$user->role] ?? ['key' => 'roleUser', 'label' => $user->role];
+                        $statusMeta = $statusTranslations[$user->status] ?? ['key' => 'statusUnknown', 'label' => $user->status];
+                    @endphp
+                    <div class="student-timeline-item">
+                        <span class="student-timeline-icon">U</span>
+                        <div>
+                            <strong>{{ $user->name }}</strong>
+                            <p>{{ $roleMeta['label'] }} · {{ $statusMeta['label'] }}</p>
+                        </div>
+                        <a class="btn btn-outline-secondary btn-sm" href="{{ route('admin.users.edit', $user) }}">Edit</a>
+                    </div>
+                @empty
+                    <div class="student-directory-empty">No users have been created yet.</div>
+                @endforelse
+            </div>
+        </div>
+    </section>
+
+    <section class="student-workspace-panel">
+        <div class="student-panel-head">
+            <div>
+                <span class="student-panel-label">Quick access</span>
+                <h2>Management panels</h2>
+                <p>Open the most used work areas without searching through the sidebar.</p>
+            </div>
+        </div>
+
+        <div class="admin-shortcut-grid">
+            <a href="{{ route('admin.users.index') }}"><span>U</span><strong>Users & Roles</strong><em>Staff accounts and access</em></a>
+            <a href="{{ route('dorm.rooms.index') }}"><span>R</span><strong>Dorm Rooms</strong><em>Capacity and occupancy</em></a>
+            <a href="{{ route('dorm.students.index') }}"><span>S</span><strong>Dorm Students</strong><em>Profiles and admission</em></a>
+            <a href="{{ route('representative.index') }}"><span>C</span><strong>Representative</strong><em>Student collections and fines</em></a>
+            <a href="{{ route('purchaser.report') }}"><span>F</span><strong>Purchaser Finance</strong><em>Food account and expenses</em></a>
+            <a href="{{ route('library.index') }}"><span>L</span><strong>Library</strong><em>Members, books, loans</em></a>
+        </div>
+    </section>
 @endsection

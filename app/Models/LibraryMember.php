@@ -22,9 +22,12 @@ class LibraryMember extends Model
         'address',
         'profile_photo_path',
         'membership_fee',
+        'monthly_fee_daily_fine',
+        'monthly_fee_fine_amount',
         'payment_status',
         'last_paid_at',
         'next_payment_due_at',
+        'last_fee_reminder_at',
         'joined_at',
         'membership_expires_at',
         'status',
@@ -38,7 +41,27 @@ class LibraryMember extends Model
             'membership_expires_at' => 'date',
             'last_paid_at' => 'date',
             'next_payment_due_at' => 'date',
+            'last_fee_reminder_at' => 'date',
         ];
+    }
+
+    public function overdueFeeDays(): int
+    {
+        if (! $this->next_payment_due_at) {
+            return 0;
+        }
+
+        return max(0, $this->next_payment_due_at->diffInDays(today(), false));
+    }
+
+    public function calculatedMonthlyFine(): int
+    {
+        return $this->overdueFeeDays() * (int) ($this->monthly_fee_daily_fine ?? 20);
+    }
+
+    public function monthlyFeeBalance(): int
+    {
+        return (int) $this->membership_fee + max((int) $this->monthly_fee_fine_amount, $this->calculatedMonthlyFine());
     }
 
     public function registeredBy(): BelongsTo

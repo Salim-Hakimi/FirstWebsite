@@ -92,7 +92,16 @@ class DormStudentController extends Controller
     public function create(): View
     {
         return view('dorm.students.form', [
-            'student' => new DormStudent(['status' => 'active', 'joined_at' => now(), 'application_date' => now()]),
+            'student' => new DormStudent([
+                'status' => 'active',
+                'joined_at' => now(),
+                'application_date' => now(),
+                'guarantee_deposit_amount' => 1000,
+                'dorm_expense_fee_amount' => 1000,
+                'registration_card_fee_amount' => 50,
+                'registration_payment_status' => 'paid',
+                'registration_paid_at' => now(),
+            ]),
             'statusLabels' => $this->statusLabels(),
             'rooms' => $this->roomsForForm(),
         ]);
@@ -104,6 +113,7 @@ class DormStudentController extends Controller
         $this->normalizeAdmissionState($validated);
         $this->ensureRoomCanAccept($validated);
         $this->syncRoomNumber($validated);
+        $this->normalizeRegistrationPayment($validated);
         $validated['document_names'] = $this->storeDocuments($request);
         $validated['profile_photo_path'] = $this->storeProfilePhoto($request);
         unset($validated['documents'], $validated['remove_documents'], $validated['profile_photo'], $validated['remove_profile_photo'], $validated['issue_card'], $validated['card_fee'], $validated['card_payment_status']);
@@ -119,8 +129,8 @@ class DormStudentController extends Controller
         }
 
         return redirect()
-            ->route('dorm.students.index')
-            ->with('status', 'Dorm student registered successfully.');
+            ->route('dorm.students.registration.receipt', $student)
+            ->with('status', 'Dorm student registered successfully. The registration receipt is ready to print.');
     }
 
     public function issueCard(Request $request, DormStudent $student): RedirectResponse
@@ -132,6 +142,35 @@ class DormStudentController extends Controller
         $card = $this->issueDormCard($student, $request);
 
         return redirect()->route('membership-cards.print', $card);
+    }
+
+    public function registrationReceipt(DormStudent $student): View
+    {
+        $student->load([
+            'room',
+            'registeredBy',
+            'membershipCards' => fn ($query) => $query->where('scope', 'dorm')->latest('issued_at'),
+        ]);
+
+        $latestCard = $student->membershipCards->first();
+        $guaranteeDeposit = (int) ($student->guarantee_deposit_amount ?? 1000);
+        $dormExpenseFee = (int) ($student->dorm_expense_fee_amount ?? 1000);
+        $cardFee = (int) ($student->registration_card_fee_amount ?? $latestCard?->fee_amount ?? 50);
+
+        return view('dorm.receipts.registration', [
+            'student' => $student,
+            'latestCard' => $latestCard,
+            'receiptNumber' => 'ADM-'.str_pad((string) $student->id, 6, '0', STR_PAD_LEFT),
+            'lineItems' => [
+                ['label' => 'Guarantee deposit', 'amount' => $guaranteeDeposit],
+                ['label' => 'Initial dorm expenses', 'amount' => $dormExpenseFee],
+                ['label' => 'Dorm card fee', 'amount' => $cardFee],
+            ],
+            'totalAmount' => $guaranteeDeposit + $dormExpenseFee + $cardFee,
+            'paymentStatus' => $student->registration_payment_status ?? 'paid',
+            'paidAt' => $student->registration_paid_at,
+            'backRoute' => route('dorm.students.show', $student),
+        ]);
     }
 
     public function edit(DormStudent $student): View
@@ -155,6 +194,7 @@ class DormStudentController extends Controller
         $this->normalizeAdmissionState($validated, $student);
         $this->ensureRoomCanAccept($validated, $student);
         $this->syncRoomNumber($validated);
+        $this->normalizeRegistrationPayment($validated, $student);
         $validated['document_names'] = $this->mergeDocuments($request, $student);
         $validated['profile_photo_path'] = $this->syncProfilePhoto($request, $student);
         unset($validated['documents'], $validated['remove_documents'], $validated['profile_photo'], $validated['remove_profile_photo'], $validated['issue_card'], $validated['card_fee'], $validated['card_payment_status']);
@@ -225,6 +265,11 @@ class DormStudentController extends Controller
             'education_score' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'eligibility_score' => ['nullable', 'integer', 'min:0', 'max:100'],
             'eligibility_notes' => ['nullable', 'string', 'max:1000'],
+            'guarantee_deposit_amount' => ['nullable', 'integer', 'min:0'],
+            'dorm_expense_fee_amount' => ['nullable', 'integer', 'min:0'],
+            'registration_card_fee_amount' => ['nullable', 'integer', 'min:0'],
+            'registration_payment_status' => ['nullable', Rule::in(['paid', 'unpaid', 'partial'])],
+            'registration_paid_at' => ['nullable', 'date'],
             'joined_at' => ['nullable', 'date'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'profile_photo' => ['nullable', 'image', 'max:2048'],
@@ -305,6 +350,20 @@ class DormStudentController extends Controller
 
         if (($validated['status'] ?? null) === 'active' && empty($validated['joined_at'])) {
             $validated['joined_at'] = now()->toDateString();
+        }
+    }
+
+    private function normalizeRegistrationPayment(array &$validated, ?DormStudent $student = null): void
+    {
+        $validated['guarantee_deposit_amount'] = (int) ($validated['guarantee_deposit_amount'] ?? $student?->guarantee_deposit_amount ?? 1000);
+        $validated['dorm_expense_fee_amount'] = (int) ($validated['dorm_expense_fee_amount'] ?? $student?->dorm_expense_fee_amount ?? 1000);
+        $validated['registration_card_fee_amount'] = (int) ($validated['registration_card_fee_amount'] ?? $student?->registration_card_fee_amount ?? 50);
+        $validated['registration_payment_status'] = $validated['registration_payment_status'] ?? $student?->registration_payment_status ?? 'paid';
+
+        if ($validated['registration_payment_status'] === 'paid') {
+            $validated['registration_paid_at'] = $validated['registration_paid_at'] ?? $student?->registration_paid_at?->toDateString() ?? now()->toDateString();
+        } elseif (($validated['registration_payment_status'] ?? null) === 'unpaid') {
+            $validated['registration_paid_at'] = null;
         }
     }
 
@@ -413,7 +472,7 @@ class DormStudentController extends Controller
     private function issueDormCard(DormStudent $student, Request $request): MembershipCard
     {
         $issuedAt = now();
-        $paymentStatus = $request->input('card_payment_status', 'unpaid');
+        $paymentStatus = $request->input('card_payment_status', 'paid');
 
         return $student->membershipCards()->create([
             'scope' => 'dorm',
@@ -422,10 +481,11 @@ class DormStudentController extends Controller
             'father_name' => $student->father_name,
             'issued_at' => $issuedAt,
             'expires_at' => $issuedAt->copy()->addMonths(6),
-            'fee_amount' => $request->input('card_fee', 0),
+            'fee_amount' => $request->input('card_fee', $student->registration_card_fee_amount ?? 50),
             'payment_status' => $paymentStatus,
             'paid_at' => $paymentStatus === 'paid' ? $issuedAt : null,
             'created_by' => $request->user()->id,
+            'notes' => 'Dorm card fee: 50 AFN',
         ]);
     }
 
