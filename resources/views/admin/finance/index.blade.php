@@ -10,7 +10,7 @@
                     <div class="row align-items-center">
                         <div class="col-12 col-lg-8 py-4 px-4">
                             <h3 class="mb-1">Dorm Finance</h3>
-                            <p class="mb-0 text-white-50">Track dorm income, student payments, donor support, construction, salaries, library repairs, and daily expenses.</p>
+                            <p class="mb-0 text-white-50">Admin-only ledger for dorm income, student payments, donor support, construction, salaries, library repairs, and daily expenses.</p>
                         </div>
                         <div class="col-12 col-lg-4 text-lg-right px-4 pb-4 pb-lg-0">
                             <button class="btn btn-outline-light btn-rounded" type="button" onclick="window.print()">Print report</button>
@@ -106,7 +106,7 @@
             <div class="card">
                 <div class="card-body">
                     <h4 class="card-title">Record income</h4>
-                    <p class="card-description">Use this for student fees, registration, donor support, and organization support.</p>
+                    <p class="card-description">Only the system admin records income here: student fees, registration, donor support, and organization support.</p>
 
                     <form method="POST" action="{{ route('admin.finance.store') }}" enctype="multipart/form-data">
                         @csrf
@@ -167,7 +167,7 @@
             <div class="card">
                 <div class="card-body">
                     <h4 class="card-title">Record expense</h4>
-                    <p class="card-description">Use this for construction, guard salaries, staff salaries, library repairs, food, utilities, and other expenses.</p>
+                    <p class="card-description">Only the system admin records expenses here: construction, guard salaries, staff salaries, library repairs, food, utilities, and other expenses.</p>
 
                     <form method="POST" action="{{ route('admin.finance.store') }}" enctype="multipart/form-data">
                         @csrf

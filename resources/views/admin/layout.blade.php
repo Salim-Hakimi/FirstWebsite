@@ -85,7 +85,7 @@
                         </li>
                     @endif
 
-                    @if ($currentUser->canAccessAdmin())
+                    @if ($currentUser->canManageFinance())
                         <li class="nav-item menu-items {{ request()->routeIs('admin.finance.*') ? 'active' : '' }}">
                             <a class="nav-link" href="{{ route('admin.finance.index') }}">
                                 <span class="menu-icon"><span class="menu-letter">F</span></span>

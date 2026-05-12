@@ -103,6 +103,14 @@ class User extends Authenticatable
         ];
     }
 
+    public static function financeAdminRoles(): array
+    {
+        return [
+            self::ROLE_OWNER,
+            self::ROLE_ADMIN,
+        ];
+    }
+
     public static function dormRecordViewerRoles(): array
     {
         return [
@@ -159,6 +167,11 @@ class User extends Authenticatable
     public function canManageUsers(): bool
     {
         return $this->canAccessAdmin();
+    }
+
+    public function canManageFinance(): bool
+    {
+        return $this->isActive() && in_array($this->role, self::financeAdminRoles(), true);
     }
 
     public function manageableRoleOptions(): array

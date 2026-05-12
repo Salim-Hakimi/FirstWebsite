@@ -132,9 +132,11 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('role:'.implode(',', User::managementRoles()))->prefix('admin')->name('admin.')->group(function () {
         Route::get('/', AdminDashboardController::class)->name('dashboard');
-        Route::get('/finance', [AdminFinanceController::class, 'index'])->name('finance.index');
-        Route::post('/finance', [AdminFinanceController::class, 'store'])->name('finance.store');
-        Route::get('/finance/{transaction}/receipt', [AdminFinanceController::class, 'receipt'])->name('finance.receipt');
+        Route::middleware('role:'.implode(',', User::financeAdminRoles()))->group(function () {
+            Route::get('/finance', [AdminFinanceController::class, 'index'])->name('finance.index');
+            Route::post('/finance', [AdminFinanceController::class, 'store'])->name('finance.store');
+            Route::get('/finance/{transaction}/receipt', [AdminFinanceController::class, 'receipt'])->name('finance.receipt');
+        });
         Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
         Route::get('/users/create', [AdminUserController::class, 'create'])->name('users.create');
         Route::post('/users', [AdminUserController::class, 'store'])->name('users.store');
