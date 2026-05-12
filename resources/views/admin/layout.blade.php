@@ -86,6 +86,15 @@
                     @endif
 
                     @if ($currentUser->canAccessAdmin())
+                        <li class="nav-item menu-items {{ request()->routeIs('admin.finance.*') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('admin.finance.index') }}">
+                                <span class="menu-icon"><span class="menu-letter">F</span></span>
+                                <span class="menu-title">Dorm Finance</span>
+                            </a>
+                        </li>
+                    @endif
+
+                    @if ($currentUser->canAccessAdmin())
                         <li class="nav-item menu-items {{ request()->routeIs('dorm.rooms.*') ? 'active' : '' }}">
                             <a class="nav-link" href="{{ route('dorm.rooms.index') }}">
                                 <span class="menu-icon"><span class="menu-letter">R</span></span>

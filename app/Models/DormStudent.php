@@ -80,6 +80,11 @@ class DormStudent extends Model
         return $this->hasMany(FoodFinance::class);
     }
 
+    public function financeTransactions(): HasMany
+    {
+        return $this->hasMany(FinanceTransaction::class);
+    }
+
     public function membershipCards(): MorphMany
     {
         return $this->morphMany(MembershipCard::class, 'cardable');
