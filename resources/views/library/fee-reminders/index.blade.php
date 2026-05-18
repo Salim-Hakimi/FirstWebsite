@@ -1,126 +1,142 @@
 @extends('admin.layout')
 
-@section('title', 'Library fee reminders - Fanous Admin')
+@section('title', 'پیگیری فیس کتابخانه - فانوس')
+@section('content_wrapper_class', 'fanous-dashboard-wrapper')
 
 @section('content')
     @php
+        use App\Support\Locale;
+
         $statusOptions = [
-            'due_soon' => 'Due soon',
-            'overdue' => 'Overdue',
-            'all' => 'All unpaid',
+            'due_soon' => 'نزدیک به سررسید',
+            'overdue' => 'گذشته از سررسید',
+            'all' => 'همه پرداخت‌نشده‌ها',
         ];
     @endphp
 
-    <div class="row">
-        <div class="col-12 grid-margin stretch-card">
-            <div class="card corona-gradient-card">
-                <div class="card-body py-0 px-0 px-sm-3">
-                    <div class="row align-items-center">
-                        <div class="col-12 col-lg-8 py-4 px-4">
-                            <h3 class="mb-1">Monthly fee reminders</h3>
-                            <p class="mb-0 text-white-50">Follow up library students before their monthly fee expires and after late fines start.</p>
-                        </div>
-                        <div class="col-12 col-lg-4 text-lg-right px-4 pb-4 pb-lg-0">
-                            <a class="btn btn-outline-light btn-rounded" href="{{ route('library.index') }}">Library</a>
-                        </div>
-                    </div>
+    <div class="fanous-library-page" dir="rtl">
+        <section class="fanous-page-header">
+            <div>
+                <span class="dashboard-section-kicker">پیگیری فیس</span>
+                <h1>یادآوری فیس ماهانه کتابخانه</h1>
+                <p>اعضایی را که فیس ماهانه‌شان نزدیک سررسید است یا از موعد پرداخت گذشته، از همین بخش پیگیری کنید.</p>
+            </div>
+            <div class="fanous-page-actions">
+                <x-ds.button :href="route('library.index')">بازگشت به کتابخانه</x-ds.button>
+                <x-ds.button variant="outline" :href="route('library.members.export', request()->query())">خروجی CSV</x-ds.button>
+            </div>
+        </section>
+
+        <section class="dashboard-stat-grid" aria-label="خلاصه پیگیری فیس">
+            <article class="dashboard-stat">
+                <div>
+                    <span>نیازمند یادآوری</span>
+                    <strong>{{ Locale::number($dueSoonCount) }}</strong>
+                    <small>اعضایی که تا سه روز آینده باید پیگیری شوند</small>
+                </div>
+                <span class="dashboard-stat-icon"><x-ds.icon name="calendar" /></span>
+            </article>
+            <article class="dashboard-stat">
+                <div>
+                    <span>گذشته از سررسید</span>
+                    <strong>{{ Locale::number($overdueCount) }}</strong>
+                    <small>فیس‌هایی که موعد پرداخت‌شان گذشته است</small>
+                </div>
+                <span class="dashboard-stat-icon is-danger"><x-ds.icon name="bell" /></span>
+            </article>
+            <article class="dashboard-stat">
+                <div>
+                    <span>جریمه روزانه</span>
+                    <strong>{{ Locale::money(20) }}</strong>
+                    <small>مقدار پیش‌فرض جریمه دیرکرد</small>
+                </div>
+                <span class="dashboard-stat-icon is-blue"><x-ds.icon name="cash" /></span>
+            </article>
+        </section>
+
+        <section class="dashboard-panel">
+            <div class="dashboard-panel-header">
+                <div>
+                    <span class="dashboard-section-kicker">جستجو و فیلتر</span>
+                    <h2>صف یادآوری اعضا</h2>
+                    <p>پیام آماده را از واتساپ بفرستید و بعد از ارسال، ثبت را به عنوان پیگیری‌شده علامت بزنید.</p>
                 </div>
             </div>
-        </div>
-    </div>
 
-    <div class="row">
-        <div class="col-xl-4 col-sm-6 grid-margin stretch-card">
-            <div class="card"><div class="card-body"><h3 class="mb-0">{{ $dueSoonCount }}</h3><h6 class="text-muted font-weight-normal">Need reminder within 3 days</h6></div></div>
-        </div>
-        <div class="col-xl-4 col-sm-6 grid-margin stretch-card">
-            <div class="card"><div class="card-body"><h3 class="mb-0">{{ $overdueCount }}</h3><h6 class="text-muted font-weight-normal">Overdue monthly fees</h6></div></div>
-        </div>
-        <div class="col-xl-4 col-sm-6 grid-margin stretch-card">
-            <div class="card"><div class="card-body"><h3 class="mb-0">20 AFN</h3><h6 class="text-muted font-weight-normal">Default daily late fine</h6></div></div>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-12 grid-margin stretch-card">
-            <div class="card">
-                <div class="card-body">
-                    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center mb-4">
-                        <div>
-                            <h4 class="card-title mb-1">Reminder queue</h4>
-                            <p class="text-muted mb-0">Open WhatsApp, send the prepared message, then mark it as sent.</p>
-                        </div>
-                    </div>
-
-                    <form method="GET" action="{{ route('library.fee-reminders.index') }}" class="library-filter-row mb-4">
-                        <input class="form-control" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="Search by name, phone, father, or member code">
-                        <select class="form-control" name="status">
-                            @foreach ($statusOptions as $value => $label)
-                                <option value="{{ $value }}" @selected($status === $value)>{{ $label }}</option>
-                            @endforeach
-                        </select>
-                        <button class="btn btn-primary" type="submit">Search</button>
-                        <a class="btn btn-dark" href="{{ route('library.fee-reminders.index') }}">Clear</a>
-                    </form>
-
-                    <div class="library-member-grid">
-                        @forelse ($members as $member)
-                            @php
-                                $fine = max((int) $member->monthly_fee_fine_amount, $member->calculatedMonthlyFine());
-                                $balance = (int) $member->membership_fee + $fine;
-                                $isOverdue = $member->next_payment_due_at && $member->next_payment_due_at->isPast();
-                                $dueDate = $member->next_payment_due_at?->format('Y-m-d') ?: 'N/A';
-                                $message = $isOverdue
-                                    ? "سلام {$member->full_name} عزیز، تاریخ پرداخت فیس ماهانه کتاب‌خانه شما گذشته است. مبلغ قابل پرداخت فعلی {$balance} افغانی است که شامل {$fine} افغانی جریمه می‌باشد."
-                                    : "سلام {$member->full_name} عزیز، فیس ماهانه کتاب‌خانه شما تا تاریخ {$dueDate} باید پرداخت شود. در صورت تاخیر، روزانه {$member->monthly_fee_daily_fine} افغانی جریمه می‌شود.";
-                                $whatsappDigits = preg_replace('/\D+/', '', $member->phone ?? '');
-                                if (str_starts_with($whatsappDigits, '0')) {
-                                    $whatsappDigits = '93'.substr($whatsappDigits, 1);
-                                }
-                            @endphp
-                            <article class="library-member-card">
-                                <div class="library-member-card-head">
-                                    @if ($member->profile_photo_path)
-                                        <img class="user-table-avatar user-table-avatar-img" src="{{ asset('storage/'.$member->profile_photo_path) }}" alt="{{ $member->full_name }}">
-                                    @else
-                                        <div class="user-table-avatar">{{ strtoupper(substr($member->full_name, 0, 1)) }}</div>
-                                    @endif
-                                    <div>
-                                        <h5>{{ $member->full_name }}</h5>
-                                        <span>{{ $member->member_code ?: 'No code' }} · {{ $isOverdue ? 'Overdue' : 'Reminder' }}</span>
-                                    </div>
-                                </div>
-                                <div class="library-member-meta">
-                                    <span><strong>Phone</strong>{{ $member->phone }}</span>
-                                    <span><strong>Next due</strong>{{ $dueDate }}</span>
-                                    <span><strong>Monthly fee</strong>{{ number_format((int) $member->membership_fee) }} AFN</span>
-                                    <span><strong>Fine</strong>{{ number_format($fine) }} AFN</span>
-                                    <span><strong>Balance</strong>{{ number_format($balance) }} AFN</span>
-                                    <span><strong>Last reminder</strong>{{ $member->last_fee_reminder_at?->format('Y-m-d') ?? 'Not sent' }}</span>
-                                </div>
-                                <div class="student-timeline-item mb-3">
-                                    <strong>Prepared message</strong>
-                                    <p class="mb-0">{{ $message }}</p>
-                                </div>
-                                <div class="library-member-actions">
-                                    @if ($whatsappDigits)
-                                        <a class="btn btn-success btn-sm" href="https://wa.me/{{ $whatsappDigits }}?text={{ rawurlencode($message) }}" target="_blank" rel="noopener">WhatsApp</a>
-                                    @endif
-                                    <a class="btn btn-outline-secondary btn-sm" href="{{ route('library.members.show', $member) }}">Profile</a>
-                                    @if ($canWriteLibrary)
-                                        <form method="POST" action="{{ route('library.members.fee-reminder.store', $member) }}">
-                                            @csrf
-                                            <button class="btn btn-outline-primary btn-sm" type="submit">Mark sent</button>
-                                        </form>
-                                    @endif
-                                </div>
-                            </article>
-                        @empty
-                            <div class="library-member-empty">No members need a monthly fee reminder for this filter.</div>
-                        @endforelse
-                    </div>
+            <form method="GET" action="{{ route('library.fee-reminders.index') }}" class="fanous-finance-filter-grid">
+                <input class="form-control" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="جستجوی نام، شماره تماس، نام پدر یا کد عضویت">
+                <select class="form-control" name="status">
+                    @foreach ($statusOptions as $value => $label)
+                        <option value="{{ $value }}" @selected($status === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+                <div class="fanous-filter-actions">
+                    <x-ds.button type="submit">جستجو</x-ds.button>
+                    <x-ds.button variant="outline" :href="route('library.fee-reminders.index')">پاک کردن</x-ds.button>
                 </div>
+            </form>
+
+            <div class="fanous-library-member-grid mt-4">
+                @forelse ($members as $member)
+                    @php
+                        $fine = max((int) $member->monthly_fee_fine_amount, $member->calculatedMonthlyFine());
+                        $balance = (int) $member->membership_fee + $fine;
+                        $isOverdue = $member->next_payment_due_at && $member->next_payment_due_at->isPast();
+                        $dueDate = $member->next_payment_due_at?->format('Y/m/d');
+                        $dueDateText = $dueDate ? Locale::number($dueDate) : 'ثبت نشده';
+                        $message = $isOverdue
+                            ? "سلام {$member->full_name} عزیز، تاریخ پرداخت فیس ماهانه کتابخانه شما گذشته است. مبلغ قابل پرداخت فعلی ".Locale::money($balance)." است که شامل ".Locale::money($fine)." جریمه می‌باشد."
+                            : "سلام {$member->full_name} عزیز، فیس ماهانه کتابخانه شما تا تاریخ {$dueDateText} باید پرداخت شود. در صورت تأخیر، روزانه ".Locale::money((int) $member->monthly_fee_daily_fine)." جریمه می‌شود.";
+                        $whatsappDigits = preg_replace('/\D+/', '', $member->phone ?? '');
+                        if (str_starts_with($whatsappDigits, '0')) {
+                            $whatsappDigits = '93'.substr($whatsappDigits, 1);
+                        }
+                    @endphp
+                    <article class="fanous-library-member-card">
+                        <div class="fanous-library-member-head">
+                            @if ($member->profile_photo_path)
+                                <img class="fanous-library-avatar" src="{{ asset('storage/'.$member->profile_photo_path) }}" alt="{{ $member->full_name }}">
+                            @else
+                                <span class="fanous-library-avatar">{{ mb_substr($member->full_name, 0, 1) }}</span>
+                            @endif
+                            <div>
+                                <strong>{{ $member->full_name }}</strong>
+                                <span class="ltr-text">{{ $member->member_code ?: 'بدون کد' }}</span>
+                            </div>
+                            <x-ds.badge :tone="$isOverdue ? 'danger' : 'warning'">{{ $isOverdue ? 'گذشته از سررسید' : 'نیازمند یادآوری' }}</x-ds.badge>
+                        </div>
+
+                        <div class="fanous-library-member-meta">
+                            <div><span>تماس</span><strong class="ltr-text">{{ $member->phone ?: 'ثبت نشده' }}</strong></div>
+                            <div><span>سررسید بعدی</span><strong>{{ $dueDateText }}</strong></div>
+                            <div><span>فیس ماهانه</span><strong>{{ Locale::money((int) $member->membership_fee) }}</strong></div>
+                            <div><span>جریمه</span><strong>{{ Locale::money($fine) }}</strong></div>
+                            <div><span>قابل پرداخت</span><strong>{{ Locale::money($balance) }}</strong></div>
+                            <div><span>آخرین یادآوری</span><strong>{{ $member->last_fee_reminder_at ? Locale::number($member->last_fee_reminder_at->format('Y/m/d')) : 'ارسال نشده' }}</strong></div>
+                        </div>
+
+                        <div class="fanous-library-notice">
+                            <span>پیام</span>
+                            <p>{{ $message }}</p>
+                        </div>
+
+                        <div class="fanous-library-member-actions">
+                            @if ($whatsappDigits)
+                                <x-ds.button size="sm" href="https://wa.me/{{ $whatsappDigits }}?text={{ rawurlencode($message) }}" target="_blank" rel="noopener">واتساپ</x-ds.button>
+                            @endif
+                            <x-ds.button variant="outline" size="sm" :href="route('library.members.show', $member)">پروفایل</x-ds.button>
+                            @if ($canWriteLibrary)
+                                <form method="POST" action="{{ route('library.members.fee-reminder.store', $member) }}">
+                                    @csrf
+                                    <x-ds.button variant="outline" size="sm" type="submit">ثبت ارسال</x-ds.button>
+                                </form>
+                            @endif
+                        </div>
+                    </article>
+                @empty
+                    <div class="dashboard-empty">برای این فیلتر هیچ عضوی نیازمند یادآوری فیس نیست.</div>
+                @endforelse
             </div>
-        </div>
+        </section>
     </div>
 @endsection

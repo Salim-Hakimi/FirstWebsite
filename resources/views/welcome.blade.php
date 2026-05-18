@@ -1,12 +1,12 @@
 @extends('layouts.site')
 
-@section('title', 'Fanous')
+@section('title', 'فانوس')
 
 @section('content')
     <section class="hero">
         <div class="container hero-inner">
             <div>
-                <p class="eyebrow">Fanous Management System</p>
+                <p class="eyebrow">سیستم مدیریت فانوس</p>
                 <h1>مدیریت لیلیه و کتابخانه در یک سیستم</h1>
                 <p class="hero-copy">
                     فانوس برای ثبت محصلین، اتاق‌ها، حساب‌های مالی، نماینده محصلین، خریدها و کتابخانه ساخته شده است.
@@ -28,7 +28,7 @@
                 <div class="program-visual">
                     <div class="program-panel">
                         <div>
-                            <span class="section-label">Fanous</span>
+                            <span class="section-label">فانوس</span>
                             <h2 class="program-title">کنترل منظم اطلاعات روزانه</h2>
                         </div>
                         <div class="program-tags">
@@ -45,19 +45,19 @@
     <section class="stats">
         <div class="container stat-row">
             <article class="stat-card">
-                <strong>RBAC</strong>
+                <strong>دسترسی</strong>
                 <span>دسترسی بر اساس نقش کاربر</span>
             </article>
             <article class="stat-card">
-                <strong>Live</strong>
+                <strong>زنده</strong>
                 <span>اطلاعات از دیتابیس خوانده می‌شود</span>
             </article>
             <article class="stat-card">
-                <strong>Cards</strong>
+                <strong>کارت‌ها</strong>
                 <span>صدور کارت عضویت و لیلیه</span>
             </article>
             <article class="stat-card">
-                <strong>Reports</strong>
+                <strong>گزارش‌ها</strong>
                 <span>گزارش‌های مالی و عملیاتی</span>
             </article>
         </div>

@@ -12,18 +12,18 @@ return new class extends Migration
     {
         DB::table('users')
             ->where('role', 'student')
-            ->update(['role' => 'applicant']);
+            ->update(['role' => 'guard']);
 
-        $hasOwner = DB::table('users')->where('role', 'owner')->exists();
+        $hasAdmin = DB::table('users')->where('role', 'admin')->exists();
 
-        if (! $hasOwner) {
+        if (! $hasAdmin) {
             $firstUser = DB::table('users')->orderBy('id')->first();
 
             if ($firstUser) {
                 DB::table('users')
                     ->where('id', $firstUser->id)
                     ->update([
-                        'role' => 'owner',
+                        'role' => 'admin',
                         'status' => 'active',
                     ]);
             }

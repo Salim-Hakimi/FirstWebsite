@@ -1,236 +1,279 @@
 @extends('admin.layout')
 
-@section('title', 'Fanous Admin Dashboard')
+@section('title', 'داشبورد ادمین فانوس')
+@section('content_wrapper_class', 'fanous-dashboard-wrapper')
 
 @section('content')
     @php
-        $roleTranslations = [
-            \App\Models\User::ROLE_OWNER => ['key' => 'roleOwner', 'label' => 'Owner'],
-            \App\Models\User::ROLE_MANAGER => ['key' => 'roleManager', 'label' => 'Manager'],
-            \App\Models\User::ROLE_ADMIN => ['key' => 'roleAdmin', 'label' => 'Admin'],
-            \App\Models\User::ROLE_GUARD => ['key' => 'roleGuard', 'label' => 'Guard'],
-            \App\Models\User::ROLE_STUDENT_REPRESENTATIVE => ['key' => 'roleStudentRepresentative', 'label' => 'Student Representative'],
-            \App\Models\User::ROLE_PURCHASER => ['key' => 'rolePurchaser', 'label' => 'Purchaser'],
-            \App\Models\User::ROLE_LIBRARIAN => ['key' => 'roleLibrarian', 'label' => 'Librarian'],
-            \App\Models\User::ROLE_COOK => ['key' => 'roleCook', 'label' => 'Cook'],
-            \App\Models\User::ROLE_DORM_STUDENT => ['key' => 'roleDormStudent', 'label' => 'Dorm Student'],
-            \App\Models\User::ROLE_LIBRARY_MEMBER => ['key' => 'roleLibraryMember', 'label' => 'Library Member'],
-            \App\Models\User::ROLE_APPLICANT => ['key' => 'roleApplicant', 'label' => 'Applicant'],
-        ];
-        $statusTranslations = [
-            \App\Models\User::STATUS_ACTIVE => ['key' => 'statusActive', 'label' => 'Active'],
-            \App\Models\User::STATUS_PENDING => ['key' => 'statusPending', 'label' => 'Pending'],
-            \App\Models\User::STATUS_SUSPENDED => ['key' => 'statusSuspended', 'label' => 'Suspended'],
-        ];
+        use App\Support\Locale;
+
         $followUpTotal = $waitingStudents + $onHoldStudents + $pendingUsers + $overdueLoans->count();
+        $today = now();
+
+        $studentStatusLabels = [
+            'active' => 'فعال',
+            'waiting' => 'در انتظار',
+            'on_hold' => 'متوقف',
+            'graduated' => 'فارغ شده',
+            'left' => 'خارج شده',
+        ];
+
+        $roleLabels = $roleLabels ?? [];
+        $statusLabels = $statusLabels ?? [];
+
+        $formatDate = fn ($date) => $date ? Locale::number($date->format('Y/m/d')) : 'ثبت نشده';
     @endphp
 
-    <section class="admin-command-center">
-        <div>
-            <span class="student-command-kicker">Management overview</span>
-            <h1>Fanous control room</h1>
-            <p>Today’s operational picture for dorm capacity, admissions, registration payments, library activity, and staff access.</p>
-        </div>
-
-        <div class="admin-command-actions">
-            <a class="btn btn-primary" href="{{ route('dorm.students.index') }}">Open students</a>
-            <a class="btn btn-outline-light" href="{{ route('library.index') }}">Open library</a>
-            <a class="btn btn-outline-light" href="{{ route('admin.users.create') }}">Create staff</a>
-        </div>
-    </section>
-
-    <section class="student-insight-grid admin-insight-grid">
-        <article class="student-insight-card is-primary">
-            <span>Dorm occupancy</span>
-            <strong>{{ $occupancyRate }}%</strong>
-            <p>{{ $occupiedBeds }} of {{ $totalBeds }} beds used</p>
-        </article>
-        <article class="student-insight-card">
-            <span>Active students</span>
-            <strong>{{ $activeStudents }}</strong>
-            <p>{{ $waitingStudents }} waiting, {{ $onHoldStudents }} on hold</p>
-        </article>
-        <article class="student-insight-card">
-            <span>Library activity</span>
-            <strong>{{ $activeLoans }}</strong>
-            <p>{{ $overdueLoans->count() }} overdue loans</p>
-        </article>
-        <article class="student-insight-card">
-            <span>Follow-up queue</span>
-            <strong>{{ $followUpTotal }}</strong>
-            <p>Admissions, staff access, and overdue books</p>
-        </article>
-    </section>
-
-    <section class="admin-dashboard-grid">
-        <div class="student-workspace-panel admin-span-2">
-            <div class="student-panel-head">
+    <div class="fanous-dashboard" dir="rtl">
+        <section class="dashboard-hero-grid">
+            <article class="dashboard-date-card">
+                <span class="dashboard-date-icon"><x-ds.icon name="calendar" /></span>
                 <div>
-                    <span class="student-panel-label">Capacity</span>
-                    <h2>Rooms and beds</h2>
-                    <p>{{ $totalRooms }} rooms, {{ $freeBeds }} free beds, {{ $occupiedBeds }} occupied beds.</p>
+                    <strong>{{ $today->locale('fa')->translatedFormat('l') }}، {{ Locale::number($today->format('Y/m/d')) }}</strong>
+                    <span>نیازمند پیگیری: {{ Locale::number($followUpTotal) }} مورد</span>
                 </div>
-                <a class="btn btn-outline-secondary btn-sm" href="{{ route('dorm.rooms.index') }}">Manage rooms</a>
-            </div>
+            </article>
 
-            <div class="admin-capacity-layout">
-                <div class="admin-occupancy-ring" style="--value: {{ $occupancyRate }}">
-                    <strong>{{ $occupancyRate }}%</strong>
-                    <span>occupied</span>
+            <article class="dashboard-welcome">
+                <div>
+                <h1>داشبورد مدیریت لیلیه و کتابخانه فانوس</h1>
+                <p>
+                    در اینجا خلاصه‌ای از وضعیت عمومی سیستم لیلیه و کتابخانه را مشاهده می‌کنید.
+                </p>
                 </div>
+                <span class="dashboard-welcome-chip">خلاصه امروز</span>
+            </article>
+        </section>
 
-                <div class="admin-mini-grid">
-                    <span><strong>{{ $totalBeds }}</strong>Total beds</span>
-                    <span><strong>{{ $occupiedBeds }}</strong>Used beds</span>
-                    <span><strong>{{ $freeBeds }}</strong>Free beds</span>
-                    <span><strong>{{ $totalRooms }}</strong>Rooms</span>
+        <section class="dashboard-stat-grid" aria-label="آمارهای اصلی داشبورد">
+            <article class="dashboard-stat">
+                <div>
+                    <span>شاگردان فعال</span>
+                    <strong>{{ Locale::number($activeStudents) }}</strong>
+                    <small>{{ Locale::number($waitingStudents) }} در انتظار، {{ Locale::number($onHoldStudents) }} متوقف</small>
                 </div>
-            </div>
+                <span class="dashboard-stat-icon"><x-ds.icon name="users" /></span>
+            </article>
 
-            <div class="student-timeline-list">
-                @forelse ($crowdedRooms as $room)
-                    @php
-                        $rate = $room->capacity > 0 ? round(($room->occupied_beds / $room->capacity) * 100) : 0;
-                    @endphp
-                    <div class="admin-room-row">
-                        <div>
-                            <strong>Room {{ $room->room_number }}</strong>
-                            <p>{{ $room->occupied_beds }} / {{ $room->capacity }} beds used</p>
-                        </div>
-                        <div class="admin-progress"><span style="width: {{ min(100, $rate) }}%"></span></div>
-                        <a class="btn btn-outline-secondary btn-sm" href="{{ route('dorm.rooms.show', $room) }}">Open</a>
+            <article class="dashboard-stat">
+                <div>
+                    <span>اتاق‌ها</span>
+                    <strong>{{ Locale::number($totalRooms) }}</strong>
+                    <small>ظرفیت و وضعیت فعلی لیلیه</small>
+                </div>
+                <span class="dashboard-stat-icon"><x-ds.icon name="building" /></span>
+            </article>
+
+            <article class="dashboard-stat">
+                <div>
+                    <span>تخت‌ها</span>
+                    <strong>{{ Locale::number($totalBeds) }}</strong>
+                    <small>{{ Locale::number($freeBeds) }} خالی، {{ Locale::number($occupiedBeds) }} اشغال‌شده</small>
+                </div>
+                <span class="dashboard-stat-icon"><x-ds.icon name="bed" /></span>
+            </article>
+
+            <article class="dashboard-stat">
+                <div>
+                    <span>کتاب‌ها</span>
+                    <strong>{{ Locale::number($bookTitles) }}</strong>
+                    <small>{{ Locale::number($availableBooks) }} نسخه موجود</small>
+                </div>
+                <span class="dashboard-stat-icon"><x-ds.icon name="books" /></span>
+            </article>
+        </section>
+
+        <section class="dashboard-main-grid">
+            <article class="dashboard-panel">
+                <div class="dashboard-panel-header">
+                    <div>
+                        <span class="dashboard-section-kicker">وضعیت اتاق‌ها و تخت‌ها</span>
+                        <h2>نمای اشغال لیلیه</h2>
+                        <p>ظرفیت کل، تخت‌های خالی و تخت‌های اشغال‌شده به صورت زنده از ثبت‌های اتاق خوانده می‌شود.</p>
                     </div>
-                @empty
-                    <div class="student-directory-empty">No crowded rooms right now.</div>
-                @endforelse
-            </div>
-        </div>
-
-        <aside class="student-workspace-panel">
-            <div class="student-panel-head">
-                <div>
-                    <span class="student-panel-label">This month</span>
-                    <h2>Registration payments</h2>
-                    <p>Only the amounts collected by management during dorm admission.</p>
+                    <x-ds.button variant="outline" size="sm" :href="route('dorm.rooms.index')">مدیریت اتاق‌ها</x-ds.button>
                 </div>
-            </div>
 
-            <div class="admin-finance-stack">
-                <span><strong>{{ number_format($monthlyGuaranteeDeposits) }}</strong>Guarantee deposits</span>
-                <span><strong>{{ number_format($monthlyDormRegistrationFees) }}</strong>Dorm expense fees</span>
-                <span><strong>{{ number_format($monthlyDormCardFees) }}</strong>Card fees</span>
-                <span class="is-positive"><strong>{{ number_format($monthlyRegistrationIncome) }}</strong>{{ $monthlyRegistrationCount }} paid registrations</span>
-            </div>
-
-            <div class="admin-command-actions mt-3">
-                <a class="btn btn-primary btn-sm" href="{{ route('dorm.students.create') }}">Register student</a>
-                <a class="btn btn-outline-secondary btn-sm" href="{{ route('dorm.students.index') }}">Student records</a>
-            </div>
-        </aside>
-    </section>
-
-    <section class="admin-dashboard-grid">
-        <div class="student-workspace-panel">
-            <div class="student-panel-head">
-                <div>
-                    <span class="student-panel-label">Admissions</span>
-                    <h2>Recent students</h2>
-                    <p>Latest registered dorm student records.</p>
-                </div>
-                <a class="btn btn-outline-secondary btn-sm" href="{{ route('dorm.students.index') }}">View all</a>
-            </div>
-
-            <div class="student-timeline-list">
-                @forelse ($recentStudents as $student)
-                    <div class="student-timeline-item">
-                        <span class="student-timeline-icon">S</span>
-                        <div>
-                            <strong>{{ $student->full_name }}</strong>
-                            <p>{{ ucfirst(str_replace('_', ' ', $student->status)) }} · {{ $student->education_place ?: 'Education not recorded' }}</p>
+                <div class="dashboard-room-layout">
+                    <div>
+                        <div class="dashboard-donut" style="--value: {{ max(0, min(100, $occupancyRate)) }}">
+                            <div>
+                                <strong>{{ Locale::percent($occupancyRate) }}</strong>
+                                <span>درصد استفاده</span>
+                            </div>
                         </div>
-                        <a class="btn btn-outline-secondary btn-sm" href="{{ route('dorm.students.show', $student) }}">Profile</a>
-                    </div>
-                @empty
-                    <div class="student-directory-empty">No students have been registered yet.</div>
-                @endforelse
-            </div>
-        </div>
-
-        <div class="student-workspace-panel">
-            <div class="student-panel-head">
-                <div>
-                    <span class="student-panel-label">Library</span>
-                    <h2>Overdue books</h2>
-                    <p>{{ $libraryMembers }} active members, {{ $bookTitles }} titles, {{ $availableBooks }} available copies.</p>
-                </div>
-                <a class="btn btn-outline-secondary btn-sm" href="{{ route('library.index') }}">Library</a>
-            </div>
-
-            <div class="student-timeline-list">
-                @forelse ($overdueLoans as $loan)
-                    <div class="student-timeline-item">
-                        <span class="student-timeline-icon">L</span>
-                        <div>
-                            <strong>{{ $loan->member?->full_name ?: 'Unknown member' }}</strong>
-                            <p>{{ $loan->book?->title ?: 'Unknown book' }} · Due {{ $loan->due_at?->format('Y-m-d') ?: 'N/A' }}</p>
+                        <div class="dashboard-progress" aria-hidden="true">
+                            <span style="width: {{ max(0, min(100, $occupancyRate)) }}%"></span>
                         </div>
-                        @if ($loan->member)
-                            <a class="btn btn-outline-secondary btn-sm" href="{{ route('library.members.show', $loan->member) }}">Profile</a>
-                        @endif
                     </div>
-                @empty
-                    <div class="student-directory-empty">No overdue books right now.</div>
-                @endforelse
-            </div>
-        </div>
 
-        <div class="student-workspace-panel">
-            <div class="student-panel-head">
-                <div>
-                    <span class="student-panel-label">Staff</span>
-                    <h2>Recent users</h2>
-                    <p>{{ $activeUsers }} active accounts, {{ $pendingUsers }} waiting for review.</p>
-                </div>
-                <a class="btn btn-outline-secondary btn-sm" href="{{ route('admin.users.index') }}">Users</a>
-            </div>
-
-            <div class="student-timeline-list">
-                @forelse ($recentUsers as $user)
-                    @php
-                        $roleMeta = $roleTranslations[$user->role] ?? ['key' => 'roleUser', 'label' => $user->role];
-                        $statusMeta = $statusTranslations[$user->status] ?? ['key' => 'statusUnknown', 'label' => $user->status];
-                    @endphp
-                    <div class="student-timeline-item">
-                        <span class="student-timeline-icon">U</span>
-                        <div>
-                            <strong>{{ $user->name }}</strong>
-                            <p>{{ $roleMeta['label'] }} · {{ $statusMeta['label'] }}</p>
+                    <div class="dashboard-metric-list">
+                        <div class="dashboard-metric-item">
+                            <span>کل اتاق‌ها</span>
+                            <strong>{{ Locale::number($totalRooms) }}</strong>
                         </div>
-                        <a class="btn btn-outline-secondary btn-sm" href="{{ route('admin.users.edit', $user) }}">Edit</a>
+                        <div class="dashboard-metric-item">
+                            <span>کل تخت‌ها</span>
+                            <strong>{{ Locale::number($totalBeds) }}</strong>
+                        </div>
+                        <div class="dashboard-metric-item">
+                            <span>تخت‌های اشغال‌شده</span>
+                            <strong>{{ Locale::number($occupiedBeds) }}</strong>
+                        </div>
+                        <div class="dashboard-metric-item">
+                            <span>تخت‌های خالی</span>
+                            <strong>{{ Locale::number($freeBeds) }}</strong>
+                        </div>
                     </div>
-                @empty
-                    <div class="student-directory-empty">No users have been created yet.</div>
-                @endforelse
-            </div>
-        </div>
-    </section>
+                </div>
+            </article>
 
-    <section class="student-workspace-panel">
-        <div class="student-panel-head">
-            <div>
-                <span class="student-panel-label">Quick access</span>
-                <h2>Management panels</h2>
-                <p>Open the most used work areas without searching through the sidebar.</p>
-            </div>
-        </div>
+            <article class="dashboard-panel">
+                <div class="dashboard-panel-header">
+                    <div>
+                        <span class="dashboard-section-kicker">خلاصه پرداخت ثبت‌نام</span>
+                        <h2>درآمد ثبت‌نام این ماه</h2>
+                        <p>ضمانت فقط امانت شاگرد است و در درآمد لیلیه حساب نمی‌شود؛ فقط فیس مصارف لیلیه و فیس کارت درآمد است.</p>
+                    </div>
+                    <x-ds.badge tone="success">{{ Locale::number($monthlyRegistrationCount) }} پرداخت</x-ds.badge>
+                </div>
 
-        <div class="admin-shortcut-grid">
-            <a href="{{ route('admin.users.index') }}"><span>U</span><strong>Users & Roles</strong><em>Staff accounts and access</em></a>
-            <a href="{{ route('dorm.rooms.index') }}"><span>R</span><strong>Dorm Rooms</strong><em>Capacity and occupancy</em></a>
-            <a href="{{ route('dorm.students.index') }}"><span>S</span><strong>Dorm Students</strong><em>Profiles and admission</em></a>
-            <a href="{{ route('representative.index') }}"><span>C</span><strong>Representative</strong><em>Student collections and fines</em></a>
-            <a href="{{ route('purchaser.report') }}"><span>F</span><strong>Purchaser Finance</strong><em>Food account and expenses</em></a>
-            <a href="{{ route('library.index') }}"><span>L</span><strong>Library</strong><em>Members, books, loans</em></a>
-        </div>
-    </section>
+                <div class="dashboard-payment-list">
+                    <div class="dashboard-payment-item">
+                        <span>ضمانت</span>
+                        <strong>{{ Locale::money($monthlyGuaranteeDeposits) }}</strong>
+                    </div>
+                    <div class="dashboard-payment-item">
+                        <span>فیس مصارف لیلیه</span>
+                        <strong>{{ Locale::money($monthlyDormRegistrationFees) }}</strong>
+                    </div>
+                    <div class="dashboard-payment-item">
+                        <span>فیس کارت</span>
+                        <strong>{{ Locale::money($monthlyDormCardFees) }}</strong>
+                    </div>
+                </div>
+
+                <div class="dashboard-payment-total">
+                    <span>درآمد واقعی ثبت‌نام</span>
+                    <strong>{{ Locale::money($monthlyRegistrationIncome) }}</strong>
+                </div>
+            </article>
+        </section>
+
+        <section class="dashboard-panel">
+            <div class="dashboard-panel-header">
+                <div>
+                    <span class="dashboard-section-kicker">دسترسی سریع</span>
+                    <h2>کارهای پرکاربرد</h2>
+                    <p>برای کارهای روزانه بدون جستجو در منو از این میانبرها استفاده کنید.</p>
+                </div>
+            </div>
+
+            <div class="dashboard-quick-grid">
+                <a class="dashboard-action" href="{{ route('dorm.students.create') }}">
+                    <span class="dashboard-action-icon"><x-ds.icon name="user" /></span>
+                    <span>
+                        <strong>ثبت شاگرد جدید</strong>
+                        <em>پروفایل، اتاق و پرداخت ثبت‌نام</em>
+                    </span>
+                </a>
+
+                <a class="dashboard-action" href="{{ route('dorm.rooms.create') }}">
+                    <span class="dashboard-action-icon"><x-ds.icon name="building" /></span>
+                    <span>
+                        <strong>افزودن اتاق</strong>
+                        <em>ظرفیت، منزل و وضعیت اتاق</em>
+                    </span>
+                </a>
+
+                <a class="dashboard-action" href="{{ route('library.index') }}#new-library-book">
+                    <span class="dashboard-action-icon"><x-ds.icon name="book" /></span>
+                    <span>
+                        <strong>افزودن کتاب</strong>
+                        <em>عنوان، نویسنده و نسخه‌ها</em>
+                    </span>
+                </a>
+
+                <a class="dashboard-action" href="{{ route('admin.finance.index') }}">
+                    <span class="dashboard-action-icon"><x-ds.icon name="cash" /></span>
+                    <span>
+                        <strong>ثبت پرداخت</strong>
+                        <em>درآمد، مصرف و گزارش مالی</em>
+                    </span>
+                </a>
+            </div>
+        </section>
+
+        <section class="dashboard-lower-grid">
+            <article class="dashboard-panel">
+                <div class="dashboard-panel-header">
+                    <div>
+                        <span class="dashboard-section-kicker">فعالیت‌های اخیر</span>
+                        <h2>آخرین ثبت‌های سیستم</h2>
+                        <p>شاگردان تازه ثبت‌شده و حساب‌های کاربری اخیر برای بررسی سریع.</p>
+                    </div>
+                    <x-ds.button variant="outline" size="sm" :href="route('dorm.students.index')">همه شاگردان</x-ds.button>
+                </div>
+
+                <div class="dashboard-activity-list">
+                    @forelse ($recentStudents as $student)
+                        @php
+                            $studentStatus = $studentStatusLabels[$student->status] ?? $student->status;
+                        @endphp
+                        <div class="dashboard-activity">
+                            <span class="dashboard-activity-icon"><x-ds.icon name="user" /></span>
+                            <div>
+                                <strong>{{ $student->full_name }}</strong>
+                                <p>{{ $studentStatus }} · {{ $student->education_place ?: 'محل تحصیل ثبت نشده' }}</p>
+                            </div>
+                            <x-ds.button variant="outline" size="sm" :href="route('dorm.students.show', $student)">پروفایل</x-ds.button>
+                        </div>
+                    @empty
+                        <div class="dashboard-empty">هنوز شاگردی ثبت نشده است.</div>
+                    @endforelse
+
+                    @foreach ($recentUsers->take(2) as $user)
+                        <div class="dashboard-activity">
+                            <span class="dashboard-activity-icon"><x-ds.icon name="users" /></span>
+                            <div>
+                                <strong>{{ $user->name }}</strong>
+                                <p>{{ $roleLabels[$user->role] ?? $user->role }} · {{ $statusLabels[$user->status] ?? $user->status }}</p>
+                            </div>
+                            <x-ds.button variant="outline" size="sm" :href="route('admin.users.edit', $user)">ویرایش</x-ds.button>
+                        </div>
+                    @endforeach
+                </div>
+            </article>
+
+            <article class="dashboard-panel">
+                <div class="dashboard-panel-header">
+                    <div>
+                        <span class="dashboard-section-kicker">لیست انتظار</span>
+                        <h2>محصلین در انتظار پذیرش</h2>
+                        <p>{{ Locale::number($waitingStudents) }} در انتظار، {{ Locale::number($onHoldStudents) }} پرونده ناقص یا متوقف.</p>
+                    </div>
+                    <x-ds.button variant="outline" size="sm" :href="route('dorm.students.index', ['status' => 'waiting'])">نمایش صف</x-ds.button>
+                </div>
+
+                <div class="dashboard-activity-list">
+                    @forelse ($waitingApplicants as $applicant)
+                        @php
+                            $applicantStatus = $studentStatusLabels[$applicant->status] ?? $applicant->status;
+                        @endphp
+                        <div class="dashboard-activity">
+                            <span class="dashboard-activity-icon"><x-ds.icon name="user" /></span>
+                            <div>
+                                <strong>{{ $applicant->full_name }}</strong>
+                                <p>{{ $applicantStatus }} · تاریخ درخواست {{ $formatDate($applicant->application_date) }}</p>
+                            </div>
+                            <x-ds.button variant="outline" size="sm" :href="route('dorm.students.edit', $applicant)">بررسی</x-ds.button>
+                        </div>
+                    @empty
+                        <div class="dashboard-empty">فعلاً هیچ محصلی در لیست انتظار نیست.</div>
+                    @endforelse
+                </div>
+            </article>
+        </section>
+
+    </div>
 @endsection

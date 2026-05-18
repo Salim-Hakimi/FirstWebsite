@@ -2,12 +2,11 @@
 
 namespace App\Support;
 
-use Illuminate\Support\Facades\Route;
-
 class Locale
 {
     public const DEFAULT = 'fa';
-    public const SUPPORTED = ['fa', 'en'];
+
+    public const SUPPORTED = ['fa'];
 
     public static function current(): string
     {
@@ -26,51 +25,53 @@ class Locale
         return self::isRtl() ? 'rtl' : 'ltr';
     }
 
-    public static function opposite(): string
+    public static function number(int|float|string|null $value, int $decimals = 0): string
     {
-        return self::current() === 'fa' ? 'en' : 'fa';
-    }
-
-    public static function switchUrl(?string $locale = null): string
-    {
-        $locale ??= self::opposite();
-
-        if (Route::has('locale.switch')) {
-            return route('locale.switch', $locale);
+        if ($value === null || $value === '') {
+            return '۰';
         }
 
-        return url('/language/'.$locale);
+        $text = is_numeric($value)
+            ? number_format((float) $value, $decimals, '.', ',')
+            : (string) $value;
+
+        return self::toPersianDigits($text);
+    }
+
+    public static function money(int|float|string|null $value): string
+    {
+        return self::number($value).' افغانی';
+    }
+
+    public static function percent(int|float|string|null $value): string
+    {
+        return self::number($value).'٪';
     }
 
     public static function label(?string $locale = null): string
     {
         return match ($locale ?? self::current()) {
-            'en' => 'English',
             default => 'فارسی',
         };
-    }
-
-    public static function switchLabel(): string
-    {
-        return self::label(self::opposite());
     }
 
     public static function translate(string $text, ?string $locale = null): string
     {
         $locale ??= self::current();
 
-        if ($locale === 'en') {
-            return self::translations()[$text] ?? $text;
-        }
-
-        $reverse = self::reverseTranslations();
-
-        return $reverse[$text] ?? $text;
+        return $locale === 'en'
+            ? (self::translations()[$text] ?? $text)
+            : $text;
     }
 
     public static function translateHtml(string $html, ?string $locale = null): string
     {
         $locale ??= self::current();
+
+        if ($locale !== 'en') {
+            return $html;
+        }
+
         $map = $locale === 'en' ? self::translations() : self::reverseTranslations();
 
         if ($locale === 'fa') {
@@ -113,6 +114,7 @@ class Locale
 
             if (str_starts_with($part, '<')) {
                 $translated .= self::translateTagAttributes($part, $map);
+
                 continue;
             }
 
@@ -218,6 +220,25 @@ class Locale
             '۷' => '7',
             '۸' => '8',
             '۹' => '9',
+        ]);
+    }
+
+    private static function toPersianDigits(string $text): string
+    {
+        return strtr($text, [
+            '0' => '۰',
+            '1' => '۱',
+            '2' => '۲',
+            '3' => '۳',
+            '4' => '۴',
+            '5' => '۵',
+            '6' => '۶',
+            '7' => '۷',
+            '8' => '۸',
+            '9' => '۹',
+            ',' => '٬',
+            '.' => '٫',
+            '%' => '٪',
         ]);
     }
 

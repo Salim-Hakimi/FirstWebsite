@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\DormRoom;
 use App\Models\DormStudent;
+use App\Support\Audit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -37,7 +38,8 @@ class DormRoomController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        DormRoom::create($this->validateRoom($request));
+        $room = DormRoom::create($this->validateRoom($request));
+        Audit::record('dorm_room_created', $room, [], $room->only(['room_number', 'capacity', 'floor', 'status']), $request);
 
         return redirect()
             ->route('dorm.rooms.index')
@@ -136,7 +138,9 @@ class DormRoomController extends Controller
                 ->withErrors(['capacity' => "ظرفیت نمی‌تواند کمتر از تعداد محصلین فعلی اتاق ({$occupiedBeds}) باشد."]);
         }
 
+        $oldValues = $room->only(['room_number', 'capacity', 'floor', 'status', 'notes']);
         $room->update($validated);
+        Audit::record('dorm_room_updated', $room, $oldValues, $room->fresh()->only(['room_number', 'capacity', 'floor', 'status', 'notes']), $request);
 
         return redirect()
             ->route('dorm.rooms.index')
@@ -162,6 +166,7 @@ class DormRoomController extends Controller
             'closed' => 'بسته',
         ];
     }
+
     private function unassignedStudents()
     {
         return DormStudent::query()
@@ -216,5 +221,6 @@ class DormRoomController extends Controller
             'room_number' => $room->room_number,
             'bed_number' => $bedNumber,
         ]);
+        Audit::record('dorm_student_room_assigned', $student, [], $student->only(['dorm_room_id', 'room_number', 'bed_number']), request());
     }
 }

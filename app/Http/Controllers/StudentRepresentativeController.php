@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\DormStudent;
 use App\Models\StudentCollection;
 use App\Models\User;
+use App\Support\Audit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -108,11 +109,14 @@ class StudentRepresentativeController extends Controller
 
         if ($validated['type'] === 'expense') {
             $validated['dorm_student_id'] = null;
+        } elseif (! DormStudent::query()->whereKey($validated['dorm_student_id'])->where('status', 'active')->exists()) {
+            return back()->withErrors(['dorm_student_id' => 'این محصل فعال نیست یا برای این ثبت مجاز نیست.'])->withInput();
         }
 
         $collection = StudentCollection::create(array_merge($validated, [
             'recorded_by' => $request->user()->id,
         ]));
+        Audit::record('representative_collection_created', $collection, [], $collection->only(['dorm_student_id', 'type', 'amount', 'collected_at', 'recorded_by']), $request);
 
         return redirect()
             ->route('representative.collections.receipt', $collection)

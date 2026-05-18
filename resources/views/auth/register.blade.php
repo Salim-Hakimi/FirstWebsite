@@ -7,14 +7,14 @@
         <div class="container form-shell">
             <div class="form-intro">
                 <p class="consultation-label" style="color: var(--green)">راه‌اندازی اولیه سیستم</p>
-                <h1>ساخت حساب صاحب سیستم</h1>
+                <h1>ساخت حساب ادمین سیستم</h1>
                 <p>
                     این صفحه فقط زمانی کار می‌کند که هنوز هیچ کاربری در سیستم ساخته نشده باشد. بعد از ساخت اولین حساب، ثبت‌نام عمومی بسته می‌شود و حساب‌های کاری توسط مدیریت ساخته می‌شوند.
                 </p>
             </div>
 
             <div class="form-card">
-                <h1>معلومات صاحب سیستم</h1>
+                <h1>معلومات ادمین سیستم</h1>
                 <p>این حساب به پنل مدیریت کامل دسترسی خواهد داشت.</p>
 
                 <form method="POST" action="{{ route('staff.setup.store') }}" class="form-grid">
@@ -58,7 +58,7 @@
                     </div>
 
                     <div class="form-footer full">
-                        <button class="primary-button" type="submit">ساخت حساب صاحب سیستم</button>
+                        <button class="primary-button" type="submit">ساخت حساب ادمین سیستم</button>
                         <a class="login-button" href="{{ route('login') }}">ورود کارکنان</a>
                     </div>
                 </form>

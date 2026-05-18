@@ -1,572 +1,699 @@
 @extends('admin.layout')
 
-@section('title', 'Library - Fanous Admin')
+@section('title', 'مدیریت کتابخانه - ادمین فانوس')
+@section('content_wrapper_class', 'fanous-dashboard-wrapper')
 
 @section('content')
     @php
+        use App\Support\Locale;
+
         $activeMemberCount = $activeMemberCount ?? $members->where('status', 'active')->count();
         $bookTitleCount = $bookTitleCount ?? $books->count();
         $activeLoanCount = $activeLoanCount ?? $loans->whereIn('status', ['borrowed', 'late'])->count();
         $availableCopyCount = $availableCopyCount ?? $books->sum('available_copies');
+        $totalCopiesCount = (int) $books->sum('total_copies');
+        $borrowedCopyCount = max(0, $totalCopiesCount - (int) $availableCopyCount);
+        $damagedLostCount = (int) $books->whereIn('status', ['damaged', 'lost'])->count();
         $overdueLoans = $overdueLoans ?? collect();
         $followUpCount = $expiringMembers->count() + $expiredCards->count() + $overdueLoans->count();
         $hasMemberFilters = filled($filters['q'] ?? null) || filled($filters['status'] ?? null);
 
         $memberStatusMeta = [
-            'active' => ['key' => 'statusActive', 'label' => 'Active'],
-            'suspended' => ['key' => 'statusSuspended', 'label' => 'Suspended'],
-            'left' => ['key' => 'statusLeft', 'label' => 'Left'],
+            'active' => ['label' => 'فعال', 'tone' => 'success'],
+            'suspended' => ['label' => 'مسدود', 'tone' => 'danger'],
+            'left' => ['label' => 'خارج شده', 'tone' => 'warning'],
         ];
         $bookStatusMeta = [
-            'available' => ['key' => 'bookAvailable', 'label' => 'Available'],
-            'damaged' => ['key' => 'bookDamaged', 'label' => 'Damaged'],
-            'lost' => ['key' => 'bookLost', 'label' => 'Lost'],
-            'archived' => ['key' => 'bookArchived', 'label' => 'Archived'],
+            'available' => ['label' => 'موجود', 'tone' => 'success'],
+            'damaged' => ['label' => 'خراب', 'tone' => 'warning'],
+            'lost' => ['label' => 'گم‌شده', 'tone' => 'danger'],
+            'archived' => ['label' => 'آرشیف', 'tone' => 'primary'],
         ];
         $loanStatusMeta = [
-            'borrowed' => ['key' => 'loanBorrowed', 'label' => 'Borrowed'],
-            'returned' => ['key' => 'loanReturned', 'label' => 'Returned'],
-            'lost' => ['key' => 'loanLost', 'label' => 'Lost'],
-            'late' => ['key' => 'loanLate', 'label' => 'Late'],
+            'borrowed' => ['label' => 'امانت', 'tone' => 'warning'],
+            'returned' => ['label' => 'برگشت‌شده', 'tone' => 'success'],
+            'lost' => ['label' => 'گم‌شده', 'tone' => 'danger'],
+            'late' => ['label' => 'دیرشده', 'tone' => 'danger'],
         ];
     @endphp
 
-    <div class="row">
-        <div class="col-12 grid-margin stretch-card">
-            <div class="card corona-gradient-card">
-                <div class="card-body py-0 px-0 px-sm-3">
-                    <div class="row align-items-center">
-                        <div class="col-12 col-lg-8 py-4 px-4">
-                            <h3 class="mb-1" data-i18n="libraryManagement">Library Management</h3>
-                            <p class="mb-0 text-white-50" data-i18n="libraryDescription">Manage members, books, cards, loans, returns, and payment follow-up from one clean database panel.</p>
-                        </div>
-                        @if ($canWriteLibrary)
-                            <div class="col-12 col-lg-4 text-lg-right px-4 pb-4 pb-lg-0">
-                                <button class="btn btn-outline-light btn-rounded" type="button" data-library-panel-trigger="new-library-member" aria-controls="new-library-member" aria-expanded="false"><span aria-hidden="true">+</span> <span data-i18n="registerMember">Register member</span></button>
-                            </div>
-                        @endif
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-xl-3 col-sm-6 grid-margin stretch-card">
-            <div class="card"><div class="card-body"><div class="row"><div class="col-9"><h3 class="mb-0">{{ $activeMemberCount }}</h3></div><div class="col-3"><div class="icon icon-box-success"><span class="metric-icon">M</span></div></div></div><h6 class="text-muted font-weight-normal" data-i18n="activeMembers">Active members</h6></div></div>
-        </div>
-        <div class="col-xl-3 col-sm-6 grid-margin stretch-card">
-            <div class="card"><div class="card-body"><div class="row"><div class="col-9"><h3 class="mb-0">{{ $bookTitleCount }}</h3></div><div class="col-3"><div class="icon icon-box-success"><span class="metric-icon">B</span></div></div></div><h6 class="text-muted font-weight-normal" data-i18n="bookTitles">Book titles</h6></div></div>
-        </div>
-        <div class="col-xl-3 col-sm-6 grid-margin stretch-card">
-            <div class="card"><div class="card-body"><div class="row"><div class="col-9"><h3 class="mb-0">{{ $activeLoanCount }}</h3></div><div class="col-3"><div class="icon icon-box-warning"><span class="metric-icon">L</span></div></div></div><h6 class="text-muted font-weight-normal" data-i18n="activeLoans">Active loans</h6></div></div>
-        </div>
-        <div class="col-xl-3 col-sm-6 grid-margin stretch-card">
-            <div class="card"><div class="card-body"><div class="row"><div class="col-9"><h3 class="mb-0">{{ $followUpCount }}</h3></div><div class="col-3"><div class="icon icon-box-danger"><span class="metric-icon">F</span></div></div></div><h6 class="text-muted font-weight-normal" data-i18n="needsFollowUp">Needs follow-up</h6></div></div>
-        </div>
-    </div>
-
-    @unless ($canWriteLibrary)
-        <div class="row">
-            <div class="col-12 grid-margin stretch-card">
-                <div class="card">
-                    <div class="card-body user-access-note">
-                        <div class="preview-thumbnail"><div class="preview-icon bg-primary"><span>i</span></div></div>
-                        <p class="text-muted mb-0" data-i18n="libraryViewOnlyNotice">View-only mode is active. Admin users can review the library database, while create, edit, loan, return, and card actions are reserved for the Librarian account.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    @endunless
-
-    @if ($canWriteLibrary)
-        <div class="row">
-            <div class="col-lg-5 grid-margin stretch-card">
-                <div class="card">
-                    <div class="card-body">
-                        <h4 class="card-title" data-i18n="librarianWorkbench">Librarian workbench</h4>
-                        <p class="card-description" data-i18n="librarianWorkbenchDescription">Fast paths for the daily library desk flow.</p>
-                        <div class="library-action-grid">
-                            <button class="library-action-tile" type="button" data-library-panel-trigger="new-library-member" aria-controls="new-library-member" aria-expanded="false">
-                                <span class="preview-icon bg-primary"><span>M</span></span>
-                                <strong data-i18n="registerMember">Register member</strong>
-                            </button>
-                            <button class="library-action-tile" type="button" data-library-panel-trigger="new-library-book" aria-controls="new-library-book" aria-expanded="false">
-                                <span class="preview-icon bg-success"><span>B</span></span>
-                                <strong data-i18n="registerBook">Register book</strong>
-                            </button>
-                            <button class="library-action-tile" type="button" data-library-panel-trigger="new-library-loan" aria-controls="new-library-loan" aria-expanded="false">
-                                <span class="preview-icon bg-warning"><span>L</span></span>
-                                <strong data-i18n="recordLoan">Record loan</strong>
-                            </button>
-                            <button class="library-action-tile" type="button" data-library-panel-trigger="library-members-panel" aria-controls="library-members-panel" aria-expanded="false">
-                                <span class="preview-icon bg-info"><span>V</span></span>
-                                <strong data-i18n="viewMembers">View members</strong>
-                            </button>
-                            <button class="library-action-tile" type="button" data-library-panel-trigger="return-library-copy" aria-controls="return-library-copy" aria-expanded="false">
-                                <span class="preview-icon bg-danger"><span>R</span></span>
-                                <strong data-i18n="markReturned">Mark returned</strong>
-                            </button>
-                            <a class="library-action-tile" href="{{ route('library.fee-reminders.index') }}">
-                                <span class="preview-icon bg-warning"><span>F</span></span>
-                                <strong>Fee reminders</strong>
-                            </a>
-                            <a class="library-action-tile" href="{{ route('library.inventory.report') }}">
-                                <span class="preview-icon bg-secondary"><span>I</span></span>
-                                <strong>Inventory report</strong>
-                            </a>
-                        </div>
-                    </div>
-                </div>
+    <div class="fanous-library-page" dir="rtl">
+        <section class="fanous-page-header">
+            <div>
+                <span class="dashboard-section-kicker">کتابخانه فانوس</span>
+                <h1>مدیریت کتابخانه</h1>
+                <p>مدیریت کتاب‌ها، اعضا، امانت‌ها و وضعیت برگشت کتاب‌ها را از این بخش انجام دهید.</p>
             </div>
 
-            <div class="col-lg-7 grid-margin stretch-card">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-2">
-                            <div>
-                                <h4 class="card-title mb-1" data-i18n="needsFollowUp">Needs follow-up</h4>
-                                <p class="text-muted mb-0" data-i18n="libraryFollowUpDescription">Overdue loans and unpaid memberships that need attention.</p>
-                            </div>
-                            <span class="badge badge-outline-warning mt-3 mt-md-0">{{ $followUpCount }}</span>
-                        </div>
+            <div class="fanous-page-actions">
+                @if ($canWriteLibrary)
+                    <x-ds.button href="#new-library-book" data-library-panel-trigger="new-library-book" aria-controls="new-library-book" aria-expanded="false">
+                        <x-ds.icon name="plus" />
+                        افزودن کتاب جدید
+                    </x-ds.button>
+                    <x-ds.button variant="outline" href="#new-library-loan" data-library-panel-trigger="new-library-loan" aria-controls="new-library-loan" aria-expanded="false">ثبت امانت</x-ds.button>
+                @endif
+                <x-ds.button variant="outline" :href="route('library.inventory.export', request()->query())">خروجی CSV</x-ds.button>
+            </div>
+        </section>
 
-                        <div class="preview-list">
-                            @forelse ($overdueLoans as $loan)
-                                <div class="preview-item border-bottom">
-                                    <div class="preview-thumbnail"><div class="preview-icon bg-danger"><span>L</span></div></div>
-                                    <div class="preview-item-content">
-                                        <p class="preview-subject mb-1">
-                                            @if ($loan->member)
-                                                {{ $loan->member->full_name }}
-                                            @else
-                                                <span data-i18n="unknownMember">Unknown member</span>
-                                            @endif
-                                            -
-                                            @if ($loan->book)
-                                                {{ $loan->book->title }}
-                                            @else
-                                                <span data-i18n="unknownBook">Unknown book</span>
-                                            @endif
-                                        </p>
-                                        <p class="text-muted mb-0"><span data-i18n="dueAt">Due at</span>: {{ $loan->due_at?->format('Y-m-d') ?: 'N/A' }}</p>
-                                    </div>
-                                    @if ($loan->member)
-                                        <a class="btn btn-outline-secondary btn-sm" href="{{ route('library.members.show', $loan->member) }}" data-i18n="profile">Profile</a>
-                                    @endif
-                                </div>
-                            @empty
-                                <div class="preview-item border-bottom">
-                                    <div class="preview-thumbnail"><div class="preview-icon bg-success"><span>OK</span></div></div>
-                                    <div class="preview-item-content">
-                                        <p class="preview-subject mb-1" data-i18n="noOverdueLoans">No overdue loans</p>
-                                        <p class="text-muted mb-0" data-i18n="returnQueueClear">The return queue is clear for today.</p>
-                                    </div>
-                                </div>
-                            @endforelse
+        <section class="dashboard-stat-grid" aria-label="خلاصه کتابخانه">
+            <article class="dashboard-stat">
+                <div>
+                    <span>کتاب‌های فعال</span>
+                    <strong>{{ Locale::number($bookTitleCount) }}</strong>
+                    <small>{{ Locale::number($availableCopyCount) }} نسخه آماده امانت</small>
+                </div>
+                <span class="dashboard-stat-icon"><x-ds.icon name="books" /></span>
+            </article>
 
-                            @foreach ($expiringMembers->take(3) as $member)
-                                @php
-                                    $feeFine = max((int) $member->monthly_fee_fine_amount, $member->calculatedMonthlyFine());
-                                    $feeBalance = (int) $member->membership_fee + $feeFine;
-                                    $isOverdueFee = $member->next_payment_due_at && $member->next_payment_due_at->isPast();
-                                @endphp
-                                <div class="preview-item border-bottom">
-                                    <div class="preview-thumbnail"><div class="preview-icon bg-warning"><span>F</span></div></div>
-                                    <div class="preview-item-content">
-                                        <p class="preview-subject mb-1">{{ $member->full_name }}</p>
-                                        <p class="text-muted mb-0">
-                                            <span data-i18n="nextDue">Next due</span>: {{ $member->next_payment_due_at?->format('Y-m-d') ?: 'N/A' }}
-                                            - {{ $isOverdueFee ? 'Overdue' : 'Reminder' }}
-                                            - {{ number_format($feeBalance) }} AFN
-                                        </p>
-                                    </div>
-                                    <a class="btn btn-outline-secondary btn-sm" href="{{ route('library.members.show', $member) }}" data-i18n="profile">Profile</a>
-                                </div>
-                            @endforeach
+            <article class="dashboard-stat">
+                <div>
+                    <span>امانت‌های فعال</span>
+                    <strong>{{ Locale::number($activeLoanCount) }}</strong>
+                    <small>کتاب‌هایی که هنوز برگشت نشده‌اند</small>
+                </div>
+                <span class="dashboard-stat-icon"><x-ds.icon name="book" /></span>
+            </article>
 
-                            @foreach ($expiredCards->take(3) as $card)
-                                <div class="preview-item border-bottom">
-                                    <div class="preview-thumbnail"><div class="preview-icon bg-warning"><span>C</span></div></div>
-                                    <div class="preview-item-content">
-                                        <p class="preview-subject mb-1">
-                                            @if ($card->holder_name)
-                                                {{ $card->holder_name }}
-                                            @else
-                                                <span data-i18n="unknownMember">Unknown member</span>
-                                            @endif
-                                        </p>
-                                        <p class="text-muted mb-0"><span data-i18n="expiry">Expiry</span>: {{ $card->expires_at?->format('Y-m-d') ?: 'N/A' }} - {{ $card->card_number }}</p>
-                                    </div>
-                                    @if ($card->cardable)
-                                        <a class="btn btn-outline-secondary btn-sm" href="{{ route('library.members.show', $card->cardable) }}" data-i18n="profile">Profile</a>
-                                    @endif
-                                </div>
-                            @endforeach
-                        </div>
+            <article class="dashboard-stat">
+                <div>
+                    <span>برگشت‌نشده</span>
+                    <strong>{{ Locale::number($overdueLoans->count()) }}</strong>
+                    <small>امانت‌های گذشته از تاریخ برگشت</small>
+                </div>
+                <span class="dashboard-stat-icon is-danger"><x-ds.icon name="bell" /></span>
+            </article>
+
+            <article class="dashboard-stat">
+                <div>
+                    <span>تمدیدها / تأخیرها</span>
+                    <strong>{{ Locale::number($followUpCount) }}</strong>
+                    <small>کارت‌ها، فیس‌ها و امانت‌های نیازمند پیگیری</small>
+                </div>
+                <span class="dashboard-stat-icon is-blue"><x-ds.icon name="calendar" /></span>
+            </article>
+        </section>
+
+        <section class="dashboard-stat-grid" aria-label="خلاصه مالی کتابخانه">
+            <article class="dashboard-stat">
+                <div>
+                    <span>درآمد کتابخانه</span>
+                    <strong>{{ Locale::money($libraryIncomeTotal) }}</strong>
+                    <small>فیس ثبت‌نام، قیمت کارت و دریافت‌های کتابخانه</small>
+                </div>
+                <span class="dashboard-stat-icon"><x-ds.icon name="cash" /></span>
+            </article>
+
+            <article class="dashboard-stat">
+                <div>
+                    <span>مصارف کتابخانه</span>
+                    <strong>{{ Locale::money($libraryExpenseTotal) }}</strong>
+                    <small>خرید کتاب، ترمیم، وسایل و مصارف عمومی</small>
+                </div>
+                <span class="dashboard-stat-icon is-danger"><x-ds.icon name="cash-minus" /></span>
+            </article>
+
+            <article class="dashboard-stat">
+                <div>
+                    <span>توازن کتابخانه</span>
+                    <strong>{{ Locale::money($libraryIncomeTotal - $libraryExpenseTotal) }}</strong>
+                    <small>درآمد منهای مصرف کتابخانه</small>
+                </div>
+                <span class="dashboard-stat-icon is-blue"><x-ds.icon name="chart" /></span>
+            </article>
+
+            <article class="dashboard-stat">
+                <div>
+                    <span>درآمد امروز</span>
+                    <strong>{{ Locale::money($libraryTodayIncome) }}</strong>
+                    <small>دریافت‌های ثبت‌شده امروز</small>
+                </div>
+                <span class="dashboard-stat-icon is-purple"><x-ds.icon name="calendar" /></span>
+            </article>
+        </section>
+
+        <section class="fanous-library-notice">
+            <span>i</span>
+            <p>کتابخانه فعال است. اعضا، امانت‌ها و برگشت کتاب‌ها را از این بخش مدیریت کنید.</p>
+        </section>
+
+        @unless ($canWriteLibrary)
+            <section class="fanous-library-notice is-warning">
+                <span>!</span>
+                <p>حالت مشاهده فعال است. ثبت عضو، کتاب، امانت و برگشت کتاب مخصوص حساب کتابدار است.</p>
+            </section>
+        @endunless
+
+        @if ($canWriteLibrary)
+            <section class="dashboard-panel">
+                <div class="dashboard-panel-header">
+                    <div>
+                        <span class="dashboard-section-kicker">دسترسی سریع</span>
+                        <h2>کارهای روزانه کتابدار</h2>
+                        <p>برای ثبت عضو، کتاب، امانت یا برگشت کتاب یکی از گزینه‌های زیر را باز کنید.</p>
                     </div>
                 </div>
-            </div>
-        </div>
-    @endif
 
-    @if ($canWriteLibrary)
-        <div class="row" id="library-action-forms">
-            <div class="col-12 grid-margin stretch-card library-form-empty" data-library-panel-empty>
-                <div class="card">
-                    <div class="card-body user-access-note">
-                        <div class="preview-thumbnail"><div class="preview-icon bg-primary"><span>i</span></div></div>
-                        <p class="text-muted mb-0" data-i18n="libraryPanelHint">Choose one of the cards above to open member registration, book registration, loan recording, or member review here.</p>
-                    </div>
+                <div class="fanous-library-action-grid">
+                    <button class="fanous-library-action" type="button" data-library-panel-trigger="new-library-member" aria-controls="new-library-member" aria-expanded="false">
+                        <span><x-ds.icon name="user" /></span>
+                        <strong>ثبت عضو جدید</strong>
+                        <small>پروفایل، فیس و کارت کتابخانه</small>
+                    </button>
+                    <button class="fanous-library-action" type="button" data-library-panel-trigger="new-library-book" aria-controls="new-library-book" aria-expanded="false">
+                        <span><x-ds.icon name="book" /></span>
+                        <strong>افزودن کتاب</strong>
+                        <small>عنوان، نویسنده و نسخه‌ها</small>
+                    </button>
+                    <button class="fanous-library-action" type="button" data-library-panel-trigger="new-library-loan" aria-controls="new-library-loan" aria-expanded="false">
+                        <span><x-ds.icon name="books" /></span>
+                        <strong>ثبت امانت</strong>
+                        <small>عضو، کتاب و تاریخ برگشت</small>
+                    </button>
+                    <button class="fanous-library-action" type="button" data-library-panel-trigger="return-library-copy" aria-controls="return-library-copy" aria-expanded="false">
+                        <span><x-ds.icon name="edit" /></span>
+                        <strong>برگشت کتاب</strong>
+                        <small>اسکن کد نسخه و ثبت برگشت</small>
+                    </button>
+                    <a class="fanous-library-action" href="{{ route('library.fee-reminders.index') }}">
+                        <span><x-ds.icon name="bell" /></span>
+                        <strong>پیگیری فیس</strong>
+                        <small>یادآوری پرداخت ماهانه</small>
+                    </a>
+                    <a class="fanous-library-action" href="{{ route('library.inventory.report') }}">
+                        <span><x-ds.icon name="report" /></span>
+                        <strong>گزارش موجودی</strong>
+                        <small>نسخه‌ها و وضعیت کتاب‌ها</small>
+                    </a>
+                    <button class="fanous-library-action" type="button" data-library-panel-trigger="library-finance-record" aria-controls="library-finance-record" aria-expanded="false">
+                        <span><x-ds.icon name="cash" /></span>
+                        <strong>ثبت مالی کتابخانه</strong>
+                        <small>درآمد یا مصرف خارج از فیس و کارت</small>
+                    </button>
                 </div>
-            </div>
+            </section>
 
-            <div class="col-12 grid-margin stretch-card library-form-panel" id="new-library-member" data-library-panel>
-                <div class="card">
-                    <div class="card-body">
-                        <div class="library-form-head">
-                            <div>
-                                <h4 class="card-title" data-i18n="registerLibraryMember">Register library member</h4>
-                                <p class="card-description" data-i18n="registerLibraryMemberDescription">Create a member profile and optionally print a monthly library card.</p>
-                            </div>
-                            <button class="btn btn-dark btn-sm" type="button" data-library-panel-close data-i18n="close">Close</button>
-                        </div>
-                        <form method="POST" action="{{ route('library.members.store') }}" enctype="multipart/form-data">
-                            @csrf
-                            <div class="row">
-                                <div class="col-md-6 form-group"><label data-i18n="memberCode">Member code</label><input class="form-control" name="member_code" data-i18n-placeholder="autoIfEmpty" placeholder="Auto if empty"></div>
-                                <div class="col-md-6 form-group"><label data-i18n="fullName">Full name</label><input class="form-control" name="full_name" required></div>
-                                <div class="col-md-6 form-group"><label data-i18n="fatherName">Father name</label><input class="form-control" name="father_name" required></div>
-                                <div class="col-md-6 form-group"><label data-i18n="phoneNumber">Phone number</label><input class="form-control" name="phone" required></div>
-                                <div class="col-md-6 form-group"><label data-i18n="emailAddress">Email address</label><input class="form-control" name="email" type="email"></div>
-                                <div class="col-md-6 form-group"><label data-i18n="profilePhoto">Profile photo</label><input class="form-control" name="profile_photo" type="file" accept="image/*"></div>
-                                <div class="col-md-6 form-group"><label data-i18n="idTazkira">ID / Tazkira</label><input class="form-control" name="tazkira_number"></div>
-                                <div class="col-md-6 form-group"><label data-i18n="educationPlace">Education place</label><input class="form-control" name="education_place"></div>
-                                <div class="col-md-6 form-group"><label data-i18n="departmentGrade">Department / grade</label><input class="form-control" name="department_or_grade"></div>
-                                <div class="col-md-6 form-group"><label data-i18n="monthlyFee">Monthly fee</label><input class="form-control" name="membership_fee" type="number" min="0" value="0"></div>
-                                <div class="col-md-6 form-group">
-                                    <label data-i18n="paymentStatus">Payment status</label>
-                                    <select class="form-control" name="payment_status">
-                                        <option value="unpaid" data-i18n="unpaid">Unpaid</option>
-                                        <option value="paid" data-i18n="paid">Paid</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6 form-group"><label data-i18n="joinedAt">Joined at</label><input class="form-control" name="joined_at" type="date" value="{{ now()->format('Y-m-d') }}"></div>
-                                <div class="col-md-6 form-group">
-                                    <label data-i18n="status">Status</label>
-                                    <select class="form-control" name="status">
-                                        @foreach ($memberStatusMeta as $value => $meta)
-                                            <option value="{{ $value }}" data-i18n="{{ $meta['key'] }}">{{ $meta['label'] }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-12 form-group"><label data-i18n="address">Address</label><input class="form-control" name="address"></div>
-                                <div class="col-12 form-group"><label data-i18n="notes">Notes</label><textarea class="form-control" name="notes" rows="3"></textarea></div>
-                                <div class="col-12">
-                                    <button class="btn btn-primary mr-2" type="submit" data-i18n="saveMember">Save member</button>
-                                    <button class="btn btn-outline-secondary" name="issue_card" value="1" type="submit" data-i18n="saveAndPrintCard">Save and print card</button>
-                                </div>
-                            </div>
-                        </form>
+            <section class="fanous-library-forms" id="library-action-forms">
+                <article class="dashboard-panel fanous-library-form-empty" data-library-panel-empty>
+                    <div class="fanous-library-notice">
+                        <span>i</span>
+                        <p>از کارت‌های دسترسی سریع بالا یک عملیات را انتخاب کنید تا فرم مربوط در همین بخش باز شود.</p>
                     </div>
-                </div>
-            </div>
+                </article>
 
-            <div class="col-12 grid-margin stretch-card library-form-panel" id="new-library-book" data-library-panel>
-                <div class="card">
-                    <div class="card-body">
-                        <div class="library-form-head">
-                            <div>
-                                <h4 class="card-title" data-i18n="registerBook">Register book</h4>
-                                <p class="card-description" data-i18n="registerBookDescription">Record book identity, shelf, copies, and current status.</p>
-                            </div>
-                            <button class="btn btn-dark btn-sm" type="button" data-library-panel-close data-i18n="close">Close</button>
-                        </div>
-                        <form method="POST" action="{{ route('library.books.store') }}">
-                            @csrf
-                            <div class="row">
-                                <div class="col-md-6 form-group"><label>ISBN</label><input class="form-control" name="isbn"></div>
-                                <div class="col-md-6 form-group"><label data-i18n="barcode">Barcode</label><input class="form-control" name="barcode" data-i18n-placeholder="autoIfEmpty" placeholder="Auto if empty"></div>
-                                <div class="col-12 form-group"><label data-i18n="bookTitle">Book title</label><input class="form-control" name="title" required></div>
-                                <div class="col-md-6 form-group"><label data-i18n="author">Author</label><input class="form-control" name="author"></div>
-                                <div class="col-md-6 form-group"><label data-i18n="publisher">Publisher</label><input class="form-control" name="publisher"></div>
-                                <div class="col-md-4 form-group"><label data-i18n="language">Language</label><input class="form-control" name="language"></div>
-                                <div class="col-md-4 form-group"><label data-i18n="edition">Edition</label><input class="form-control" name="edition"></div>
-                                <div class="col-md-4 form-group"><label data-i18n="publishedYear">Published year</label><input class="form-control" name="published_year" type="number" min="1000" max="{{ now()->year }}"></div>
-                                <div class="col-md-4 form-group"><label data-i18n="pages">Pages</label><input class="form-control" name="pages" type="number" min="1"></div>
-                                <div class="col-md-4 form-group"><label data-i18n="category">Category</label><input class="form-control" name="category"></div>
-                                <div class="col-md-4 form-group"><label data-i18n="shelfCode">Shelf code</label><input class="form-control" name="shelf_code"></div>
-                                <div class="col-md-6 form-group"><label data-i18n="totalCopies">Total copies</label><input class="form-control" name="total_copies" type="number" min="1" value="1" required></div>
-                                <div class="col-md-6 form-group">
-                                    <label data-i18n="status">Status</label>
-                                    <select class="form-control" name="status">
-                                        @foreach ($bookStatusMeta as $value => $meta)
-                                            <option value="{{ $value }}" data-i18n="{{ $meta['key'] }}">{{ $meta['label'] }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-12 form-group"><label data-i18n="notes">Notes</label><textarea class="form-control" name="notes" rows="3"></textarea></div>
-                                <div class="col-12"><button class="btn btn-primary" type="submit" data-i18n="saveBook">Save book</button></div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12 grid-margin stretch-card library-form-panel" id="new-library-loan" data-library-panel>
-                <div class="card">
-                    <div class="card-body">
-                        <div class="library-form-head">
-                            <div>
-                                <h4 class="card-title" data-i18n="recordLoan">Record loan</h4>
-                                <p class="card-description" data-i18n="recordLoanDescription">Choose an active member and an available book; the system reduces available copies automatically.</p>
-                            </div>
-                            <button class="btn btn-dark btn-sm" type="button" data-library-panel-close data-i18n="close">Close</button>
-                        </div>
-                        <form method="POST" action="{{ route('library.loans.store') }}">
-                            @csrf
-                            <div class="row">
-                                <div class="col-md-3 form-group"><label data-i18n="loanCode">Loan code</label><input class="form-control" name="loan_code" data-i18n-placeholder="autoIfEmpty" placeholder="Auto if empty"></div>
-                                <div class="col-md-3 form-group">
-                                    <label data-i18n="member">Member</label>
-                                    <select class="form-control" name="library_member_id" required>
-                                        <option value="" data-i18n="selectMember">Select member</option>
-                                        @foreach ($activeMembers as $member)
-                                            <option value="{{ $member->id }}">{{ $member->full_name }} - {{ $member->member_code }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-md-3 form-group">
-                                    <label data-i18n="book">Book</label>
-                                    <select class="form-control" name="book_id" required>
-                                        <option value="" data-i18n="selectBook">Select book</option>
-                                        @foreach ($availableBooks as $book)
-                                            <option value="{{ $book->id }}">{{ $book->title }} - {{ $book->available_copies }} {{ __('available') }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-md-3 form-group">
-                                    <label>Copy barcode / code</label>
-                                    <input class="form-control" name="copy_code" list="available-copy-codes" placeholder="Scan or enter copy code" required>
-                                    <datalist id="available-copy-codes">
-                                        @foreach ($availableBooks as $book)
-                                            @foreach ($book->availableCopies as $copy)
-                                                <option value="{{ $copy->copy_code }}">{{ $book->title }} - {{ $copy->shelf_code ?: 'No shelf' }}</option>
-                                            @endforeach
-                                        @endforeach
-                                    </datalist>
-                                </div>
-                                <div class="col-md-3 form-group"><label data-i18n="borrowedAt">Borrowed at</label><input class="form-control" name="borrowed_at" type="date" value="{{ now()->format('Y-m-d') }}" required></div>
-                                <div class="col-md-3 form-group"><label data-i18n="dueAt">Due at</label><input class="form-control" name="due_at" type="date" value="{{ now()->addDays(7)->format('Y-m-d') }}"></div>
-                                <div class="col-md-3 form-group"><label data-i18n="conditionOut">Condition out</label><input class="form-control" name="condition_out"></div>
-                                <div class="col-md-6 form-group"><label data-i18n="notes">Notes</label><input class="form-control" name="notes"></div>
-                                <div class="col-12"><button class="btn btn-primary" type="submit" data-i18n="saveLoan">Save loan</button></div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12 grid-margin stretch-card library-form-panel" id="return-library-copy" data-library-panel>
-                <div class="card">
-                    <div class="card-body">
-                        <div class="library-form-head">
-                            <div>
-                                <h4 class="card-title">Return by barcode</h4>
-                                <p class="card-description">Scan a copy label to find the active loan and mark the book as returned.</p>
-                            </div>
-                            <button class="btn btn-dark btn-sm" type="button" data-library-panel-close data-i18n="close">Close</button>
-                        </div>
-                        <form method="POST" action="{{ route('library.loans.return-by-copy') }}">
-                            @csrf
-                            <div class="row">
-                                <div class="col-md-4 form-group">
-                                    <label>Copy barcode / code</label>
-                                    <input class="form-control @error('copy_code') is-invalid @enderror" name="copy_code" value="{{ old('copy_code') }}" placeholder="Scan returned copy" required autofocus>
-                                    @error('copy_code') <span class="text-danger small">{{ $message }}</span> @enderror
-                                </div>
-                                <div class="col-md-3 form-group"><label data-i18n="returnedAt">Returned at</label><input class="form-control" name="returned_at" type="date" value="{{ now()->format('Y-m-d') }}" required></div>
-                                <div class="col-md-2 form-group"><label data-i18n="fineAmount">Fine</label><input class="form-control" name="fine_amount" type="number" min="0" value="0"></div>
-                                <div class="col-md-3 form-group">
-                                    <label>Return status</label>
-                                    <select class="form-control" name="return_status">
-                                        <option value="available">Good / available</option>
-                                        <option value="damaged">Damaged</option>
-                                        <option value="lost">Lost</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-3 form-group"><label data-i18n="conditionIn">Condition in</label><input class="form-control" name="condition_in" placeholder="Good / damaged"></div>
-                                <div class="col-12"><button class="btn btn-primary" type="submit">Return copy</button></div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    @endif
-
-    <div class="row">
-        <div class="col-12 grid-margin stretch-card {{ $canWriteLibrary ? 'library-form-panel' : '' }}" id="library-members-panel" @if ($canWriteLibrary) data-library-panel @endif>
-            <div class="card">
-                <div class="card-body">
-                    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center mb-3">
+                <article class="dashboard-panel fanous-library-form-panel" id="library-finance-record" data-library-panel>
+                    <div class="dashboard-panel-header">
                         <div>
-                            <h4 class="card-title mb-1" data-i18n="libraryMembers">Library members</h4>
-                            <p class="text-muted mb-0" data-i18n="libraryMembersDescription">Each member has a profile for cards, payment status, and loan history.</p>
+                            <span class="dashboard-section-kicker">مالی کتابخانه</span>
+                            <h2>ثبت درآمد یا مصرف کتابخانه</h2>
+                            <p>فیس ثبت‌نام، فیس ماهانه و قیمت کارت به صورت اتومات ثبت می‌شود؛ این فرم برای درآمد و مصرف‌های اضافی کتابخانه است.</p>
+                        </div>
+                        <x-ds.button variant="outline" size="sm" type="button" data-library-panel-close>بستن</x-ds.button>
+                    </div>
+
+                    <form method="POST" action="{{ route('library.finance.store') }}" class="fanous-library-form">
+                        @csrf
+                        <label>
+                            <span>نوع ثبت</span>
+                            <select class="form-control" name="type" required>
+                                <option value="income">درآمد</option>
+                                <option value="expense">مصرف</option>
+                            </select>
+                        </label>
+                        <label>
+                            <span>دسته‌بندی</span>
+                            <select class="form-control" name="category_key" required>
+                                @foreach ($libraryFinanceCategories as $key => $category)
+                                    <option value="{{ $key }}">{{ $category['label'] }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label><span>مبلغ</span><input class="form-control" name="amount" type="number" min="1" required></label>
+                        <label><span>تاریخ</span><input class="form-control" name="transaction_date" type="date" value="{{ now()->format('Y-m-d') }}" required></label>
+                        <label>
+                            <span>روش پرداخت</span>
+                            <select class="form-control" name="payment_method">
+                                @foreach ($libraryPaymentMethods as $value => $label)
+                                    <option value="{{ $value }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label><span>شخص / منبع / مصرف‌شونده</span><input class="form-control" name="source_or_payee" placeholder="نام شخص، فروشنده یا منبع درآمد"></label>
+                        <label><span>شماره رسید</span><input class="form-control ltr-text" name="receipt_number" placeholder="در صورت خالی بودن خودکار ساخته می‌شود"></label>
+                        <label class="fanous-form-wide"><span>توضیحات</span><textarea class="form-control" name="description" rows="3" placeholder="جزئیات درآمد یا مصرف کتابخانه"></textarea></label>
+                        <div class="fanous-form-actions">
+                            <x-ds.button type="submit">ذخیره ثبت مالی</x-ds.button>
+                        </div>
+                    </form>
+                </article>
+
+                <article class="dashboard-panel fanous-library-form-panel" id="new-library-member" data-library-panel>
+                    <div class="dashboard-panel-header">
+                        <div>
+                            <span class="dashboard-section-kicker">عضویت</span>
+                            <h2>ثبت عضو کتابخانه</h2>
+                            <p>پروفایل عضو را بسازید و در صورت نیاز کارت ماهانه چاپ کنید.</p>
+                        </div>
+                        <x-ds.button variant="outline" size="sm" type="button" data-library-panel-close>بستن</x-ds.button>
+                    </div>
+
+                    <form method="POST" action="{{ route('library.members.store') }}" enctype="multipart/form-data" class="fanous-library-form">
+                        @csrf
+                        <label><span>کد عضویت</span><input class="form-control ltr-text" name="member_code" placeholder="خودکار اگر خالی باشد"></label>
+                        <label><span>نام کامل</span><input class="form-control" name="full_name" required></label>
+                        <label><span>نام پدر</span><input class="form-control" name="father_name" required></label>
+                        <label><span>شماره تماس</span><input class="form-control ltr-text" name="phone" required></label>
+                        <label><span>ایمیل</span><input class="form-control ltr-text" name="email" type="email"></label>
+                        <label><span>عکس پروفایل</span><input class="form-control" name="profile_photo" type="file" accept="image/*"></label>
+                        <label><span>تذکره / ID</span><input class="form-control ltr-text" name="tazkira_number"></label>
+                        <label><span>محل تحصیل</span><input class="form-control" name="education_place"></label>
+                        <label><span>دیپارتمنت / صنف</span><input class="form-control" name="department_or_grade"></label>
+                        <label><span>فیس ماهانه</span><input class="form-control" name="membership_fee" type="number" min="0" value="0"></label>
+                        <label>
+                            <span>وضعیت پرداخت</span>
+                            <select class="form-control" name="payment_status">
+                                <option value="unpaid">پرداخت نشده</option>
+                                <option value="paid">پرداخت شده</option>
+                            </select>
+                        </label>
+                        <label><span>تاریخ عضویت</span><input class="form-control" name="joined_at" type="date" value="{{ now()->format('Y-m-d') }}"></label>
+                        <label>
+                            <span>وضعیت</span>
+                            <select class="form-control" name="status">
+                                @foreach ($memberStatusMeta as $value => $meta)
+                                    <option value="{{ $value }}">{{ $meta['label'] }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label class="fanous-form-wide"><span>آدرس</span><input class="form-control" name="address"></label>
+                        <label class="fanous-form-wide"><span>یادداشت</span><textarea class="form-control" name="notes" rows="3"></textarea></label>
+                        <div class="fanous-form-actions">
+                            <x-ds.button type="submit">ذخیره عضو</x-ds.button>
+                            <x-ds.button variant="outline" name="issue_card" value="1" type="submit">ذخیره و چاپ کارت</x-ds.button>
+                        </div>
+                    </form>
+                </article>
+
+                <article class="dashboard-panel fanous-library-form-panel" id="new-library-book" data-library-panel>
+                    <div class="dashboard-panel-header">
+                        <div>
+                            <span class="dashboard-section-kicker">کتاب</span>
+                            <h2>افزودن کتاب جدید</h2>
+                            <p>مشخصات کتاب، قفسه، تعداد نسخه‌ها و وضعیت فعلی را ثبت کنید.</p>
+                        </div>
+                        <x-ds.button variant="outline" size="sm" type="button" data-library-panel-close>بستن</x-ds.button>
+                    </div>
+
+                    <form method="POST" action="{{ route('library.books.store') }}" class="fanous-library-form">
+                        @csrf
+                        <label><span>ISBN</span><input class="form-control ltr-text" name="isbn"></label>
+                        <label><span>بارکد</span><input class="form-control ltr-text" name="barcode" placeholder="خودکار اگر خالی باشد"></label>
+                        <label class="fanous-form-wide"><span>عنوان کتاب</span><input class="form-control" name="title" required></label>
+                        <label><span>نویسنده</span><input class="form-control" name="author"></label>
+                        <label><span>ناشر</span><input class="form-control" name="publisher"></label>
+                        <label><span>زبان</span><input class="form-control" name="language"></label>
+                        <label><span>چاپ / ویرایش</span><input class="form-control" name="edition"></label>
+                        <label><span>سال نشر</span><input class="form-control" name="published_year" type="number" min="1000" max="{{ now()->year }}"></label>
+                        <label><span>صفحات</span><input class="form-control" name="pages" type="number" min="1"></label>
+                        <label><span>دسته‌بندی</span><input class="form-control" name="category"></label>
+                        <label><span>کد قفسه</span><input class="form-control ltr-text" name="shelf_code"></label>
+                        <label><span>تعداد نسخه‌ها</span><input class="form-control" name="total_copies" type="number" min="1" value="1" required></label>
+                        <label>
+                            <span>وضعیت</span>
+                            <select class="form-control" name="status">
+                                @foreach ($bookStatusMeta as $value => $meta)
+                                    <option value="{{ $value }}">{{ $meta['label'] }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label class="fanous-form-wide"><span>یادداشت</span><textarea class="form-control" name="notes" rows="3"></textarea></label>
+                        <div class="fanous-form-actions"><x-ds.button type="submit">ذخیره کتاب</x-ds.button></div>
+                    </form>
+                </article>
+
+                <article class="dashboard-panel fanous-library-form-panel" id="new-library-loan" data-library-panel>
+                    <div class="dashboard-panel-header">
+                        <div>
+                            <span class="dashboard-section-kicker">امانت</span>
+                            <h2>ثبت امانت کتاب</h2>
+                            <p>عضو فعال و کتاب موجود را انتخاب کنید؛ سیستم تعداد نسخه‌های موجود را مدیریت می‌کند.</p>
+                        </div>
+                        <x-ds.button variant="outline" size="sm" type="button" data-library-panel-close>بستن</x-ds.button>
+                    </div>
+
+                    <form method="POST" action="{{ route('library.loans.store') }}" class="fanous-library-form">
+                        @csrf
+                        <label><span>کد امانت</span><input class="form-control ltr-text" name="loan_code" placeholder="خودکار اگر خالی باشد"></label>
+                        <label>
+                            <span>عضو</span>
+                            <select class="form-control" name="library_member_id" required>
+                                <option value="">انتخاب عضو</option>
+                                @foreach ($activeMembers as $member)
+                                    <option value="{{ $member->id }}">{{ $member->full_name }} - {{ $member->member_code }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label>
+                            <span>کتاب</span>
+                            <select class="form-control" name="book_id" required>
+                                <option value="">انتخاب کتاب</option>
+                                @foreach ($availableBooks as $book)
+                                    <option value="{{ $book->id }}">{{ $book->title }} - {{ Locale::number($book->available_copies) }} موجود</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label>
+                            <span>بارکد / کد نسخه</span>
+                            <input class="form-control ltr-text" name="copy_code" list="available-copy-codes" placeholder="اسکن یا درج کد نسخه" required>
+                            <datalist id="available-copy-codes">
+                                @foreach ($availableBooks as $book)
+                                    @foreach ($book->availableCopies as $copy)
+                                        <option value="{{ $copy->copy_code }}">{{ $book->title }} - {{ $copy->shelf_code ?: 'بدون قفسه' }}</option>
+                                    @endforeach
+                                @endforeach
+                            </datalist>
+                        </label>
+                        <label><span>تاریخ امانت</span><input class="form-control" name="borrowed_at" type="date" value="{{ now()->format('Y-m-d') }}" required></label>
+                        <label><span>تاریخ برگشت</span><input class="form-control" name="due_at" type="date" value="{{ now()->addDays(7)->format('Y-m-d') }}"></label>
+                        <label><span>وضعیت هنگام خروج</span><input class="form-control" name="condition_out"></label>
+                        <label class="fanous-form-wide"><span>یادداشت</span><input class="form-control" name="notes"></label>
+                        <div class="fanous-form-actions"><x-ds.button type="submit">ذخیره امانت</x-ds.button></div>
+                    </form>
+                </article>
+
+                <article class="dashboard-panel fanous-library-form-panel" id="return-library-copy" data-library-panel>
+                    <div class="dashboard-panel-header">
+                        <div>
+                            <span class="dashboard-section-kicker">برگشت</span>
+                            <h2>برگشت کتاب با بارکد</h2>
+                            <p>کد نسخه را اسکن کنید تا امانت فعال پیدا و برگشت کتاب ثبت شود.</p>
+                        </div>
+                        <x-ds.button variant="outline" size="sm" type="button" data-library-panel-close>بستن</x-ds.button>
+                    </div>
+
+                    <form method="POST" action="{{ route('library.loans.return-by-copy') }}" class="fanous-library-form">
+                        @csrf
+                        <label>
+                            <span>بارکد / کد نسخه</span>
+                            <input class="form-control ltr-text @error('copy_code') is-invalid @enderror" name="copy_code" value="{{ old('copy_code') }}" placeholder="اسکن نسخه برگشتی" required autofocus>
+                            @error('copy_code') <span class="text-danger small">{{ $message }}</span> @enderror
+                        </label>
+                        <label><span>تاریخ برگشت</span><input class="form-control" name="returned_at" type="date" value="{{ now()->format('Y-m-d') }}" required></label>
+                        <label><span>جریمه</span><input class="form-control" name="fine_amount" type="number" min="0" value="0"></label>
+                        <label>
+                            <span>وضعیت برگشت</span>
+                            <select class="form-control" name="return_status">
+                                <option value="available">سالم / قابل امانت</option>
+                                <option value="damaged">خراب</option>
+                                <option value="lost">گم‌شده</option>
+                            </select>
+                        </label>
+                        <label><span>وضعیت هنگام برگشت</span><input class="form-control" name="condition_in" placeholder="سالم / خراب"></label>
+                        <div class="fanous-form-actions"><x-ds.button type="submit">ثبت برگشت</x-ds.button></div>
+                    </form>
+                </article>
+            </section>
+        @endif
+
+        <section class="dashboard-panel">
+            <div class="dashboard-panel-header">
+                <div>
+                    <span class="dashboard-section-kicker">دفتر مالی کتابخانه</span>
+                    <h2>آخرین ثبت‌های مالی کتابخانه</h2>
+                    <p>درآمدهای اتومات از فیس و کارت، همراه با درآمد و مصرف‌های دستی کتابدار.</p>
+                </div>
+                @if ($canWriteLibrary)
+                    <x-ds.button size="sm" type="button" data-library-panel-trigger="library-finance-record" aria-controls="library-finance-record" aria-expanded="false">ثبت مالی جدید</x-ds.button>
+                @endif
+            </div>
+
+            <div class="fanous-table-wrap">
+                <table class="fanous-finance-table">
+                    <thead>
+                        <tr>
+                            <th>تاریخ</th>
+                            <th>نوع</th>
+                            <th>دسته‌بندی</th>
+                            <th>شخص / منبع</th>
+                            <th>مبلغ</th>
+                            <th>ثبت‌کننده</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($libraryFinanceRecords as $record)
+                            <tr>
+                                <td>{{ $record->transaction_date ? Locale::number($record->transaction_date->format('Y/m/d')) : 'ثبت نشده' }}</td>
+                                <td><x-ds.badge :tone="$record->type === 'income' ? 'success' : 'danger'">{{ $record->type === 'income' ? 'درآمد' : 'مصرف' }}</x-ds.badge></td>
+                                <td>{{ $record->category?->name ? str_replace('کتابخانه - ', '', $record->category->name) : 'کتابخانه' }}</td>
+                                <td>{{ $record->source_or_payee ?: $record->payer_name ?: $record->payee_name ?: 'کتابخانه فانوس' }}</td>
+                                <td>{{ Locale::money((int) $record->amount) }}</td>
+                                <td>{{ $record->recordedBy?->name ?: 'سیستم' }}</td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="6"><div class="dashboard-empty">هنوز ثبت مالی کتابخانه وجود ندارد.</div></td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="fanous-library-layout">
+            <div class="fanous-library-main">
+                <article class="dashboard-panel" id="library-members-panel">
+                    <div class="dashboard-panel-header">
+                        <div>
+                            <span class="dashboard-section-kicker">اعضا</span>
+                            <h2>اعضای کتابخانه</h2>
+                            <p>اعضای ثبت‌شده، وضعیت پرداخت و امانت‌های هر عضو را مدیریت کنید.</p>
                         </div>
                         @if ($canWriteLibrary)
-                            <button class="btn btn-dark btn-sm mt-3 mt-lg-0" type="button" data-library-panel-close data-i18n="close">Close</button>
+                            <x-ds.button size="sm" type="button" data-library-panel-trigger="new-library-member" aria-controls="new-library-member" aria-expanded="false">افزودن عضو</x-ds.button>
                         @endif
                     </div>
 
-                    <form method="GET" action="{{ route('library.index') }}" class="library-filter-row mb-4">
-                        <input class="form-control" name="q" value="{{ $filters['q'] ?? '' }}" data-i18n-placeholder="searchLibraryMembers" placeholder="Search by name, phone, ID, code, or education">
+                    <form method="GET" action="{{ route('library.index') }}" class="fanous-library-filters">
+                        <input class="form-control" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="جستجوی نام، شماره تماس یا کد عضویت">
                         <select class="form-control" name="status">
-                            <option value="" data-i18n="allStatuses">All statuses</option>
+                            <option value="">همه وضعیت‌ها</option>
                             @foreach ($memberStatusMeta as $value => $meta)
-                                <option value="{{ $value }}" @selected(($filters['status'] ?? '') === $value) data-i18n="{{ $meta['key'] }}">{{ $meta['label'] }}</option>
+                                <option value="{{ $value }}" @selected(($filters['status'] ?? '') === $value)>{{ $meta['label'] }}</option>
                             @endforeach
                         </select>
-                        <button class="btn btn-primary" type="submit" data-i18n="search">Search</button>
-                        <a class="btn btn-outline-secondary" href="{{ route('library.members.export', request()->only(['q', 'status'])) }}">CSV</a>
-                        <a class="btn btn-dark" href="{{ route('library.index') }}" data-i18n="clear">Clear</a>
+                        <div class="fanous-filter-actions">
+                            <x-ds.button type="submit">جستجو</x-ds.button>
+                            <x-ds.button variant="outline" :href="route('library.members.export', request()->only(['q', 'status']))">CSV</x-ds.button>
+                            <x-ds.button variant="outline" :href="route('library.index')">پاک کردن</x-ds.button>
+                        </div>
                     </form>
 
-                    <div class="library-member-grid mb-4">
+                    <div class="fanous-library-member-grid">
                         @forelse ($members as $member)
                             @php
                                 $card = $member->membershipCards->first();
-                                $statusMeta = $memberStatusMeta[$member->status] ?? ['key' => 'statusUnknown', 'label' => $member->status];
+                                $statusMeta = $memberStatusMeta[$member->status] ?? ['label' => $member->status, 'tone' => 'primary'];
+                                $paymentTone = $member->payment_status === 'paid' ? 'success' : 'warning';
                             @endphp
-                            <article class="library-member-card">
-                                <div class="library-member-card-head">
-                                        @if ($member->profile_photo_path)
-                                            <img class="user-table-avatar user-table-avatar-img" src="{{ asset('storage/'.$member->profile_photo_path) }}" alt="{{ $member->full_name }}">
-                                        @else
-                                            <div class="user-table-avatar">{{ strtoupper(substr($member->full_name, 0, 1)) }}</div>
-                                        @endif
+                            <article class="fanous-library-member-card">
+                                <div class="fanous-library-member-head">
+                                    @if ($member->profile_photo_path)
+                                        <img class="fanous-library-avatar" src="{{ asset('storage/'.$member->profile_photo_path) }}" alt="{{ $member->full_name }}">
+                                    @else
+                                        <span class="fanous-library-avatar">{{ mb_substr($member->full_name, 0, 1) }}</span>
+                                    @endif
                                     <div>
-                                        <h5>{{ $member->full_name }}</h5>
-                                        <span>{{ $member->member_code ?: 'N/A' }}</span>
+                                        <strong>{{ $member->full_name }}</strong>
+                                        <span class="ltr-text">{{ $member->member_code ?: 'N/A' }}</span>
                                     </div>
+                                    <x-ds.badge :tone="$statusMeta['tone']">{{ $statusMeta['label'] }}</x-ds.badge>
                                 </div>
-                                <div class="library-member-meta">
-                                    <span><strong data-i18n="father">Father</strong>{{ $member->father_name ?: 'N/A' }}</span>
-                                    <span><strong data-i18n="idTazkira">ID / Tazkira</strong>{{ $member->tazkira_number ?: 'N/A' }}</span>
-                                    <span><strong data-i18n="phoneNumber">Phone number</strong>{{ $member->phone }}</span>
-                                    <span><strong data-i18n="expiry">Expiry</strong>{{ $member->membership_expires_at?->format('Y-m-d') ?? ($card?->expires_at?->format('Y-m-d') ?? 'N/A') }}</span>
-                                    <span><strong data-i18n="payment">Payment</strong><em data-i18n="{{ $member->payment_status === 'paid' ? 'paid' : 'unpaid' }}">{{ $member->payment_status === 'paid' ? 'Paid' : 'Unpaid' }}</em></span>
-                                    <span><strong data-i18n="nextDue">Next due</strong>{{ $member->next_payment_due_at?->format('Y-m-d') ?? 'N/A' }}</span>
-                                    <span><strong>Fee balance</strong>{{ number_format($member->monthlyFeeBalance()) }} AFN</span>
-                                    <span><strong data-i18n="status">Status</strong><em data-i18n="{{ $statusMeta['key'] }}">{{ $statusMeta['label'] }}</em></span>
+
+                                <div class="fanous-library-member-meta">
+                                    <div><span>شماره تماس</span><strong class="ltr-text">{{ $member->phone }}</strong></div>
+                                    <div><span>فیس عضویت</span><strong>{{ Locale::money((int) $member->membership_fee) }}</strong></div>
+                                    <div><span>باقی فیس</span><strong>{{ Locale::money((int) $member->monthlyFeeBalance()) }}</strong></div>
+                                    <div><span>پرداخت</span><strong><x-ds.badge :tone="$paymentTone">{{ $member->payment_status === 'paid' ? 'پرداخت شده' : 'پرداخت نشده' }}</x-ds.badge></strong></div>
+                                    <div><span>تاریخ ثبت</span><strong>{{ $member->joined_at ? Locale::number($member->joined_at->format('Y/m/d')) : 'ثبت نشده' }}</strong></div>
+                                    <div><span>اعتبار کارت</span><strong>{{ $member->membership_expires_at ? Locale::number($member->membership_expires_at->format('Y/m/d')) : ($card?->expires_at ? Locale::number($card->expires_at->format('Y/m/d')) : 'ندارد') }}</strong></div>
                                 </div>
-                                <div class="library-member-actions">
-                                    <a class="btn btn-primary btn-sm" href="{{ route('library.members.show', $member) }}" data-i18n="profile">Profile</a>
+
+                                <div class="fanous-library-member-actions">
+                                    <x-ds.button size="sm" :href="route('library.members.show', $member)">مشاهده</x-ds.button>
                                     @if ($canWriteLibrary)
-                                        <a class="btn btn-outline-secondary btn-sm" href="{{ route('library.members.edit', $member) }}" data-i18n="edit">Edit</a>
+                                        <x-ds.button variant="outline" size="sm" :href="route('library.members.edit', $member)">ویرایش</x-ds.button>
                                     @endif
                                     @if ($card)
-                                        <a class="btn btn-outline-secondary btn-sm" href="{{ route('membership-cards.print', $card) }}" data-i18n="printCard">Print card</a>
+                                        <x-ds.button variant="outline" size="sm" :href="route('membership-cards.print', $card)">چاپ کارت</x-ds.button>
                                     @endif
                                 </div>
                             </article>
                         @empty
-                            <div class="library-member-empty" data-i18n="noLibraryMembersFound">No library members were found.</div>
+                            <div class="dashboard-empty">هیچ عضو کتابخانه پیدا نشد.</div>
                         @endforelse
                     </div>
 
-                </div>
-            </div>
-        </div>
-    </div>
+                    @if ($members->hasPages())
+                        <div class="fanous-pagination">
+                            {{ $members->links() }}
+                        </div>
+                    @endif
+                </article>
 
-    <div class="row">
-        <div class="col-lg-5 grid-margin stretch-card">
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title" data-i18n="bookInventory">Book inventory</h4>
-                    <p class="card-description"><span data-i18n="availableCopies">Available copies</span>: {{ $availableCopyCount }}</p>
-                    <div class="preview-list">
-                        @forelse ($books as $book)
-                            @php
-                                $statusMeta = $bookStatusMeta[$book->status] ?? ['key' => 'statusUnknown', 'label' => $book->status];
-                            @endphp
-                            <div class="preview-item border-bottom">
-                                <div class="preview-thumbnail"><div class="preview-icon bg-success"><span>B</span></div></div>
-                                <div class="preview-item-content">
-                                    <p class="preview-subject mb-1">{{ $book->title }}</p>
-                                    <p class="text-muted mb-0">
-                                        @if ($book->author)
-                                            {{ $book->author }}
-                                        @else
-                                            <span data-i18n="unknownAuthor">Unknown author</span>
-                                        @endif
-                                        · <span data-i18n="shelfCode">Shelf code</span>: {{ $book->shelf_code ?: 'N/A' }}
-                                    </p>
-                                    <p class="text-muted mb-0">{{ $book->available_copies }}/{{ $book->total_copies }} <span data-i18n="available">available</span> - {{ $book->copies_count ?? 0 }} physical copies - <span data-i18n="{{ $statusMeta['key'] }}">{{ $statusMeta['label'] }}</span></p>
-                                </div>
-                                @if ($canWriteLibrary)
-                                    <div class="student-profile-actions">
-                                        <a class="btn btn-outline-secondary btn-sm" href="{{ route('library.books.edit', $book) }}" data-i18n="edit">Edit</a>
-                                        <a class="btn btn-outline-secondary btn-sm" href="{{ route('library.books.copy-labels', $book) }}">Labels</a>
-                                    </div>
-                                @endif
-                            </div>
-                        @empty
-                            <p class="text-muted mb-0" data-i18n="noBooksFound">No books have been registered yet.</p>
-                        @endforelse
+                <article class="dashboard-panel" id="recent-library-loans">
+                    <div class="dashboard-panel-header">
+                        <div>
+                            <span class="dashboard-section-kicker">امانت‌ها</span>
+                            <h2>امانت‌های اخیر</h2>
+                            <p>کتاب‌های امانت گرفته‌شده، تاریخ برگشت و وضعیت هر ثبت.</p>
+                        </div>
+                        @if ($canWriteLibrary)
+                            <x-ds.button size="sm" type="button" data-library-panel-trigger="new-library-loan" aria-controls="new-library-loan" aria-expanded="false">ثبت امانت جدید</x-ds.button>
+                        @endif
                     </div>
-                </div>
-            </div>
-        </div>
 
-        <div class="col-lg-7 grid-margin stretch-card">
-            <div class="card" id="recent-library-loans">
-                <div class="card-body">
-                    <h4 class="card-title" data-i18n="recentLoans">Recent loans</h4>
-                    <div class="preview-list">
+                    <div class="fanous-library-loan-list">
                         @forelse ($loans as $loan)
                             @php
-                                $statusMeta = $loanStatusMeta[$loan->status] ?? ['key' => 'statusUnknown', 'label' => $loan->status];
                                 $isLateLoan = in_array($loan->status, ['borrowed', 'late'], true) && $loan->due_at && $loan->due_at->isPast();
+                                $statusMeta = $loanStatusMeta[$isLateLoan ? 'late' : $loan->status] ?? ['label' => $loan->status, 'tone' => 'primary'];
                             @endphp
-                            <div class="preview-item border-bottom">
-                                <div class="preview-thumbnail"><div class="preview-icon {{ $loan->status === 'returned' ? 'bg-success' : ($isLateLoan ? 'bg-danger' : 'bg-warning') }}"><span>L</span></div></div>
-                                <div class="preview-item-content">
-                                    <p class="preview-subject mb-1">{{ $loan->member?->full_name }} - {{ $loan->book?->title }}</p>
-                                    <p class="text-muted mb-0">{{ $loan->borrowed_at?->format('Y-m-d') }} <span data-i18n="to">to</span> {{ $loan->due_at?->format('Y-m-d') ?? 'N/A' }} - Copy {{ $loan->copy?->copy_code ?: 'N/A' }} - <span data-i18n="{{ $statusMeta['key'] }}">{{ $isLateLoan ? 'Late' : $statusMeta['label'] }}</span></p>
+                            <article class="fanous-library-loan-card">
+                                <span class="fanous-record-icon {{ $loan->status === 'returned' ? 'is-income' : ($isLateLoan ? 'is-expense' : 'is-warning') }}">ا</span>
+                                <div class="fanous-record-main">
+                                    <div>
+                                        <strong>{{ $loan->member?->full_name ?: 'عضو نامشخص' }}</strong>
+                                        <span>{{ $loan->book?->title ?: 'کتاب نامشخص' }}</span>
+                                    </div>
+                                    <div class="fanous-record-meta">
+                                        <span>امانت: {{ $loan->borrowed_at ? Locale::number($loan->borrowed_at->format('Y/m/d')) : 'ثبت نشده' }}</span>
+                                        <span>برگشت: {{ $loan->due_at ? Locale::number($loan->due_at->format('Y/m/d')) : 'ندارد' }}</span>
+                                        <span class="ltr-text">Copy {{ $loan->copy?->copy_code ?: 'N/A' }}</span>
+                                    </div>
+
                                     @if ($canWriteLibrary && $loan->status !== 'returned')
-                                        <form method="POST" action="{{ route('library.loans.return', $loan) }}" class="library-return-form mt-3">
+                                        <form method="POST" action="{{ route('library.loans.return', $loan) }}" class="fanous-library-return-form">
                                             @csrf
                                             @method('PUT')
                                             <input class="form-control" name="returned_at" type="date" value="{{ now()->format('Y-m-d') }}" required>
-                                            <input class="form-control" name="fine_amount" type="number" min="0" value="0" data-i18n-placeholder="fineAmount" placeholder="Fine amount">
+                                            <input class="form-control" name="fine_amount" type="number" min="0" value="0" placeholder="جریمه">
                                             <select class="form-control" name="return_status">
-                                                <option value="available">Good</option>
-                                                <option value="damaged">Damaged</option>
-                                                <option value="lost">Lost</option>
+                                                <option value="available">سالم</option>
+                                                <option value="damaged">خراب</option>
+                                                <option value="lost">گم‌شده</option>
                                             </select>
-                                            <input class="form-control" name="condition_in" data-i18n-placeholder="conditionIn" placeholder="Condition in">
-                                            <button class="btn btn-primary" type="submit" data-i18n="markReturned">Mark returned</button>
+                                            <input class="form-control" name="condition_in" placeholder="وضعیت برگشت">
+                                            <x-ds.button type="submit" size="sm">برگشت</x-ds.button>
                                         </form>
                                     @endif
                                 </div>
-                                <div class="shortcut-action pt-2 pt-sm-0">
+                                <div class="fanous-record-side">
+                                    <x-ds.badge :tone="$statusMeta['tone']">{{ $statusMeta['label'] }}</x-ds.badge>
                                     @if ($loan->member)
-                                        <a class="btn btn-outline-secondary btn-sm mb-2" href="{{ route('library.members.show', $loan->member) }}" data-i18n="memberProfile">Member profile</a>
+                                        <x-ds.button variant="outline" size="sm" :href="route('library.members.show', $loan->member)">پروفایل</x-ds.button>
                                     @endif
                                     @if ($canWriteLibrary)
-                                        <a class="btn btn-outline-secondary btn-sm" href="{{ route('library.loans.edit', $loan) }}" data-i18n="edit">Edit</a>
+                                        <x-ds.button variant="outline" size="sm" :href="route('library.loans.edit', $loan)">ویرایش</x-ds.button>
+                                    @endif
+                                </div>
+                            </article>
+                        @empty
+                            <div class="dashboard-empty">
+                                <strong>هنوز امانت ثبت نشده است</strong>
+                                @if ($canWriteLibrary)
+                                    <x-ds.button size="sm" type="button" data-library-panel-trigger="new-library-loan" aria-controls="new-library-loan" aria-expanded="false">ثبت امانت جدید</x-ds.button>
+                                @endif
+                            </div>
+                        @endforelse
+                    </div>
+                </article>
+            </div>
+
+            <aside class="fanous-library-sidebar">
+                <article class="dashboard-panel">
+                    <div class="dashboard-panel-header">
+                        <div>
+                            <span class="dashboard-section-kicker">موجودی</span>
+                            <h2>موجودی کتاب‌ها</h2>
+                            <p>خلاصه نسخه‌های موجود، امانت‌رفته و آسیب‌دیده.</p>
+                        </div>
+                    </div>
+
+                    <div class="fanous-collection-list">
+                        <div><span class="fanous-record-icon is-income">ک</span><p><strong>کل کتاب‌ها</strong><small>عنوان‌های ثبت‌شده</small></p><b>{{ Locale::number($bookTitleCount) }}</b></div>
+                        <div><span class="fanous-record-icon is-income">م</span><p><strong>نسخه‌های موجود</strong><small>آماده امانت</small></p><b>{{ Locale::number($availableCopyCount) }}</b></div>
+                        <div><span class="fanous-record-icon is-warning">ا</span><p><strong>نسخه‌های امانت‌رفته</strong><small>خارج از قفسه</small></p><b>{{ Locale::number($borrowedCopyCount) }}</b></div>
+                        <div><span class="fanous-record-icon is-expense">خ</span><p><strong>خراب / گم‌شده</strong><small>نیازمند پیگیری</small></p><b>{{ Locale::number($damagedLostCount) }}</b></div>
+                    </div>
+                </article>
+
+                <article class="dashboard-panel">
+                    <div class="dashboard-panel-header">
+                        <div>
+                            <span class="dashboard-section-kicker">کتاب‌ها</span>
+                            <h2>فهرست کوتاه موجودی</h2>
+                        </div>
+                    </div>
+
+                    <div class="fanous-library-book-list">
+                        @forelse ($books->take(8) as $book)
+                            @php $statusMeta = $bookStatusMeta[$book->status] ?? ['label' => $book->status, 'tone' => 'primary']; @endphp
+                            <div class="fanous-library-book-row">
+                                <span class="fanous-record-icon">ک</span>
+                                <div>
+                                    <strong>{{ $book->title }}</strong>
+                                    <small>{{ $book->author ?: 'نویسنده نامشخص' }} · قفسه: <span class="ltr-text">{{ $book->shelf_code ?: 'N/A' }}</span></small>
+                                    <small>{{ Locale::number($book->available_copies) }}/{{ Locale::number($book->total_copies) }} موجود · {{ Locale::number($book->copies_count ?? 0) }} نسخه فزیکی</small>
+                                </div>
+                                <div class="fanous-row-actions">
+                                    <x-ds.badge :tone="$statusMeta['tone']">{{ $statusMeta['label'] }}</x-ds.badge>
+                                    @if ($canWriteLibrary)
+                                        <x-ds.button variant="outline" size="sm" :href="route('library.books.edit', $book)">ویرایش</x-ds.button>
                                     @endif
                                 </div>
                             </div>
                         @empty
-                            <p class="text-muted mb-0" data-i18n="noLoansFound">No loans have been registered yet.</p>
+                            <div class="dashboard-empty">هنوز کتاب ثبت نشده است.</div>
                         @endforelse
                     </div>
-                </div>
-            </div>
-        </div>
+                </article>
+
+                <article class="dashboard-panel">
+                    <div class="dashboard-panel-header">
+                        <div>
+                            <span class="dashboard-section-kicker">گزارش‌ها</span>
+                            <h2>آخرین گزارش‌ها</h2>
+                            <p>پیگیری امانت‌های دیرشده، کارت‌های منقضی و فیس‌های نزدیک.</p>
+                        </div>
+                    </div>
+
+                    <div class="fanous-follow-list">
+                        @forelse ($overdueLoans->take(4) as $loan)
+                            <div class="fanous-follow-row">
+                                <strong>{{ $loan->member?->full_name ?: 'عضو نامشخص' }}</strong>
+                                <span>{{ $loan->book?->title ?: 'کتاب نامشخص' }} · تاریخ برگشت: {{ $loan->due_at ? Locale::number($loan->due_at->format('Y/m/d')) : 'ندارد' }}</span>
+                            </div>
+                        @empty
+                            <div class="dashboard-empty">فعلاً امانت دیرشده وجود ندارد.</div>
+                        @endforelse
+
+                        @foreach ($expiringMembers->take(3) as $member)
+                            @php
+                                $feeFine = max((int) $member->monthly_fee_fine_amount, $member->calculatedMonthlyFine());
+                                $feeBalance = (int) $member->membership_fee + $feeFine;
+                            @endphp
+                            <div class="fanous-follow-row">
+                                <strong>{{ $member->full_name }}</strong>
+                                <span>سررسید: {{ $member->next_payment_due_at ? Locale::number($member->next_payment_due_at->format('Y/m/d')) : 'ندارد' }} · باقی: {{ Locale::money($feeBalance) }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <div class="fanous-library-report-actions">
+                        <x-ds.button variant="outline" :href="route('library.inventory.report')">مشاهده گزارش‌ها</x-ds.button>
+                    </div>
+                </article>
+            </aside>
+        </section>
     </div>
 
     @if ($canWriteLibrary)
@@ -576,7 +703,7 @@
                 const triggers = Array.from(document.querySelectorAll('[data-library-panel-trigger]'));
                 const emptyState = document.querySelector('[data-library-panel-empty]');
                 const formArea = document.getElementById('library-action-forms');
-                const defaultPanel = @json($hasMemberFilters ? 'library-members-panel' : null);
+                const defaultPanel = @json($hasMemberFilters ? null : null);
 
                 function setPanel(panelId, shouldScroll) {
                     const activePanel = panels.find((panel) => panel.id === panelId);
@@ -601,7 +728,8 @@
                 }
 
                 triggers.forEach((trigger) => {
-                    trigger.addEventListener('click', function () {
+                    trigger.addEventListener('click', function (event) {
+                        event.preventDefault();
                         setPanel(trigger.getAttribute('data-library-panel-trigger'), true);
                     });
                 });

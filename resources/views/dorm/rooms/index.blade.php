@@ -1,130 +1,201 @@
 @extends('admin.layout')
 
-@section('title', 'Rooms - Fanous Admin')
+@section('title', 'اتاق‌ها و ظرفیت - ادمین فانوس')
+@section('content_wrapper_class', 'fanous-dashboard-wrapper')
 
 @section('content')
     @php
+        use App\Support\Locale;
+
         $freeBeds = max(0, $totalCapacity - $occupiedBeds);
         $occupancyRate = $totalCapacity > 0 ? min(100, round(($occupiedBeds / $totalCapacity) * 100)) : 0;
         $activeRooms = $rooms->where('status', 'active')->count();
         $maintenanceRooms = $rooms->where('status', 'maintenance')->count();
         $closedRooms = $rooms->where('status', 'closed')->count();
-        $roomStatusNames = [
-            'active' => 'Active',
-            'maintenance' => 'Maintenance',
-            'closed' => 'Closed',
+        $roomStatusNames = $statusLabels ?? [
+            'active' => 'فعال',
+            'maintenance' => 'در تعمیر',
+            'closed' => 'بسته',
         ];
+        $statusTones = [
+            'active' => 'success',
+            'maintenance' => 'warning',
+            'closed' => 'danger',
+        ];
+        $floors = $rooms->pluck('floor')->filter()->unique()->values();
+        $query = trim((string) request('q'));
+        $statusFilter = request('status');
+        $floorFilter = request('floor');
+        $filteredRooms = $rooms
+            ->when($query !== '', fn ($items) => $items->filter(fn ($room) => str_contains(mb_strtolower((string) $room->room_number), mb_strtolower($query)) || str_contains(mb_strtolower((string) $room->floor), mb_strtolower($query))))
+            ->when($statusFilter, fn ($items) => $items->where('status', $statusFilter))
+            ->when($floorFilter, fn ($items) => $items->where('floor', $floorFilter))
+            ->values();
     @endphp
 
-    <div class="student-command-shell">
-        <div class="student-command-copy">
-            <span class="student-command-kicker">Dorm control</span>
-            <h1>Rooms & Capacity</h1>
-            <p>Manage room readiness, bed usage, and student allocation from one calm overview.</p>
-        </div>
-        <div class="student-command-actions">
-            <a href="{{ route('dorm.students.index') }}" class="btn btn-outline-secondary">Students</a>
-            <a href="{{ route('dorm.rooms.create') }}" class="btn btn-primary">Create room</a>
-        </div>
-    </div>
-
-    <div class="student-insight-grid">
-        <div class="student-insight-card is-primary">
-            <span>Total capacity</span>
-            <strong>{{ $totalCapacity }}</strong>
-            <p>{{ $occupiedBeds }} occupied beds</p>
-        </div>
-        <div class="student-insight-card">
-            <span>Free beds</span>
-            <strong>{{ $freeBeds }}</strong>
-            <p>{{ $occupancyRate }}% dorm occupancy</p>
-        </div>
-        <div class="student-insight-card">
-            <span>Active rooms</span>
-            <strong>{{ $activeRooms }}</strong>
-            <p>{{ $maintenanceRooms }} maintenance</p>
-        </div>
-        <div class="student-insight-card">
-            <span>Registered rooms</span>
-            <strong>{{ $rooms->count() }}</strong>
-            <p>{{ $closedRooms }} closed rooms</p>
-        </div>
-    </div>
-
-    <div class="room-board-layout">
-        <section class="student-workspace-panel room-occupancy-panel">
-            <div class="student-panel-head">
-                <div>
-                    <span class="student-panel-label">Occupancy</span>
-                    <h2>Dorm usage</h2>
-                    <p>Current bed usage across all registered rooms.</p>
-                </div>
+    <div class="fanous-rooms-page" dir="rtl">
+        <section class="fanous-page-header">
+            <div>
+                <span class="dashboard-section-kicker">کنترل لیلیه</span>
+                <h1>اتاق‌ها و ظرفیت</h1>
+                <p>ظرفیت اتاق‌ها، تخت‌های خالی، تخت‌های اشغال‌شده و وضعیت هر اتاق را مدیریت کنید.</p>
             </div>
-            <div class="room-ring" style="--value: {{ $occupancyRate }}">
-                <span>{{ $occupancyRate }}%</span>
-            </div>
-            <div class="room-stats-row">
-                <div><span>Used</span><strong>{{ $occupiedBeds }}</strong></div>
-                <div><span>Free</span><strong>{{ $freeBeds }}</strong></div>
-                <div><span>Total</span><strong>{{ $totalCapacity }}</strong></div>
+
+            <div class="fanous-page-actions">
+                <x-ds.button variant="outline" href="#room-filters">فیلتر اتاق‌ها</x-ds.button>
+                <x-ds.button :href="route('dorm.rooms.create')">
+                    <x-ds.icon name="plus" />
+                    افزودن اتاق جدید
+                </x-ds.button>
             </div>
         </section>
 
-        <section class="student-workspace-panel">
-            <div class="student-panel-head">
+        <section class="dashboard-stat-grid" aria-label="آمار اتاق‌ها">
+            <article class="dashboard-stat">
                 <div>
-                    <span class="student-panel-label">Directory</span>
-                    <h2>Room cards</h2>
-                    <p>Open a room to allocate, move, or remove students.</p>
+                    <span>ظرفیت مجموعی</span>
+                    <strong>{{ Locale::number($totalCapacity) }}</strong>
+                    <small>کل تخت‌ها در لیلیه</small>
                 </div>
-                <a href="{{ route('dorm.rooms.create') }}" class="btn btn-primary">Create room</a>
-            </div>
+                <span class="dashboard-stat-icon"><x-ds.icon name="bed" /></span>
+            </article>
 
-            <div class="room-directory-grid">
-                @forelse ($rooms as $room)
-                    @php
-                        $roomFreeBeds = max(0, $room->capacity - $room->occupied_beds);
-                        $usedPercent = $room->capacity > 0 ? min(100, round(($room->occupied_beds / $room->capacity) * 100)) : 0;
-                        $badgeClass = match ($room->status) {
-                            'active' => 'badge-outline-success',
-                            'maintenance' => 'badge-outline-warning',
-                            'closed' => 'badge-outline-danger',
-                            default => 'badge-outline-secondary',
-                        };
-                    @endphp
-                    <article class="room-command-card">
-                        <div class="room-command-head">
-                            <div>
-                                <span class="student-command-kicker">{{ $room->floor ?: 'Floor not recorded' }}</span>
-                                <h3>Room {{ $room->room_number }}</h3>
-                            </div>
-                            <span class="badge {{ $badgeClass }}">{{ $roomStatusNames[$room->status] ?? $room->status }}</span>
-                        </div>
+            <article class="dashboard-stat">
+                <div>
+                    <span>تخت‌های خالی</span>
+                    <strong>{{ Locale::number($freeBeds) }}</strong>
+                    <small>آماده برای اختصاص</small>
+                </div>
+                <span class="dashboard-stat-icon"><x-ds.icon name="bed" /></span>
+            </article>
 
-                        <div class="room-usage-line">
-                            <span style="width: {{ $usedPercent }}%"></span>
-                        </div>
+            <article class="dashboard-stat">
+                <div>
+                    <span>تخت‌های اشغال‌شده</span>
+                    <strong>{{ Locale::number($occupiedBeds) }}</strong>
+                    <small>در حال استفاده</small>
+                </div>
+                <span class="dashboard-stat-icon"><x-ds.icon name="users" /></span>
+            </article>
 
-                        <div class="room-stats-row">
-                            <div><span>Capacity</span><strong>{{ $room->capacity }}</strong></div>
-                            <div><span>Occupied</span><strong>{{ $room->occupied_beds }}</strong></div>
-                            <div><span>Free</span><strong>{{ $roomFreeBeds }}</strong></div>
-                        </div>
+            <article class="dashboard-stat">
+                <div>
+                    <span>اتاق‌های ثبت‌شده</span>
+                    <strong>{{ Locale::number($rooms->count()) }}</strong>
+                    <small>{{ Locale::number($activeRooms) }} فعال، {{ Locale::number($maintenanceRooms) }} در تعمیر، {{ Locale::number($closedRooms) }} بسته</small>
+                </div>
+                <span class="dashboard-stat-icon"><x-ds.icon name="building" /></span>
+            </article>
+        </section>
 
-                        <p>{{ $room->notes ?: 'No notes recorded for this room.' }}</p>
-
-                        <div class="student-profile-actions">
-                            <a href="{{ route('dorm.rooms.show', $room) }}" class="btn btn-primary btn-sm">Manage</a>
-                            <a href="{{ route('dorm.rooms.edit', $room) }}" class="btn btn-outline-secondary btn-sm">Edit</a>
-                        </div>
-                    </article>
-                @empty
-                    <div class="student-directory-empty">
-                        <strong>No rooms yet</strong>
-                        <p>Create the first room to start assigning students.</p>
+        <section class="fanous-rooms-overview">
+            <article class="dashboard-panel">
+                <div class="dashboard-panel-header">
+                    <div>
+                        <span class="dashboard-section-kicker">کارت‌های اتاق</span>
+                        <h2>فهرست اتاق‌ها</h2>
+                        <p>برای هر اتاق ظرفیت، تخت خالی، تخت اشغال‌شده و عملیات مدیریت را ببینید.</p>
                     </div>
-                @endforelse
-            </div>
+                    <x-ds.button size="sm" :href="route('dorm.rooms.create')">اتاق جدید</x-ds.button>
+                </div>
+
+                <form id="room-filters" method="GET" action="{{ route('dorm.rooms.index') }}" class="fanous-room-filters">
+                    <input class="form-control" type="search" name="q" value="{{ request('q') }}" placeholder="جستجوی نام یا کد اتاق...">
+                    <select class="form-control" name="status">
+                        <option value="">همه وضعیت‌ها</option>
+                        @foreach ($roomStatusNames as $value => $label)
+                            <option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    <select class="form-control" name="floor">
+                        <option value="">همه منزل‌ها</option>
+                        @foreach ($floors as $floor)
+                            <option value="{{ $floor }}" @selected(request('floor') === $floor)>{{ $floor }}</option>
+                        @endforeach
+                    </select>
+                    <div class="fanous-filter-actions">
+                        <x-ds.button type="submit">فیلتر</x-ds.button>
+                        <x-ds.button variant="outline" :href="route('dorm.rooms.index')">پاک کردن</x-ds.button>
+                    </div>
+                </form>
+
+                <div class="fanous-room-grid">
+                    @forelse ($filteredRooms as $room)
+                        @php
+                            $roomFreeBeds = max(0, $room->capacity - $room->occupied_beds);
+                            $usedPercent = $room->capacity > 0 ? min(100, round(($room->occupied_beds / $room->capacity) * 100)) : 0;
+                            $tone = $statusTones[$room->status] ?? 'primary';
+                        @endphp
+                        <article class="fanous-room-card">
+                            <div class="fanous-room-head">
+                                <div class="fanous-room-title">
+                                    <span class="fanous-room-icon">ا</span>
+                                    <div>
+                                        <strong>اتاق {{ Locale::number($room->room_number) }}</strong>
+                                        <span>کد اتاق: <b class="ltr-text">{{ $room->room_number }}</b></span>
+                                    </div>
+                                </div>
+                                <x-ds.badge :tone="$tone">{{ $roomStatusNames[$room->status] ?? $room->status }}</x-ds.badge>
+                            </div>
+
+                            <div class="fanous-room-progress" aria-label="میزان استفاده">
+                                <span style="width: {{ $usedPercent }}%"></span>
+                            </div>
+
+                            <div class="fanous-room-stats">
+                                <div><strong>{{ Locale::number($room->capacity) }}</strong><span>ظرفیت</span></div>
+                                <div><strong>{{ Locale::number($room->occupied_beds) }}</strong><span>اشغال</span></div>
+                                <div><strong>{{ Locale::number($roomFreeBeds) }}</strong><span>خالی</span></div>
+                            </div>
+
+                            <p>{{ $room->notes ?: 'برای این اتاق یادداشتی ثبت نشده است.' }}</p>
+
+                            <div class="fanous-room-actions">
+                                <x-ds.button variant="outline" size="sm" :href="route('dorm.rooms.edit', $room)">ویرایش</x-ds.button>
+                                <x-ds.button size="sm" :href="route('dorm.rooms.show', $room)">مدیریت</x-ds.button>
+                            </div>
+                        </article>
+                    @empty
+                        <div class="dashboard-empty">
+                            <strong>اتاقی پیدا نشد</strong>
+                            <p>فیلترها را پاک کنید یا یک اتاق جدید ثبت کنید.</p>
+                        </div>
+                    @endforelse
+                </div>
+            </article>
+
+            <aside class="dashboard-panel fanous-room-usage">
+                <div class="dashboard-panel-header">
+                    <div>
+                        <span class="dashboard-section-kicker">نمای کلی استفاده</span>
+                        <h2>استفاده لیلیه</h2>
+                        <p>نرخ استفاده از ظرفیت موجود در اتاق‌ها.</p>
+                    </div>
+                    <x-ds.badge tone="primary">امروز</x-ds.badge>
+                </div>
+
+                <div class="dashboard-donut" style="--value: {{ $occupancyRate }}">
+                    <div>
+                        <strong>{{ Locale::percent($occupancyRate) }}</strong>
+                        <span>نرخ استفاده</span>
+                    </div>
+                </div>
+
+                <div class="fanous-usage-list">
+                    <div>
+                        <span>ظرفیت مجموعی</span>
+                        <strong>{{ Locale::number($totalCapacity) }}</strong>
+                    </div>
+                    <div>
+                        <span>تخت‌های خالی</span>
+                        <strong>{{ Locale::number($freeBeds) }}</strong>
+                    </div>
+                    <div>
+                        <span>استفاده‌شده</span>
+                        <strong>{{ Locale::number($occupiedBeds) }}</strong>
+                    </div>
+                </div>
+            </aside>
         </section>
     </div>
 @endsection

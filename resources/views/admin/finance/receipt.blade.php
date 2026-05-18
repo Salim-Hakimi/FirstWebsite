@@ -1,69 +1,57 @@
-@extends('admin.layout')
-
-@section('title', 'Finance Receipt - Fanous Admin')
-
-@section('content')
-    <div class="row">
-        <div class="col-lg-8 grid-margin stretch-card mx-auto">
-            <div class="card">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start mb-4">
-                        <div>
-                            <h3 class="mb-1">Fanous Dormitory</h3>
-                            <p class="text-muted mb-0">{{ ucfirst($transaction->type) }} receipt</p>
-                        </div>
-                        <div class="text-right">
-                            <h4 class="mb-1">{{ $transaction->transaction_number }}</h4>
-                            <p class="text-muted mb-0">{{ $transaction->transaction_date?->format('Y-m-d') }}</p>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <p><strong>Category:</strong> {{ $transaction->category?->name ?: ucfirst($transaction->type) }}</p>
-                            <p><strong>Amount:</strong> {{ number_format($transaction->amount) }} AFN</p>
-                            <p><strong>Payment method:</strong> {{ $paymentMethods[$transaction->payment_method] ?? $transaction->payment_method }}</p>
-                            <p><strong>Status:</strong> {{ $paymentStatuses[$transaction->payment_status] ?? $transaction->payment_status }}</p>
-                        </div>
-                        <div class="col-md-6">
-                            <p><strong>Student:</strong> {{ $transaction->student?->full_name ?: 'N/A' }}</p>
-                            <p><strong>Payer:</strong> {{ $transaction->payer_name ?: 'N/A' }}</p>
-                            <p><strong>Paid to:</strong> {{ $transaction->payee_name ?: 'N/A' }}</p>
-                            <p><strong>Project:</strong> {{ $transaction->project_name ?: 'N/A' }}</p>
-                        </div>
-                    </div>
-
-                    @if ($transaction->expected_amount)
-                        <div class="alert alert-secondary mt-3">
-                            Expected amount: {{ number_format($transaction->expected_amount) }} AFN.
-                            Remaining balance: {{ number_format($transaction->balance) }} AFN.
-                        </div>
-                    @endif
-
-                    <div class="mt-4">
-                        <h5>Description</h5>
-                        <p class="text-muted">{{ $transaction->description ?: 'No description recorded.' }}</p>
-                    </div>
-
-                    @if ($transaction->attachment_path)
-                        <p class="mt-3"><strong>Attachment:</strong> <a href="{{ asset('storage/'.$transaction->attachment_path) }}" target="_blank" rel="noopener">Open document</a></p>
-                    @endif
-
-                    <div class="row mt-5">
-                        <div class="col-md-6">
-                            <p class="border-top pt-3">Recorded by: {{ $transaction->recordedBy?->name ?: 'Unknown' }}</p>
-                        </div>
-                        <div class="col-md-6 text-md-right">
-                            <p class="border-top pt-3">Manager signature</p>
-                        </div>
-                    </div>
-
-                    <div class="d-print-none mt-4">
-                        <button class="btn btn-primary mr-2" type="button" onclick="window.print()">Print receipt</button>
-                        <a class="btn btn-dark" href="{{ route('admin.finance.index') }}">Back to finance</a>
-                    </div>
-                </div>
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <title>رسید مالی {{ $transaction->transaction_number }}</title>
+    <style>
+        body { font-family: Tahoma, Arial, sans-serif; margin: 32px; color: #111827; }
+        .receipt { max-width: 760px; margin: auto; border: 1px solid #d1d5db; padding: 28px; }
+        .header { display: flex; justify-content: space-between; border-bottom: 2px solid #111827; padding-bottom: 16px; margin-bottom: 20px; }
+        .title { font-size: 24px; font-weight: 700; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        th, td { border: 1px solid #d1d5db; padding: 10px; text-align: right; }
+        .signatures { display: flex; gap: 40px; margin-top: 48px; }
+        .signature { flex: 1; border-top: 1px solid #111827; padding-top: 8px; text-align: center; }
+        .actions { max-width: 760px; margin: 16px auto; display: flex; gap: 8px; }
+        .btn { padding: 10px 14px; border: 1px solid #111827; color: #111827; text-decoration: none; background: #fff; cursor: pointer; }
+        @media print { .actions { display: none; } body { margin: 0; } .receipt { border: 0; } }
+    </style>
+</head>
+<body>
+    <div class="actions">
+        <button class="btn" onclick="window.print()">چاپ رسید</button>
+        <a class="btn" href="{{ route('admin.finance.index') }}">برگشت</a>
+    </div>
+    <div class="receipt">
+        <div class="header">
+            <div>
+                <div class="title">لیلیه فانوس</div>
+                <div>رسید {{ $transaction->type === 'income' ? 'درآمد' : 'مصرف' }}</div>
+            </div>
+            <div>
+                <div>شماره سند: {{ $transaction->transaction_number }}</div>
+                <div>شماره رسید: {{ $transaction->receipt_number }}</div>
+                <div>تاریخ: {{ $transaction->transaction_date?->format('Y-m-d') }}</div>
             </div>
         </div>
+
+        <table>
+            <tr><th>دسته</th><td>{{ $transaction->category?->name ?: 'بدون دسته' }}</td></tr>
+            <tr><th>شخص / پروژه</th><td>{{ $transaction->displayPerson() }}</td></tr>
+            <tr><th>مبلغ</th><td>{{ number_format((int) $transaction->amount) }} افغانی</td></tr>
+            <tr><th>باقی‌مانده</th><td>{{ number_format($transaction->remainingAmount()) }} افغانی</td></tr>
+            <tr><th>روش پرداخت</th><td>{{ $paymentMethods[$transaction->payment_method] ?? $transaction->payment_method }}</td></tr>
+            <tr><th>وضعیت</th><td>{{ $statusLabels[$transaction->status] ?? $transaction->status }}</td></tr>
+            <tr><th>توضیحات</th><td>{{ $transaction->description ?: $transaction->notes ?: 'بدون توضیح' }}</td></tr>
+            <tr><th>ثبت‌کننده</th><td>{{ $transaction->recordedBy?->name ?: 'نامعلوم' }}</td></tr>
+            <tr><th>سند ضمیمه</th><td>{{ $transaction->attachments->isNotEmpty() ? 'دارد' : 'ندارد' }}</td></tr>
+        </table>
+
+        <div class="signatures">
+            <div class="signature">امضای پرداخت‌کننده / دریافت‌کننده</div>
+            <div class="signature">امضای ثبت‌کننده</div>
+            <div class="signature">تایید مدیریت</div>
+        </div>
     </div>
-@endsection
+</body>
+</html>

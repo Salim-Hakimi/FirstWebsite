@@ -1,186 +1,217 @@
 @extends('admin.layout')
 
-@section('title', 'Representative Report - Fanous Admin')
+@section('title', 'گزارش نماینده - ادمین فانوس')
+@section('content_wrapper_class', 'fanous-dashboard-wrapper')
 
 @section('content')
     @php
+        use App\Support\Locale;
+
         $typeNames = [
-            'monthly_fee' => 'Monthly fee',
-            'electricity' => 'Electricity',
-            'fine' => 'Fine',
-            'water' => 'Water',
-            'expense' => 'Representative expense',
+            'monthly_fee' => 'پول ماهانه',
+            'electricity' => 'پول برق',
+            'fine' => 'جریمه',
+            'water' => 'پول آب',
+            'expense' => 'مصرف نماینده',
         ];
         $groupNames = [
-            'daily' => 'Daily',
-            'weekly' => 'Weekly',
-            'monthly' => 'Monthly',
+            'daily' => 'روزانه',
+            'weekly' => 'هفته‌وار',
+            'monthly' => 'ماهانه',
         ];
     @endphp
 
-    <div class="row">
-        <div class="col-12 grid-margin stretch-card">
-            <div class="card corona-gradient-card">
-                <div class="card-body py-0 px-0 px-sm-3">
-                    <div class="row align-items-center">
-                        <div class="col-12 col-lg-8 py-4 px-4">
-                            <h3 class="mb-1">Representative Report</h3>
-                            <p class="mb-0 text-white-50">Review all representative collections, expenses, balances, periods, and recorded-by details.</p>
-                        </div>
-                        <div class="col-12 col-lg-4 text-lg-right px-4 pb-4 pb-lg-0">
-                            <a href="{{ route('representative.index') }}" class="btn btn-outline-light btn-rounded">Back to representative</a>
+    <div class="fanous-representative-page" dir="rtl">
+        <section class="fanous-page-header">
+            <div>
+                <span class="dashboard-section-kicker">گزارش نماینده</span>
+                <h1>گزارش حساب نماینده محصلین</h1>
+                <p>دریافت‌ها، مصارف، باقی‌مانده، دوره‌ها و ثبت‌کننده‌ها را به شکل منظم بررسی کنید.</p>
+            </div>
+            <div class="fanous-page-actions">
+                <x-ds.button variant="outline" :href="route('representative.index')">بازگشت</x-ds.button>
+                <x-ds.button onclick="window.print()">چاپ گزارش</x-ds.button>
+            </div>
+        </section>
+
+        <section class="dashboard-stat-grid">
+            <article class="dashboard-stat">
+                <div>
+                    <span>کل دریافتی</span>
+                    <strong>{{ Locale::money($totalIncome) }}</strong>
+                    <small>مجموع پول ثبت‌شده از محصلین</small>
+                </div>
+                <span class="dashboard-stat-icon"><x-ds.icon name="cash" /></span>
+            </article>
+            <article class="dashboard-stat">
+                <div>
+                    <span>کل مصرف</span>
+                    <strong>{{ Locale::money($totalExpenses) }}</strong>
+                    <small>مصارف ثبت‌شده توسط نماینده</small>
+                </div>
+                <span class="dashboard-stat-icon is-danger"><x-ds.icon name="cash-minus" /></span>
+            </article>
+            <article class="dashboard-stat">
+                <div>
+                    <span>باقی‌مانده</span>
+                    <strong>{{ Locale::money($balance) }}</strong>
+                    <small>دریافت منهای مصرف</small>
+                </div>
+                <span class="dashboard-stat-icon is-blue"><x-ds.icon name="chart" /></span>
+            </article>
+        </section>
+
+        <section class="fanous-representative-layout">
+            <aside class="fanous-representative-sidebar">
+                <article class="dashboard-panel">
+                    <div class="dashboard-panel-header">
+                        <div>
+                            <span class="dashboard-section-kicker">فیلتر</span>
+                            <h2>فیلتر گزارش</h2>
+                            <p>گزارش را بر اساس تاریخ، نوع ثبت، دوره یا گروه‌بندی محدود کنید.</p>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <div class="row">
-        <div class="col-xl-4 col-sm-6 grid-margin stretch-card">
-            <div class="card"><div class="card-body"><h3 class="mb-0">{{ number_format($totalIncome) }}</h3><h6 class="text-muted font-weight-normal mt-3">Total income AFN</h6></div></div>
-        </div>
-        <div class="col-xl-4 col-sm-6 grid-margin stretch-card">
-            <div class="card"><div class="card-body"><h3 class="mb-0">{{ number_format($totalExpenses) }}</h3><h6 class="text-muted font-weight-normal mt-3">Total expenses AFN</h6></div></div>
-        </div>
-        <div class="col-xl-4 col-sm-6 grid-margin stretch-card">
-            <div class="card"><div class="card-body"><h3 class="mb-0">{{ number_format($balance) }}</h3><h6 class="text-muted font-weight-normal mt-3">Balance AFN</h6></div></div>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-lg-4 grid-margin stretch-card">
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title">Report filters</h4>
-                    <form method="GET" action="{{ route('representative.report') }}">
-                        <div class="form-group"><label>From date</label><input class="form-control" name="date_from" type="date" value="{{ $filters['date_from'] ?? '' }}"></div>
-                        <div class="form-group"><label>To date</label><input class="form-control" name="date_to" type="date" value="{{ $filters['date_to'] ?? '' }}"></div>
-                        <div class="form-group">
-                            <label>Record type</label>
+                    <form method="GET" action="{{ route('representative.report') }}" class="fanous-representative-form">
+                        <label>
+                            <span>از تاریخ</span>
+                            <input class="form-control" name="date_from" type="date" value="{{ $filters['date_from'] ?? '' }}">
+                        </label>
+                        <label>
+                            <span>تا تاریخ</span>
+                            <input class="form-control" name="date_to" type="date" value="{{ $filters['date_to'] ?? '' }}">
+                        </label>
+                        <label>
+                            <span>نوع ثبت</span>
                             <select class="form-control" name="type">
-                                <option value="">All types</option>
+                                <option value="">همه نوع‌ها</option>
                                 @foreach ($typeNames as $value => $label)
                                     <option value="{{ $value }}" @selected(($filters['type'] ?? '') === $value)>{{ $label }}</option>
                                 @endforeach
                             </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Group by</label>
+                        </label>
+                        <label>
+                            <span>گروه‌بندی</span>
                             <select class="form-control" name="group">
                                 @foreach ($groupNames as $value => $label)
                                     <option value="{{ $value }}" @selected($group === $value)>{{ $label }}</option>
                                 @endforeach
                             </select>
-                        </div>
-                        <div class="form-group"><label>Period</label><input class="form-control" name="period" value="{{ $filters['period'] ?? '' }}" placeholder="Example: Hamal month"></div>
-                        <button class="btn btn-primary mr-2" type="submit">Show report</button>
-                        <a class="btn btn-dark" href="{{ route('representative.report') }}">Clear</a>
+                        </label>
+                        <label class="fanous-form-wide">
+                            <span>دوره / ماه</span>
+                            <input class="form-control" name="period" value="{{ $filters['period'] ?? '' }}" placeholder="مثلاً حمل ۱۴۰۵">
+                        </label>
+                        <x-ds.button type="submit">نمایش گزارش</x-ds.button>
+                        <x-ds.button variant="outline" :href="route('representative.report')">پاک کردن</x-ds.button>
                     </form>
-                </div>
-            </div>
-        </div>
+                </article>
 
-        <div class="col-lg-8 grid-margin stretch-card">
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title">{{ $groupNames[$group] ?? 'Daily' }} summary</h4>
-                    <div class="table-responsive">
-                        <table class="table">
+                <article class="dashboard-panel">
+                    <div class="dashboard-panel-header">
+                        <div>
+                            <span class="dashboard-section-kicker">نوع‌ها</span>
+                            <h2>جمع‌بندی بر اساس نوع</h2>
+                        </div>
+                    </div>
+                    <div class="fanous-collection-list">
+                        @foreach ($typeNames as $value => $label)
+                            <div>
+                                <span class="fanous-record-icon {{ $value === 'expense' ? 'is-expense' : 'is-income' }}">
+                                    <x-ds.icon :name="$value === 'expense' ? 'cash-minus' : 'cash'" />
+                                </span>
+                                <p><strong>{{ $label }}</strong><small>{{ Locale::number((int) $records->where('type', $value)->count()) }} ثبت</small></p>
+                                <b>{{ Locale::money((int) ($totalsByType[$value] ?? 0)) }}</b>
+                            </div>
+                        @endforeach
+                    </div>
+                </article>
+            </aside>
+
+            <div class="fanous-representative-main">
+                <article class="dashboard-panel">
+                    <div class="dashboard-panel-header">
+                        <div>
+                            <span class="dashboard-section-kicker">{{ $groupNames[$group] ?? 'روزانه' }}</span>
+                            <h2>خلاصه گروه‌بندی‌شده</h2>
+                        </div>
+                    </div>
+                    <div class="fanous-table-wrap">
+                        <table class="fanous-finance-table">
                             <thead>
                                 <tr>
-                                    <th>Period</th>
-                                    <th>Income</th>
-                                    <th>Expense</th>
-                                    <th>Balance</th>
-                                    <th>Records</th>
+                                    <th>دوره</th>
+                                    <th>دریافت</th>
+                                    <th>مصرف</th>
+                                    <th>باقی‌مانده</th>
+                                    <th>تعداد ثبت</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @forelse ($summaryRows as $row)
                                     <tr>
-                                        <td>{{ $row['label'] }}</td>
-                                        <td>{{ number_format($row['income']) }} AFN</td>
-                                        <td>{{ number_format($row['expense']) }} AFN</td>
-                                        <td>{{ number_format($row['balance']) }} AFN</td>
-                                        <td>{{ $row['count'] }}</td>
+                                        <td>{{ Locale::number($row['label']) }}</td>
+                                        <td>{{ Locale::money($row['income']) }}</td>
+                                        <td>{{ Locale::money($row['expense']) }}</td>
+                                        <td>{{ Locale::money($row['balance']) }}</td>
+                                        <td>{{ Locale::number($row['count']) }}</td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="5" class="text-center text-muted py-4">No records exist in this range.</td></tr>
+                                    <tr><td colspan="5"><div class="dashboard-empty">در این محدوده هیچ ثبت وجود ندارد.</div></td></tr>
                                 @endforelse
                             </tbody>
                         </table>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
+                </article>
 
-    <div class="row">
-        <div class="col-lg-4 grid-margin stretch-card">
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title">Totals by type</h4>
-                    <div class="preview-list">
-                        @foreach ($typeNames as $value => $label)
-                            <div class="preview-item border-bottom">
-                                <div class="preview-thumbnail"><div class="preview-icon {{ $value === 'expense' ? 'bg-danger' : 'bg-primary' }}"><span>{{ strtoupper(substr($label, 0, 1)) }}</span></div></div>
-                                <div class="preview-item-content">
-                                    <p class="preview-subject mb-1">{{ $label }}</p>
-                                    <p class="text-muted mb-0">{{ number_format((int) ($totalsByType[$value] ?? 0)) }} AFN</p>
-                                </div>
-                            </div>
-                        @endforeach
+                <article class="dashboard-panel">
+                    <div class="dashboard-panel-header">
+                        <div>
+                            <span class="dashboard-section-kicker">جزئیات</span>
+                            <h2>جزئیات ثبت‌های نماینده</h2>
+                        </div>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-8 grid-margin stretch-card">
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title">Record details</h4>
-                    <div class="table-responsive">
-                        <table class="table">
+                    <div class="fanous-table-wrap">
+                        <table class="fanous-finance-table">
                             <thead>
                                 <tr>
-                                    <th>Date</th>
-                                    <th>Student / Source</th>
-                                    <th>Type</th>
-                                    <th>Period</th>
-                                    <th>Amount</th>
-                                    <th>Recorded by</th>
-                                    <th>Action</th>
+                                    <th>تاریخ</th>
+                                    <th>محصل / منبع</th>
+                                    <th>نوع</th>
+                                    <th>دوره</th>
+                                    <th>مبلغ</th>
+                                    <th>ثبت‌کننده</th>
+                                    <th>عملیات</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @forelse ($records as $record)
                                     <tr>
-                                        <td>{{ $record->collected_at?->format('Y-m-d') }}</td>
+                                        <td>{{ $record->collected_at ? Locale::number($record->collected_at->format('Y/m/d')) : 'ثبت نشده' }}</td>
                                         <td>
-                                            {{ $record->student?->full_name ?: 'Representative general expense' }}
-                                            <div class="text-muted small">{{ $record->notes ?: 'No note' }}</div>
+                                            <strong>{{ $record->student?->full_name ?: 'مصرف عمومی نماینده' }}</strong>
+                                            <small>{{ $record->notes ?: 'یادداشت ندارد' }}</small>
                                         </td>
                                         <td>{{ $typeNames[$record->type] ?? $record->type }}</td>
-                                        <td>{{ $record->period ?: 'No period' }}</td>
-                                        <td>{{ number_format($record->amount) }} AFN</td>
-                                        <td>{{ $record->recordedBy?->name ?: 'Unknown' }}</td>
+                                        <td>{{ $record->period ?: 'ندارد' }}</td>
+                                        <td>{{ Locale::money($record->amount) }}</td>
+                                        <td>{{ $record->recordedBy?->name ?: 'نامعلوم' }}</td>
                                         <td>
                                             @if ($record->student)
-                                                <a class="btn btn-outline-secondary btn-sm" href="{{ route('dorm.students.show', $record->student) }}">Profile</a>
+                                                <x-ds.button variant="outline" size="sm" :href="route('dorm.students.show', $record->student)">پروفایل</x-ds.button>
                                             @else
-                                                <span class="text-muted">General</span>
+                                                <span class="fanous-locked-label">عمومی</span>
                                             @endif
                                         </td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="7" class="text-center text-muted py-4">No records exist in this range.</td></tr>
+                                    <tr><td colspan="7"><div class="dashboard-empty">در این محدوده هیچ ثبت وجود ندارد.</div></td></tr>
                                 @endforelse
                             </tbody>
                         </table>
                     </div>
-                </div>
+                </article>
             </div>
-        </div>
+        </section>
     </div>
 @endsection

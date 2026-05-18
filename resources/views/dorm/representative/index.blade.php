@@ -1,185 +1,325 @@
 @extends('admin.layout')
 
-@section('title', 'Representative - Fanous Admin')
+@section('title', 'نماینده محصلین - ادمین فانوس')
+@section('content_wrapper_class', 'fanous-dashboard-wrapper')
 
 @section('content')
     @php
+        use App\Support\Locale;
+
         $balance = $totalIncome - $totalExpenses;
         $typeNames = [
-            'monthly_fee' => 'Monthly fee',
-            'electricity' => 'Electricity',
-            'fine' => 'Fine',
-            'water' => 'Water',
-            'expense' => 'Representative expense',
+            'monthly_fee' => 'پول ماهانه',
+            'electricity' => 'پول برق',
+            'fine' => 'جریمه',
+            'water' => 'پول آب',
+            'expense' => 'مصرف نماینده',
         ];
         $incomeTypeNames = collect($typeNames)->except('expense')->all();
+        $recordCount = $collections->count();
     @endphp
 
-    <div class="row">
-        <div class="col-12 grid-margin stretch-card">
-            <div class="card corona-gradient-card">
-                <div class="card-body py-0 px-0 px-sm-3">
-                    <div class="row align-items-center">
-                        <div class="col-12 col-lg-8 py-4 px-4">
-                            <h3 class="mb-1">Student Representative</h3>
-                            <p class="mb-0 text-white-50">Record monthly fees, electricity, water, fines, and representative expenses for dorm students.</p>
-                        </div>
-                        <div class="col-12 col-lg-4 text-lg-right px-4 pb-4 pb-lg-0">
-                            <a href="{{ route('representative.report', $filters) }}" class="btn btn-outline-light btn-rounded">Open report</a>
-                        </div>
-                    </div>
-                </div>
+    <div class="fanous-representative-page" dir="rtl">
+        <section class="fanous-page-header">
+            <div>
+                <span class="dashboard-section-kicker">مدیریت لیلیه</span>
+                <h1>نماینده محصلین</h1>
+                <p>نماینده‌ها، جمع‌آوری ماهانه، بدهی‌ها و گزارش‌های مربوط به محصلین را مدیریت کنید.</p>
             </div>
-        </div>
-    </div>
 
-    <div class="row">
-        <div class="col-xl-3 col-sm-6 grid-margin stretch-card">
-            <div class="card"><div class="card-body"><div class="row"><div class="col-9"><h3 class="mb-0">{{ number_format($totalIncome) }}</h3></div><div class="col-3"><div class="icon icon-box-success"><span class="metric-icon">I</span></div></div></div><h6 class="text-muted font-weight-normal">Total income AFN</h6></div></div>
-        </div>
-        <div class="col-xl-3 col-sm-6 grid-margin stretch-card">
-            <div class="card"><div class="card-body"><div class="row"><div class="col-9"><h3 class="mb-0">{{ number_format($totalExpenses) }}</h3></div><div class="col-3"><div class="icon icon-box-danger"><span class="metric-icon">E</span></div></div></div><h6 class="text-muted font-weight-normal">Total expenses AFN</h6></div></div>
-        </div>
-        <div class="col-xl-3 col-sm-6 grid-margin stretch-card">
-            <div class="card"><div class="card-body"><div class="row"><div class="col-9"><h3 class="mb-0">{{ number_format($balance) }}</h3></div><div class="col-3"><div class="icon icon-box-warning"><span class="metric-icon">B</span></div></div></div><h6 class="text-muted font-weight-normal">Balance AFN</h6></div></div>
-        </div>
-        <div class="col-xl-3 col-sm-6 grid-margin stretch-card">
-            <div class="card"><div class="card-body"><div class="row"><div class="col-9"><h3 class="mb-0">{{ $students->count() }}</h3></div><div class="col-3"><div class="icon icon-box-success"><span class="metric-icon">S</span></div></div></div><h6 class="text-muted font-weight-normal">Active students</h6></div></div>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-lg-4 grid-margin stretch-card">
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title">Collection summary</h4>
-                    <div class="preview-list">
-                        <div class="preview-item border-bottom"><div class="preview-thumbnail"><div class="preview-icon bg-primary"><span>M</span></div></div><div class="preview-item-content"><p class="preview-subject mb-1">Monthly fee</p><p class="text-muted mb-0">{{ number_format($totalMonthly) }} AFN</p></div></div>
-                        <div class="preview-item border-bottom"><div class="preview-thumbnail"><div class="preview-icon bg-info"><span>E</span></div></div><div class="preview-item-content"><p class="preview-subject mb-1">Electricity</p><p class="text-muted mb-0">{{ number_format($totalElectricity) }} AFN</p></div></div>
-                        <div class="preview-item border-bottom"><div class="preview-thumbnail"><div class="preview-icon bg-success"><span>W</span></div></div><div class="preview-item-content"><p class="preview-subject mb-1">Water</p><p class="text-muted mb-0">{{ number_format($totalWater) }} AFN</p></div></div>
-                        <div class="preview-item border-bottom"><div class="preview-thumbnail"><div class="preview-icon bg-warning"><span>F</span></div></div><div class="preview-item-content"><p class="preview-subject mb-1">Fines</p><p class="text-muted mb-0">{{ number_format($totalFines) }} AFN</p></div></div>
-                        <div class="preview-item"><div class="preview-thumbnail"><div class="preview-icon bg-danger"><span>X</span></div></div><div class="preview-item-content"><p class="preview-subject mb-1">Expenses</p><p class="text-muted mb-0">{{ number_format($totalExpenses) }} AFN</p></div></div>
-                    </div>
-                </div>
+            <div class="fanous-page-actions">
+                <x-ds.button variant="outline" href="#representative-filters">فیلتر گزارش‌ها</x-ds.button>
+                @if ($canRecord)
+                    <x-ds.button variant="outline" href="#representative-account">ثبت نماینده</x-ds.button>
+                @endif
+                <x-ds.button :href="route('representative.report', $filters)">گزارش گرفتن</x-ds.button>
             </div>
-        </div>
+        </section>
 
-        <div class="col-lg-8 grid-margin stretch-card">
-            <div class="card">
-                <div class="card-body">
-                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-3">
+        <section class="dashboard-stat-grid" aria-label="خلاصه حساب نماینده">
+            <article class="dashboard-stat">
+                <div>
+                    <span>کل درآمد افغانی</span>
+                    <strong>{{ Locale::money($totalIncome) }}</strong>
+                    <small>مجموع دریافت‌های ثبت‌شده نماینده</small>
+                </div>
+                <span class="dashboard-stat-icon"><x-ds.icon name="cash" /></span>
+            </article>
+
+            <article class="dashboard-stat">
+                <div>
+                    <span>کل مصرف افغانی</span>
+                    <strong>{{ Locale::money($totalExpenses) }}</strong>
+                    <small>مصارف ثبت‌شده از حساب نماینده</small>
+                </div>
+                <span class="dashboard-stat-icon"><x-ds.icon name="cash-minus" /></span>
+            </article>
+
+            <article class="dashboard-stat">
+                <div>
+                    <span>باقی‌مانده افغانی</span>
+                    <strong>{{ Locale::money($balance) }}</strong>
+                    <small>توازن فعلی حساب نماینده</small>
+                </div>
+                <span class="dashboard-stat-icon"><x-ds.icon name="chart" /></span>
+            </article>
+
+            <article class="dashboard-stat">
+                <div>
+                    <span>محصلین فعال</span>
+                    <strong>{{ Locale::number($students->count()) }}</strong>
+                    <small>{{ Locale::number($recordCount) }} ثبت اخیر در این گزارش</small>
+                </div>
+                <span class="dashboard-stat-icon"><x-ds.icon name="users" /></span>
+            </article>
+        </section>
+
+        <section class="fanous-representative-layout">
+            <div class="fanous-representative-main">
+                <article class="dashboard-panel" id="representative-filters">
+                    <div class="dashboard-panel-header">
                         <div>
-                            <h4 class="card-title mb-1">Search and filters</h4>
-                            <p class="text-muted mb-0">Filter representative records by student, type, date, or period.</p>
+                            <span class="dashboard-section-kicker">جستجو و فیلتر</span>
+                            <h2>گزارش حساب نماینده</h2>
+                            <p>ثبت‌ها را بر اساس شاگرد، نوع پرداخت، تاریخ یا دوره مشخص فیلتر کنید.</p>
                         </div>
                     </div>
 
-                    <form method="GET" action="{{ route('representative.index') }}" class="representative-filter-row">
-                        <input class="form-control" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="Student name, father, phone, ID, or room">
-                        <select class="form-control" name="type">
-                            <option value="">All types</option>
-                            @foreach ($typeNames as $value => $label)
-                                <option value="{{ $value }}" @selected(($filters['type'] ?? '') === $value)>{{ $label }}</option>
-                            @endforeach
-                        </select>
-                        <input class="form-control" name="date_from" type="date" value="{{ $filters['date_from'] ?? '' }}">
-                        <input class="form-control" name="date_to" type="date" value="{{ $filters['date_to'] ?? '' }}">
-                        <input class="form-control representative-period" name="period" value="{{ $filters['period'] ?? '' }}" placeholder="Period, e.g. Hamal month">
-                        <button class="btn btn-primary" type="submit">Search</button>
-                        <a class="btn btn-dark" href="{{ route('representative.index') }}">Clear</a>
-                        <a class="btn btn-outline-secondary" href="{{ route('representative.report', $filters) }}">Report</a>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
+                    <form method="GET" action="{{ route('representative.index') }}" class="fanous-representative-filters">
+                        <label>
+                            <span>جستجو</span>
+                            <input class="form-control" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="نام شاگرد، نام پدر، تماس، ID یا اتاق">
+                        </label>
 
-    <div class="row">
-        <div class="col-lg-7 grid-margin stretch-card">
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title">Record representative account</h4>
-                    <p class="card-description">Direct recording is available only for the Student Representative role.</p>
+                        <label>
+                            <span>نوع پرداخت</span>
+                            <select class="form-control" name="type">
+                                <option value="">همه نوع‌ها</option>
+                                @foreach ($typeNames as $value => $label)
+                                    <option value="{{ $value }}" @selected(($filters['type'] ?? '') === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+
+                        <label>
+                            <span>تاریخ شروع</span>
+                            <input class="form-control" name="date_from" type="date" value="{{ $filters['date_from'] ?? '' }}">
+                        </label>
+
+                        <label>
+                            <span>تاریخ ختم</span>
+                            <input class="form-control" name="date_to" type="date" value="{{ $filters['date_to'] ?? '' }}">
+                        </label>
+
+                        <label>
+                            <span>دوره / ماه</span>
+                            <input class="form-control" name="period" value="{{ $filters['period'] ?? '' }}" placeholder="مثلاً حمل ۱۴۰۵">
+                        </label>
+
+                        <div class="fanous-filter-actions">
+                            <x-ds.button type="submit">جستجو</x-ds.button>
+                            <x-ds.button variant="outline" :href="route('representative.index')">پاک کردن</x-ds.button>
+                            <x-ds.button variant="outline" :href="route('representative.report', $filters)">گزارش</x-ds.button>
+                        </div>
+                    </form>
+                </article>
+
+                <article class="dashboard-panel">
+                    <div class="dashboard-panel-header">
+                        <div>
+                            <span class="dashboard-section-kicker">آخرین ثبت‌ها</span>
+                            <h2>آخرین ثبت‌های نماینده</h2>
+                            <p>دریافت‌ها و مصارف تازه حساب نماینده در این بخش دیده می‌شود.</p>
+                        </div>
+                    </div>
+
+                    <div class="fanous-representative-record-list">
+                        @forelse ($collections as $collection)
+                            @php
+                                $isExpense = $collection->type === 'expense';
+                                $tone = $isExpense ? 'danger' : 'success';
+                            @endphp
+
+                            <article class="fanous-representative-record">
+                                <span class="fanous-record-icon {{ $isExpense ? 'is-expense' : 'is-income' }}">
+                                    <x-ds.icon :name="$isExpense ? 'cash-minus' : 'cash'" />
+                                </span>
+
+                                <div class="fanous-record-main">
+                                    <div>
+                                        <strong>{{ $collection->student?->full_name ?: 'مصرف عمومی نماینده' }}</strong>
+                                        <span>{{ $typeNames[$collection->type] ?? $collection->type }}</span>
+                                    </div>
+
+                                    <div class="fanous-record-meta">
+                                        <span>تاریخ: {{ $collection->collected_at ? Locale::number($collection->collected_at->format('Y/m/d')) : 'ثبت نشده' }}</span>
+                                        <span>دوره: {{ $collection->period ?: 'ندارد' }}</span>
+                                    </div>
+                                </div>
+
+                                <div class="fanous-record-side">
+                                    <x-ds.badge :tone="$tone">{{ $isExpense ? 'مصرف' : 'پرداخت‌شده' }}</x-ds.badge>
+                                    <strong>{{ Locale::money($collection->amount) }}</strong>
+                                    @if ($collection->student)
+                                        <x-ds.button variant="outline" size="sm" :href="route('dorm.students.show', $collection->student)">پروفایل</x-ds.button>
+                                    @endif
+                                </div>
+                            </article>
+                        @empty
+                            <div class="dashboard-empty">
+                                <strong>هنوز ثبت نماینده وجود ندارد</strong>
+                                <span>بعد از ثبت دریافت یا مصرف، گزارش‌ها در همین بخش نمایش داده می‌شود.</span>
+                                @if ($canRecord)
+                                    <x-ds.button size="sm" href="#representative-account">ثبت نماینده جدید</x-ds.button>
+                                @endif
+                            </div>
+                        @endforelse
+                    </div>
+                </article>
+            </div>
+
+            <aside class="fanous-representative-sidebar">
+                <article class="dashboard-panel">
+                    <div class="dashboard-panel-header">
+                        <div>
+                            <span class="dashboard-section-kicker">خلاصه دریافت‌ها</span>
+                            <h2>جزئیات حساب</h2>
+                            <p>خلاصه سریع از دریافت‌ها، جریمه‌ها و مصرف‌های نماینده.</p>
+                        </div>
+                    </div>
+
+                    <div class="fanous-collection-list">
+                        <div>
+                            <span class="fanous-record-icon is-income"><x-ds.icon name="cash" /></span>
+                            <p><strong>پول ماهانه</strong><small>دریافت ماهانه محصلین</small></p>
+                            <b>{{ Locale::money($totalMonthly) }}</b>
+                        </div>
+                        <div>
+                            <span class="fanous-record-icon is-income"><x-ds.icon name="cash" /></span>
+                            <p><strong>پول برق</strong><small>مصارف برق جمع‌آوری‌شده</small></p>
+                            <b>{{ Locale::money($totalElectricity) }}</b>
+                        </div>
+                        <div>
+                            <span class="fanous-record-icon is-income"><x-ds.icon name="cash" /></span>
+                            <p><strong>پول آب</strong><small>هزینه آب ثبت‌شده</small></p>
+                            <b>{{ Locale::money($totalWater) }}</b>
+                        </div>
+                        <div>
+                            <span class="fanous-record-icon is-warning"><x-ds.icon name="bell" /></span>
+                            <p><strong>جریمه‌ها</strong><small>جریمه یا فیس اضافی</small></p>
+                            <b>{{ Locale::money($totalFines) }}</b>
+                        </div>
+                        <div>
+                            <span class="fanous-record-icon is-expense"><x-ds.icon name="cash-minus" /></span>
+                            <p><strong>مصرف</strong><small>مصارف نماینده</small></p>
+                            <b>{{ Locale::money($totalExpenses) }}</b>
+                        </div>
+                        <div class="is-balance">
+                            <span class="fanous-record-icon"><x-ds.icon name="chart" /></span>
+                            <p><strong>باقی‌مانده</strong><small>درآمد منفی مصرف</small></p>
+                            <b>{{ Locale::money($balance) }}</b>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="dashboard-panel" id="representative-account">
+                    <div class="dashboard-panel-header">
+                        <div>
+                            <span class="dashboard-section-kicker">عملیات نماینده</span>
+                            <h2>ثبت حساب نماینده</h2>
+                            <p>ثبت مستقیم فقط برای نقش نماینده محصلین فعال است.</p>
+                        </div>
+                    </div>
 
                     @if ($canRecord)
-                        <form method="POST" action="{{ route('representative.collections.store') }}">
-                            @csrf
-                            <div class="row">
-                                <div class="col-md-6 form-group">
-                                    <label>Student</label>
+                        <details class="fanous-representative-form-panel" open>
+                            <summary>ثبت دریافت از محصل</summary>
+                            <form method="POST" action="{{ route('representative.collections.store') }}" class="fanous-representative-form">
+                                @csrf
+
+                                <label>
+                                    <span>شاگرد / محصل</span>
                                     <select class="form-control" name="dorm_student_id" required>
-                                        <option value="">Select student</option>
+                                        <option value="">انتخاب شاگرد</option>
                                         @foreach ($students as $student)
-                                            <option value="{{ $student->id }}">{{ $student->full_name }} · Room {{ $student->room?->room_number ?: ($student->room_number ?: 'N/A') }}</option>
+                                            <option value="{{ $student->id }}">
+                                                {{ $student->full_name }} · اتاق {{ $student->room?->room_number ?: ($student->room_number ?: 'ثبت نشده') }}
+                                            </option>
                                         @endforeach
                                     </select>
-                                </div>
-                                <div class="col-md-6 form-group">
-                                    <label>Collection type</label>
+                                </label>
+
+                                <label>
+                                    <span>نوع پرداخت</span>
                                     <select class="form-control" name="type" required>
                                         @foreach ($incomeTypeNames as $value => $label)
                                             <option value="{{ $value }}">{{ $label }}</option>
                                         @endforeach
                                     </select>
-                                </div>
-                                <div class="col-md-4 form-group"><label>Amount</label><input class="form-control" name="amount" type="number" min="1" required></div>
-                                <div class="col-md-4 form-group"><label>Date</label><input class="form-control" name="collected_at" type="date" value="{{ now()->format('Y-m-d') }}" required></div>
-                                <div class="col-md-4 form-group"><label>Period</label><input class="form-control" name="period" placeholder="Hamal 1405"></div>
-                                <div class="col-12 form-group"><label>Note</label><textarea class="form-control" name="notes" rows="4"></textarea></div>
-                                <div class="col-12"><button class="btn btn-primary" type="submit">Save collection</button></div>
-                            </div>
-                        </form>
+                                </label>
 
-                        <hr class="border-secondary my-4">
+                                <label>
+                                    <span>مبلغ</span>
+                                    <input class="form-control" name="amount" type="number" min="1" required>
+                                </label>
 
-                        <h4 class="card-title">Record representative expense</h4>
-                        <form method="POST" action="{{ route('representative.collections.store') }}">
-                            @csrf
-                            <input name="type" type="hidden" value="expense">
-                            <div class="row">
-                                <div class="col-md-4 form-group"><label>Amount</label><input class="form-control" name="amount" type="number" min="1" required></div>
-                                <div class="col-md-4 form-group"><label>Date</label><input class="form-control" name="collected_at" type="date" value="{{ now()->format('Y-m-d') }}" required></div>
-                                <div class="col-md-4 form-group"><label>Period</label><input class="form-control" name="period" placeholder="Hamal month"></div>
-                                <div class="col-12 form-group"><label>Expense note</label><textarea class="form-control" name="notes" rows="4" placeholder="Printing, shared supplies, small repairs, etc."></textarea></div>
-                                <div class="col-12"><button class="btn btn-danger" type="submit">Save expense</button></div>
-                            </div>
-                        </form>
+                                <label>
+                                    <span>تاریخ</span>
+                                    <input class="form-control" name="collected_at" type="date" value="{{ now()->format('Y-m-d') }}" required>
+                                </label>
+
+                                <label>
+                                    <span>دوره / ماه</span>
+                                    <input class="form-control" name="period" placeholder="حمل ۱۴۰۵">
+                                </label>
+
+                                <label class="fanous-form-wide">
+                                    <span>یادداشت</span>
+                                    <textarea class="form-control" name="notes" rows="3" placeholder="توضیحات کوتاه"></textarea>
+                                </label>
+
+                                <x-ds.button type="submit">ذخیره دریافت</x-ds.button>
+                            </form>
+                        </details>
+
+                        <details class="fanous-representative-form-panel">
+                            <summary>ثبت مصرف نماینده</summary>
+                            <form method="POST" action="{{ route('representative.collections.store') }}" class="fanous-representative-form">
+                                @csrf
+                                <input name="type" type="hidden" value="expense">
+
+                                <label>
+                                    <span>مبلغ</span>
+                                    <input class="form-control" name="amount" type="number" min="1" required>
+                                </label>
+
+                                <label>
+                                    <span>تاریخ</span>
+                                    <input class="form-control" name="collected_at" type="date" value="{{ now()->format('Y-m-d') }}" required>
+                                </label>
+
+                                <label>
+                                    <span>دوره / ماه</span>
+                                    <input class="form-control" name="period" placeholder="حمل ۱۴۰۵">
+                                </label>
+
+                                <label class="fanous-form-wide">
+                                    <span>توضیحات مصرف</span>
+                                    <textarea class="form-control" name="notes" rows="3" placeholder="چاپ، وسایل مشترک، ترمیم کوچک و موارد مشابه"></textarea>
+                                </label>
+
+                                <x-ds.button variant="danger" type="submit">ذخیره مصرف</x-ds.button>
+                            </form>
+                        </details>
                     @else
-                        <div class="user-access-note">
-                            <div class="preview-thumbnail"><div class="preview-icon bg-primary"><span>i</span></div></div>
-                            <p class="text-muted mb-0">You are viewing this module as management. Direct recording is reserved for the Student Representative account.</p>
+                        <div class="fanous-representative-note">
+                            <span class="fanous-record-icon"><x-ds.icon name="bell" /></span>
+                            <p>شما این بخش را در نقش مدیریت می‌بینید. ثبت مستقیم دریافت و مصرف مخصوص حساب نماینده محصلین است.</p>
                         </div>
-                        <a class="btn btn-primary mt-4" href="{{ route('representative.report') }}">Open representative report</a>
+                        <x-ds.button :href="route('representative.report')">باز کردن گزارش نماینده</x-ds.button>
                     @endif
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-5 grid-margin stretch-card">
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title">Latest representative records</h4>
-                    <div class="preview-list">
-                        @forelse ($collections as $collection)
-                            <div class="preview-item border-bottom">
-                                <div class="preview-thumbnail">
-                                    <div class="preview-icon {{ $collection->type === 'expense' ? 'bg-danger' : 'bg-success' }}"><span>{{ $collection->type === 'expense' ? 'X' : 'R' }}</span></div>
-                                </div>
-                                <div class="preview-item-content">
-                                    <p class="preview-subject mb-1">{{ $collection->student?->full_name ?: 'Representative general expense' }}</p>
-                                    <p class="text-muted mb-0">{{ $typeNames[$collection->type] ?? $collection->type }} · {{ number_format($collection->amount) }} AFN</p>
-                                    <p class="text-muted mb-0">{{ $collection->collected_at?->format('Y-m-d') }} · {{ $collection->period ?: 'No period' }}</p>
-                                </div>
-                                @if ($collection->student)
-                                    <a class="btn btn-outline-secondary btn-sm" href="{{ route('dorm.students.show', $collection->student) }}">Profile</a>
-                                @endif
-                            </div>
-                        @empty
-                            <p class="text-muted mb-0">No representative records found.</p>
-                        @endforelse
-                    </div>
-                </div>
-            </div>
-        </div>
+                </article>
+            </aside>
+        </section>
     </div>
 @endsection

@@ -1,12 +1,12 @@
 (function () {
     const LANG_KEY = 'fanous.lang';
     const THEME_KEY = 'fanous.theme';
-    const SUPPORTED_LANGS = ['en', 'fa'];
+    const SUPPORTED_LANGS = ['fa'];
     const SUPPORTED_THEMES = ['dark', 'light'];
     const textStore = new WeakMap();
     const attrNames = ['placeholder', 'title', 'aria-label', 'value'];
     let dictionaries = {};
-    let currentLang = readStored(LANG_KEY, SUPPORTED_LANGS, document.documentElement.lang || 'en');
+    let currentLang = 'fa';
     let currentTheme = readStored(THEME_KEY, SUPPORTED_THEMES, document.documentElement.dataset.theme || 'dark');
 
     function readStored(key, allowed, fallback) {
@@ -31,17 +31,14 @@
     }
 
     function applyShellState() {
-        const dir = currentLang === 'fa' ? 'rtl' : 'ltr';
-        document.documentElement.lang = currentLang;
-        document.documentElement.dir = dir;
+        document.documentElement.lang = 'fa';
+        document.documentElement.dir = 'rtl';
         document.documentElement.dataset.theme = currentTheme;
 
-        document.body.classList.toggle('rtl', currentLang === 'fa');
-        document.body.classList.toggle('ltr', currentLang !== 'fa');
+        document.body.classList.add('rtl', 'locale-fa');
+        document.body.classList.remove('ltr', 'locale-en');
         document.body.classList.toggle('theme-dark', currentTheme === 'dark');
         document.body.classList.toggle('theme-light', currentTheme === 'light');
-        document.body.classList.toggle('locale-fa', currentLang === 'fa');
-        document.body.classList.toggle('locale-en', currentLang === 'en');
     }
 
     async function loadDictionary(lang) {
@@ -156,22 +153,12 @@
     }
 
     function updateControls() {
-        document.querySelectorAll('[data-lang-toggle]').forEach((button) => {
-            const label = button.querySelector('[data-lang-label]');
-            if (label) {
-                label.textContent = currentLang === 'fa' ? 'English' : 'فارسی';
-            }
-            button.setAttribute('aria-label', currentLang === 'fa' ? 'Switch to English' : 'تغییر به فارسی');
-        });
-
         document.querySelectorAll('[data-theme-toggle]').forEach((button) => {
             const label = button.querySelector('[data-theme-label]');
             if (label) {
-                label.textContent = currentTheme === 'dark'
-                    ? (currentLang === 'fa' ? 'حالت روشن' : 'Light mode')
-                    : (currentLang === 'fa' ? 'حالت تاریک' : 'Dark mode');
+                label.textContent = currentTheme === 'dark' ? 'حالت روشن' : 'حالت تاریک';
             }
-            button.setAttribute('aria-label', currentTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+            button.setAttribute('aria-label', currentTheme === 'dark' ? 'تغییر به حالت روشن' : 'تغییر به حالت تاریک');
         });
     }
 
@@ -184,15 +171,7 @@
 
     function bindControls() {
         document.addEventListener('click', (event) => {
-            const langButton = event.target.closest('[data-lang-toggle]');
             const themeButton = event.target.closest('[data-theme-toggle]');
-
-            if (langButton) {
-                event.preventDefault();
-                currentLang = currentLang === 'fa' ? 'en' : 'fa';
-                saveStored(LANG_KEY, currentLang);
-                applyI18n();
-            }
 
             if (themeButton) {
                 event.preventDefault();
@@ -204,6 +183,7 @@
     }
 
     applyShellState();
+    saveStored(LANG_KEY, 'fa');
 
     document.addEventListener('DOMContentLoaded', () => {
         bindControls();

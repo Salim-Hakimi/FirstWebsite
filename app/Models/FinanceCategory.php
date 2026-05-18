@@ -7,14 +7,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class FinanceCategory extends Model
 {
-    public const TYPE_INCOME = 'income';
-    public const TYPE_EXPENSE = 'expense';
-
     protected $fillable = [
-        'type',
         'name',
-        'slug',
-        'description',
+        'type',
+        'color',
         'is_active',
     ];
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\DormStudent;
 use App\Models\FoodFinance;
 use App\Models\User;
+use App\Support\Audit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -119,11 +120,14 @@ class PurchaserController extends Controller
 
         if ($validated['type'] === 'expense') {
             $validated['dorm_student_id'] = null;
+        } elseif (! DormStudent::query()->whereKey($validated['dorm_student_id'])->where('status', 'active')->exists()) {
+            return back()->withErrors(['dorm_student_id' => 'Student is not active or cannot receive this record.'])->withInput();
         }
 
         $record = FoodFinance::create(array_merge($validated, [
             'recorded_by' => $request->user()->id,
         ]));
+        Audit::record('purchaser_finance_record_created', $record, [], $record->only(['dorm_student_id', 'type', 'amount', 'recorded_at', 'recorded_by']), $request);
 
         return redirect()
             ->route('purchaser.records.receipt', $record)

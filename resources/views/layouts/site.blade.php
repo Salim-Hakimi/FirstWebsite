@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ \App\Support\Locale::current() }}" dir="{{ \App\Support\Locale::dir() }}">
+<html lang="fa" dir="rtl">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,10 +8,10 @@
         <title>@yield('title', 'فانوس')</title>
         <script>
             (function () {
-                const lang = localStorage.getItem('fanous.lang') || '{{ \App\Support\Locale::current() }}';
                 const theme = localStorage.getItem('fanous.theme') || '{{ auth()->user()?->theme === 'dark' ? 'dark' : 'light' }}';
-                document.documentElement.lang = lang === 'fa' ? 'fa' : 'en';
-                document.documentElement.dir = lang === 'fa' ? 'rtl' : 'ltr';
+                localStorage.setItem('fanous.lang', 'fa');
+                document.documentElement.lang = 'fa';
+                document.documentElement.dir = 'rtl';
                 document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light';
             })();
         </script>
@@ -2992,10 +2992,6 @@
     </head>
     <body class="theme-{{ auth()->user()?->theme ?? 'light' }} locale-{{ \App\Support\Locale::current() }}">
         <div class="page">
-            @if (trim($__env->yieldContent('bare_page')) === 'true' && trim($__env->yieldContent('hide_global_language')) !== 'true')
-                <button class="language-switch global-language" type="button" data-lang-toggle><span data-lang-label>{{ \App\Support\Locale::switchLabel() }}</span></button>
-            @endif
-
             @if (trim($__env->yieldContent('bare_page')) !== 'true')
             <header class="site-header">
                 <div class="container header-inner">
@@ -3029,7 +3025,6 @@
 
                     @auth
                         <div class="header-actions">
-                            <button class="language-switch" type="button" data-lang-toggle><span data-lang-label>{{ \App\Support\Locale::switchLabel() }}</span></button>
                             <button class="language-switch" type="button" data-theme-toggle><span data-theme-label>Dark mode</span></button>
                             <a class="login-button" href="{{ route('dashboard') }}">داشبورد</a>
                             <form method="POST" action="{{ route('logout') }}">
@@ -3039,7 +3034,6 @@
                         </div>
                     @else
                         <div class="header-actions">
-                            <button class="language-switch" type="button" data-lang-toggle><span data-lang-label>{{ \App\Support\Locale::switchLabel() }}</span></button>
                             <button class="language-switch" type="button" data-theme-toggle><span data-theme-label>Dark mode</span></button>
                             <a class="login-button" href="{{ route('login') }}">ورود</a>
                         </div>

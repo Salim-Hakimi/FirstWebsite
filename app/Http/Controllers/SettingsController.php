@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\Audit;
+use App\Support\SecurityRules;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -24,12 +26,13 @@ class SettingsController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
-            'phone' => ['nullable', 'string', 'max:30'],
+            'phone' => SecurityRules::phone(false),
             'theme' => ['required', Rule::in(['light', 'dark'])],
-            'profile_photo' => ['nullable', 'image', 'max:2048'],
+            'profile_photo' => SecurityRules::profileImage(),
             'remove_profile_photo' => ['nullable', 'boolean'],
         ]);
 
+        $oldValues = $user->only(['name', 'email', 'phone', 'theme', 'profile_photo_path']);
         $user->update([
             'name' => $validated['name'],
             'email' => $validated['email'],
@@ -37,6 +40,7 @@ class SettingsController extends Controller
             'theme' => $validated['theme'],
             'profile_photo_path' => $this->syncProfilePhoto($request),
         ]);
+        Audit::record('account_profile_updated', $user, $oldValues, $user->fresh()->only(['name', 'email', 'phone', 'theme', 'profile_photo_path']), $request);
 
         return redirect()
             ->route('settings.edit')
@@ -70,12 +74,13 @@ class SettingsController extends Controller
     {
         $validated = $request->validate([
             'current_password' => ['required', 'current_password'],
-            'password' => ['required', 'confirmed', 'min:8'],
+            'password' => SecurityRules::strongPassword(),
         ]);
 
         $request->user()->update([
             'password' => $validated['password'],
         ]);
+        Audit::record('account_password_changed', $request->user(), [], ['password_changed' => true], $request);
 
         return redirect()
             ->route('settings.edit')

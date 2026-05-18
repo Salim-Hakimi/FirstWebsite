@@ -11,18 +11,7 @@ class SetLocale
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $locale = $request->routeIs('admin.*')
-            || $request->routeIs('dorm.rooms.*')
-            || $request->routeIs('dorm.students.*')
-            || $request->routeIs('representative.*')
-            || $request->routeIs('purchaser.*')
-            || $request->routeIs('settings.*')
-            ? 'en'
-            : $request->session()->get('locale', Locale::DEFAULT);
-
-        if (! in_array($locale, Locale::SUPPORTED, true)) {
-            $locale = Locale::DEFAULT;
-        }
+        $locale = Locale::DEFAULT;
 
         app()->setLocale($locale);
 

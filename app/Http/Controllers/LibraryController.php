@@ -5,9 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\Book;
 use App\Models\BookCopy;
 use App\Models\BookLoan;
+use App\Models\FinanceAuditLog;
+use App\Models\FinanceCategory;
+use App\Models\FinanceTransaction;
 use App\Models\LibraryMember;
 use App\Models\MembershipCard;
 use App\Models\User;
+use App\Support\Audit;
+use App\Support\SecurityRules;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -27,7 +32,8 @@ class LibraryController extends Controller
 
         $members = $this->libraryMembersQuery($filters)
             ->latest()
-            ->get();
+            ->paginate(12)
+            ->withQueryString();
 
         $activeLoanStatuses = ['borrowed', 'late'];
         $followUpMembers = LibraryMember::query()
@@ -65,6 +71,17 @@ class LibraryController extends Controller
             'availableBooks' => Book::with('availableCopies')->where('available_copies', '>', 0)->orderBy('title')->get(),
             'expiringMembers' => $followUpMembers,
             'expiredCards' => $expiredCards,
+            'libraryIncomeTotal' => (int) $this->libraryFinanceTransactions()->where('type', 'income')->sum('amount'),
+            'libraryExpenseTotal' => (int) $this->libraryFinanceTransactions()->where('type', 'expense')->sum('amount'),
+            'libraryTodayIncome' => (int) $this->libraryFinanceTransactions()->where('type', 'income')->whereDate('transaction_date', today())->sum('amount'),
+            'libraryFinanceRecords' => $this->libraryFinanceTransactions()
+                ->with(['category', 'recordedBy'])
+                ->latest('transaction_date')
+                ->latest()
+                ->limit(10)
+                ->get(),
+            'libraryPaymentMethods' => $this->libraryPaymentMethods(),
+            'libraryFinanceCategories' => $this->libraryFinanceCategoryLabels(),
         ]);
     }
 
@@ -298,7 +315,44 @@ class LibraryController extends Controller
             'last_fee_reminder_at' => today(),
         ])->save();
 
-        return back()->with('status', 'Fee reminder marked as sent for '.$member->full_name.'.');
+        return back()->with('status', 'یادآوری فیس برای '.$member->full_name.' به عنوان ارسال‌شده ثبت شد.');
+    }
+
+    public function storeFinanceRecord(Request $request): RedirectResponse
+    {
+        $labels = $this->libraryFinanceCategoryLabels();
+        $validated = $request->validate([
+            'type' => ['required', Rule::in(['income', 'expense'])],
+            'category_key' => ['required', Rule::in(array_keys($labels))],
+            'amount' => ['required', 'integer', 'min:1'],
+            'transaction_date' => ['required', 'date'],
+            'payment_method' => ['required', Rule::in(array_keys($this->libraryPaymentMethods()))],
+            'source_or_payee' => ['nullable', 'string', 'max:180'],
+            'receipt_number' => ['nullable', 'string', 'max:80'],
+            'description' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $category = $labels[$validated['category_key']];
+
+        if ($category['type'] !== $validated['type']) {
+            return back()
+                ->withErrors(['category_key' => 'دسته‌بندی انتخاب‌شده با نوع ثبت مالی همخوانی ندارد.'])
+                ->withInput();
+        }
+
+        $transaction = $this->recordLibraryFinance(
+            $validated['type'],
+            $category['label'],
+            (int) $validated['amount'],
+            $validated['source_or_payee'] ?: 'کتابخانه فانوس',
+            $validated['description'] ?: $category['label'],
+            $request,
+            $validated['transaction_date'],
+            $validated['payment_method'],
+            $validated['receipt_number'] ?? null
+        );
+
+        return back()->with('status', 'ثبت مالی کتابخانه ذخیره شد: '.$transaction->receipt_number);
     }
 
     public function storeMember(Request $request): RedirectResponse
@@ -319,6 +373,11 @@ class LibraryController extends Controller
             'last_paid_at' => $paymentStatus === 'paid' ? $joinedAt : null,
             'next_payment_due_at' => Carbon::parse($joinedAt)->addMonth(),
         ]));
+        Audit::record('library_member_created', $member, [], $member->only(['member_code', 'full_name', 'phone', 'status', 'payment_status']), $request);
+
+        if ($paymentStatus === 'paid' && (int) $member->membership_fee > 0) {
+            $this->recordLibraryFinance('income', 'فیس ثبت‌نام کتابخانه', (int) $member->membership_fee, $member->full_name, 'فیس ثبت‌نام عضو کتابخانه: '.$member->member_code, $request);
+        }
 
         if ($request->boolean('issue_card')) {
             $card = $this->issueLibraryCard($member, $request);
@@ -350,7 +409,9 @@ class LibraryController extends Controller
         $this->normalizeMemberPayment($validated, $member);
         unset($validated['issue_card'], $validated['profile_photo'], $validated['remove_profile_photo']);
 
+        $oldValues = $member->only(['member_code', 'full_name', 'phone', 'status', 'payment_status', 'membership_fee', 'profile_photo_path']);
         $member->update($validated);
+        Audit::record('library_member_updated', $member, $oldValues, $member->fresh()->only(['member_code', 'full_name', 'phone', 'status', 'payment_status', 'membership_fee', 'profile_photo_path']), $request);
 
         return redirect()->route('library.members.show', $member)->with('status', 'مشخصات عضو کتاب‌خانه ویرایش شد.');
     }
@@ -389,9 +450,13 @@ class LibraryController extends Controller
             ],
         ]);
 
+        if ($feeAmount > 0) {
+            $this->recordLibraryFinance('income', 'فیس ماهانه کتابخانه', $feeAmount, $member->full_name, 'پرداخت ماهانه عضو کتابخانه: '.$member->member_code, $request, $paidAt->toDateString());
+        }
+
         return redirect()
             ->route('library.members.monthly-payment.receipt', $member)
-            ->with('status', 'Monthly library payment recorded. The receipt is ready to print.');
+            ->with('status', 'پرداخت ماهانه کتابخانه ثبت شد و رسید آماده چاپ است.');
     }
 
     public function monthlyPaymentReceipt(LibraryMember $member): View
@@ -529,6 +594,7 @@ class LibraryController extends Controller
                 'status' => 'borrowed',
             ]));
         });
+        Audit::record('library_loan_created', null, [], ['copy_code' => $validated['copy_code'], 'library_member_id' => $validated['library_member_id'], 'book_id' => $validated['book_id']], $request);
 
         return back()->with('status', 'امانت کتاب ثبت شد.');
     }
@@ -549,7 +615,9 @@ class LibraryController extends Controller
         $validated = $this->validateLoan($request, $loan);
         unset($validated['book_id'], $validated['library_member_id']);
 
+        $oldValues = $loan->only(['loan_code', 'borrowed_at', 'due_at', 'status', 'fine_amount']);
         $loan->update($validated);
+        Audit::record('library_loan_updated', $loan, $oldValues, $loan->fresh()->only(['loan_code', 'borrowed_at', 'due_at', 'status', 'fine_amount']), $request);
 
         return redirect()->route('library.members.show', $loan->member)->with('status', 'امانت کتاب ویرایش شد.');
     }
@@ -564,6 +632,7 @@ class LibraryController extends Controller
         ]);
 
         $this->markLoanReturned($loan, $validated);
+        Audit::record('library_loan_returned', $loan, [], ['returned_at' => $validated['returned_at'], 'fine_amount' => $validated['fine_amount'] ?? 0], $request);
 
         return back()->with('status', 'برگشت کتاب ثبت شد.');
     }
@@ -601,6 +670,7 @@ class LibraryController extends Controller
         }
 
         $this->markLoanReturned($loan, $validated);
+        Audit::record('library_loan_returned_by_copy', $loan, [], ['copy_code' => $copy->copy_code, 'returned_at' => $validated['returned_at'], 'fine_amount' => $validated['fine_amount'] ?? 0], $request);
 
         return back()->with('status', 'Book returned by barcode: '.$copy->copy_code);
     }
@@ -669,7 +739,7 @@ class LibraryController extends Controller
             'member_code' => ['nullable', 'string', 'max:60', Rule::unique('library_members', 'member_code')->ignore($member)],
             'full_name' => ['required', 'string', 'max:120'],
             'father_name' => ['required', 'string', 'max:120'],
-            'phone' => ['required', 'string', 'max:30'],
+            'phone' => SecurityRules::phone(),
             'email' => ['nullable', 'email', 'max:120'],
             'tazkira_number' => ['nullable', 'string', 'max:80'],
             'education_place' => ['nullable', 'string', 'max:160'],
@@ -684,7 +754,7 @@ class LibraryController extends Controller
             'next_payment_due_at' => ['nullable', 'date'],
             'status' => ['nullable', Rule::in(['active', 'suspended', 'left'])],
             'notes' => ['nullable', 'string', 'max:700'],
-            'profile_photo' => ['nullable', 'image', 'max:2048'],
+            'profile_photo' => SecurityRules::profileImage(),
             'remove_profile_photo' => ['nullable', 'boolean'],
             'issue_card' => ['nullable', 'boolean'],
         ]);
@@ -764,11 +834,15 @@ class LibraryController extends Controller
             'father_name' => $member->father_name,
             'issued_at' => $issuedAt,
             'expires_at' => $issuedAt->copy()->addMonth(),
-            'fee_amount' => $member->membership_fee,
+            'fee_amount' => 50,
             'payment_status' => $paymentStatus,
             'paid_at' => $paymentStatus === 'paid' ? $issuedAt : null,
             'created_by' => $request->user()->id,
         ]);
+
+        if ($paymentStatus === 'paid') {
+            $this->recordLibraryFinance('income', 'قیمت کارت کتابخانه', 50, $member->full_name, 'صدور کارت کتابخانه: '.$card->card_number, $request);
+        }
 
         $member->update([
             'membership_expires_at' => $card->expires_at,
@@ -776,6 +850,7 @@ class LibraryController extends Controller
             'last_paid_at' => $paymentStatus === 'paid' ? $issuedAt : $member->last_paid_at,
             'monthly_fee_fine_amount' => $paymentStatus === 'paid' ? 0 : $member->monthly_fee_fine_amount,
         ]);
+        Audit::record('library_card_issued', $card, [], $card->only(['card_number', 'holder_name', 'payment_status', 'expires_at']), $request);
 
         return $card;
     }
@@ -918,6 +993,91 @@ class LibraryController extends Controller
         if ($calculatedFine > (int) $member->monthly_fee_fine_amount) {
             $member->forceFill(['monthly_fee_fine_amount' => $calculatedFine])->save();
         }
+    }
+
+    private function recordLibraryFinance(
+        string $type,
+        string $categoryLabel,
+        int $amount,
+        string $person,
+        string $description,
+        Request $request,
+        ?string $date = null,
+        string $paymentMethod = 'cash',
+        ?string $receiptNumber = null
+    ): FinanceTransaction {
+        $category = FinanceCategory::firstOrCreate(
+            ['name' => 'کتابخانه - '.$categoryLabel, 'type' => $type],
+            ['color' => $type === 'income' ? '#0ea5a4' : '#ef4444', 'is_active' => true]
+        );
+
+        $transaction = FinanceTransaction::create([
+            'transaction_number' => $this->nextLibraryFinanceNumber($type),
+            'type' => $type,
+            'finance_category_id' => $category->id,
+            'expected_amount' => $amount,
+            'amount' => $amount,
+            'transaction_date' => $date ?: today()->toDateString(),
+            'source_or_payee' => $person,
+            'payer_name' => $type === 'income' ? $person : null,
+            'payee_name' => $type === 'expense' ? $person : null,
+            'receipt_number' => $receiptNumber ?: $this->nextLibraryFinanceNumber($type),
+            'payment_method' => $paymentMethod,
+            'status' => 'paid',
+            'description' => $description,
+            'notes' => 'ثبت مالی کتابخانه',
+            'attachment_required' => false,
+            'recorded_by' => $request->user()->id,
+        ]);
+
+        FinanceAuditLog::create([
+            'finance_transaction_id' => $transaction->id,
+            'action' => 'created',
+            'new_values' => $transaction->fresh()->toArray(),
+            'performed_by' => $request->user()->id,
+        ]);
+
+        return $transaction;
+    }
+
+    private function libraryFinanceTransactions()
+    {
+        return FinanceTransaction::query()
+            ->whereHas('category', fn ($query) => $query->where('name', 'like', 'کتابخانه -%'));
+    }
+
+    private function libraryFinanceCategoryLabels(): array
+    {
+        return [
+            'registration_fee' => ['type' => 'income', 'label' => 'فیس ثبت‌نام کتابخانه'],
+            'card_fee' => ['type' => 'income', 'label' => 'قیمت کارت کتابخانه'],
+            'monthly_fee' => ['type' => 'income', 'label' => 'فیس ماهانه کتابخانه'],
+            'donation' => ['type' => 'income', 'label' => 'کمک برای کتابخانه'],
+            'other_income' => ['type' => 'income', 'label' => 'درآمد متفرقه کتابخانه'],
+            'book_purchase' => ['type' => 'expense', 'label' => 'خرید کتاب و وسایل'],
+            'repair' => ['type' => 'expense', 'label' => 'ترمیم و نگهداری کتابخانه'],
+            'staff_payment' => ['type' => 'expense', 'label' => 'معاش یا حق‌الزحمه کتابخانه'],
+            'other_expense' => ['type' => 'expense', 'label' => 'مصرف متفرقه کتابخانه'],
+        ];
+    }
+
+    private function libraryPaymentMethods(): array
+    {
+        return [
+            'cash' => 'نقد',
+            'bank' => 'بانک',
+            'hawala' => 'حواله',
+            'card' => 'کارت',
+            'other' => 'سایر',
+        ];
+    }
+
+    private function nextLibraryFinanceNumber(string $type): string
+    {
+        $prefix = $type === 'expense' ? 'LIB-EXP' : 'LIB-INC';
+        $count = FinanceTransaction::withTrashed()->whereDate('created_at', now()->toDateString())->count() + 1;
+
+        return $prefix.'-'.now()->format('Ymd').'-'.str_pad((string) $count, 4, '0', STR_PAD_LEFT);
     }
 
     private function normalizeMemberPayment(array &$validated, LibraryMember $member): void

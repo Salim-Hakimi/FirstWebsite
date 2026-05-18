@@ -1,6 +1,6 @@
 @extends('admin.layout')
 
-@section('title', 'Book Copy Labels - Fanous Admin')
+@section('title', 'لیبل نسخه‌های کتاب - ادمین فانوس')
 
 @section('content')
     <style>
@@ -89,10 +89,10 @@
 
     <div class="label-actions">
         <div>
-            <button class="btn btn-primary mr-2" type="button" onclick="window.print()">Print labels</button>
-            <a class="btn btn-dark" href="{{ route('library.books.edit', $book) }}">Back to book</a>
+            <button class="btn btn-primary mr-2" type="button" onclick="window.print()">چاپ لیبل‌ها</button>
+            <a class="btn btn-dark" href="{{ route('library.books.edit', $book) }}">برگشت به کتاب</a>
         </div>
-        <a class="btn btn-outline-secondary" href="{{ route('library.index') }}">Library</a>
+        <a class="btn btn-outline-secondary" href="{{ route('library.index') }}">کتابخانه</a>
     </div>
 
     <section class="label-sheet">
@@ -103,16 +103,16 @@
             <article class="copy-label">
                 <div>
                     <strong>{{ $book->title }}</strong>
-                    <span>{{ $book->author ?: 'Unknown author' }} - Shelf {{ $copy->shelf_code ?: ($book->shelf_code ?: 'N/A') }}</span>
+                    <span>{{ $book->author ?: 'نویسنده نامشخص' }} - قفسه {{ $copy->shelf_code ?: ($book->shelf_code ?: 'ثبت نشده') }}</span>
                 </div>
                 <div>
                     {!! $label['barcodeSvg'] !!}
                     <div class="copy-label-code">{{ $copy->barcode ?: $copy->copy_code }}</div>
                 </div>
-                <span>Status: {{ $copy->status }}</span>
+                <span>وضعیت: {{ ['available' => 'قابل استفاده', 'on_loan' => 'در امانت', 'damaged' => 'خراب', 'lost' => 'گم‌شده', 'archived' => 'آرشیف'][$copy->status] ?? $copy->status }}</span>
             </article>
         @empty
-            <div class="student-directory-empty">No physical copies exist for this book yet.</div>
+            <div class="student-directory-empty">تا هنوز برای این کتاب نسخه فزیکی ثبت نشده است.</div>
         @endforelse
     </section>
 @endsection

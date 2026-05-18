@@ -47,6 +47,7 @@ class DashboardController extends Controller
 
         $monthlyRegistrationStudents = DormStudent::query()
             ->whereIn('registration_payment_status', ['paid', 'partial'])
+            ->whereNotIn('status', ['waiting', 'on_hold', 'rejected'])
             ->where(function ($query) use ($monthStart, $monthEnd) {
                 $query
                     ->whereBetween('registration_paid_at', [$monthStart, $monthEnd])
@@ -61,7 +62,7 @@ class DashboardController extends Controller
         $monthlyGuaranteeDeposits = (int) $monthlyRegistrationStudents->sum(fn ($student) => $student->guarantee_deposit_amount ?? 1000);
         $monthlyDormRegistrationFees = (int) $monthlyRegistrationStudents->sum(fn ($student) => $student->dorm_expense_fee_amount ?? 1000);
         $monthlyDormCardFees = (int) $monthlyRegistrationStudents->sum(fn ($student) => $student->registration_card_fee_amount ?? 50);
-        $monthlyRegistrationIncome = $monthlyGuaranteeDeposits + $monthlyDormRegistrationFees + $monthlyDormCardFees;
+        $monthlyRegistrationIncome = $monthlyDormRegistrationFees + $monthlyDormCardFees;
 
         return view('admin.dashboard', [
             'totalUsers' => User::count(),
@@ -86,6 +87,12 @@ class DashboardController extends Controller
             'monthlyDormCardFees' => $monthlyDormCardFees,
             'monthlyRegistrationIncome' => $monthlyRegistrationIncome,
             'recentStudents' => DormStudent::query()
+                ->latest()
+                ->limit(5)
+                ->get(),
+            'waitingApplicants' => DormStudent::query()
+                ->whereIn('status', ['waiting', 'on_hold'])
+                ->latest('application_date')
                 ->latest()
                 ->limit(5)
                 ->get(),

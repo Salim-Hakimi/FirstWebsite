@@ -8,6 +8,8 @@ use App\Models\FoodFinance;
 use App\Models\MembershipCard;
 use App\Models\StudentCollection;
 use App\Models\User;
+use App\Support\Audit;
+use App\Support\SecurityRules;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -26,7 +28,11 @@ class DormStudentController extends Controller
 
         $students = DormStudent::query()
             ->with(['room', 'membershipCards' => fn ($query) => $query->where('scope', 'dorm')->latest('expires_at')])
-            ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
+            ->whereNotIn('status', ['waiting', 'on_hold', 'rejected'])
+            ->when(
+                ($filters['status'] ?? null) && ! in_array($filters['status'], ['waiting', 'on_hold', 'rejected'], true),
+                fn ($query) => $query->where('status', $filters['status'])
+            )
             ->when($filters['q'] ?? null, function ($query, $search) {
                 $query->where(function ($query) use ($search) {
                     $query
@@ -89,6 +95,25 @@ class DormStudentController extends Controller
         ]);
     }
 
+    public function document(DormStudent $student, int $index)
+    {
+        $document = $student->document_names[$index] ?? null;
+        $path = $document['path'] ?? null;
+
+        abort_if(
+            ! $path
+            || ! str_starts_with($path, 'dorm-student-documents/')
+            || (! Storage::disk('local')->exists($path) && ! Storage::disk('public')->exists($path)),
+            404
+        );
+
+        $disk = Storage::disk('local')->exists($path) ? 'local' : 'public';
+
+        return Storage::disk($disk)->response($path, $document['name'] ?? null, [
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
     public function create(): View
     {
         return view('dorm.students.form', [
@@ -116,11 +141,12 @@ class DormStudentController extends Controller
         $this->normalizeRegistrationPayment($validated);
         $validated['document_names'] = $this->storeDocuments($request);
         $validated['profile_photo_path'] = $this->storeProfilePhoto($request);
-        unset($validated['documents'], $validated['remove_documents'], $validated['profile_photo'], $validated['remove_profile_photo'], $validated['issue_card'], $validated['card_fee'], $validated['card_payment_status']);
+        $this->unsetUploadInputs($validated);
 
         $student = DormStudent::create(array_merge($validated, [
             'registered_by' => $request->user()->id,
         ]));
+        Audit::record('dorm_student_created', $student, [], $student->only(['full_name', 'phone', 'status', 'dorm_room_id', 'room_number', 'bed_number']), $request);
 
         if ($request->boolean('issue_card') && $student->status === 'active') {
             $card = $this->issueDormCard($student, $request);
@@ -130,13 +156,13 @@ class DormStudentController extends Controller
 
         return redirect()
             ->route('dorm.students.registration.receipt', $student)
-            ->with('status', 'Dorm student registered successfully. The registration receipt is ready to print.');
+            ->with('status', 'ثبت شاگرد لیلیه موفقانه انجام شد و رسید ثبت‌نام آماده چاپ است.');
     }
 
     public function issueCard(Request $request, DormStudent $student): RedirectResponse
     {
         if ($student->status !== 'active') {
-            throw ValidationException::withMessages(['status' => 'Only active students can receive a dorm card.']);
+            throw ValidationException::withMessages(['status' => 'فقط شاگردان فعال می‌توانند کارت لیلیه دریافت کنند.']);
         }
 
         $card = $this->issueDormCard($student, $request);
@@ -162,9 +188,9 @@ class DormStudentController extends Controller
             'latestCard' => $latestCard,
             'receiptNumber' => 'ADM-'.str_pad((string) $student->id, 6, '0', STR_PAD_LEFT),
             'lineItems' => [
-                ['label' => 'Guarantee deposit', 'amount' => $guaranteeDeposit],
-                ['label' => 'Initial dorm expenses', 'amount' => $dormExpenseFee],
-                ['label' => 'Dorm card fee', 'amount' => $cardFee],
+                ['label' => 'پول ضمانت', 'amount' => $guaranteeDeposit],
+                ['label' => 'مصارف ابتدایی لیلیه', 'amount' => $dormExpenseFee],
+                ['label' => 'فیس کارت لیلیه', 'amount' => $cardFee],
             ],
             'totalAmount' => $guaranteeDeposit + $dormExpenseFee + $cardFee,
             'paymentStatus' => $student->registration_payment_status ?? 'paid',
@@ -197,19 +223,21 @@ class DormStudentController extends Controller
         $this->normalizeRegistrationPayment($validated, $student);
         $validated['document_names'] = $this->mergeDocuments($request, $student);
         $validated['profile_photo_path'] = $this->syncProfilePhoto($request, $student);
-        unset($validated['documents'], $validated['remove_documents'], $validated['profile_photo'], $validated['remove_profile_photo'], $validated['issue_card'], $validated['card_fee'], $validated['card_payment_status']);
+        $this->unsetUploadInputs($validated);
 
+        $oldValues = $student->only(['full_name', 'phone', 'status', 'dorm_room_id', 'room_number', 'bed_number', 'profile_photo_path', 'document_names']);
         $student->update($validated);
+        Audit::record('dorm_student_updated', $student, $oldValues, $student->fresh()->only(['full_name', 'phone', 'status', 'dorm_room_id', 'room_number', 'bed_number', 'profile_photo_path', 'document_names']), $request);
 
         return redirect()
             ->route('dorm.students.index')
-            ->with('status', 'Student profile updated.');
+            ->with('status', 'پروفایل شاگرد موفقانه به‌روزرسانی شد.');
     }
 
     public function admit(Request $request, DormStudent $student): RedirectResponse
     {
         if (! in_array($student->status, ['waiting', 'on_hold'], true)) {
-            throw ValidationException::withMessages(['status' => 'Only waiting-list applicants can be admitted from this panel.']);
+            throw ValidationException::withMessages(['status' => 'فقط شاگردان لیست انتظار از این بخش قابل پذیرش هستند.']);
         }
 
         $validated = $request->validate([
@@ -224,7 +252,7 @@ class DormStudentController extends Controller
 
         $notes = trim((string) ($student->eligibility_notes ?? ''));
         if (! empty($validated['admission_note'])) {
-            $notes = trim($notes."\nAdmission note: ".$validated['admission_note']);
+            $notes = trim($notes."\nیادداشت پذیرش: ".$validated['admission_note']);
         }
 
         $student->update([
@@ -240,7 +268,7 @@ class DormStudentController extends Controller
 
         return redirect()
             ->route('dorm.students.show', $student)
-            ->with('status', 'Student admitted from the waiting list.');
+            ->with('status', 'شاگرد از لیست انتظار به لیست اصلی لیلیه منتقل شد.');
     }
 
     private function validateStudent(Request $request): array
@@ -248,8 +276,8 @@ class DormStudentController extends Controller
         return $request->validate([
             'full_name' => ['required', 'string', 'max:120'],
             'father_name' => ['required', 'string', 'max:120'],
-            'phone' => ['required', 'string', 'max:30'],
-            'whatsapp' => ['nullable', 'string', 'max:30'],
+            'phone' => SecurityRules::phone(),
+            'whatsapp' => SecurityRules::phone(false),
             'email' => ['nullable', 'email', 'max:120'],
             'tazkira_number' => ['required', 'string', 'max:80'],
             'education_place' => ['required', 'string', 'max:160'],
@@ -259,7 +287,12 @@ class DormStudentController extends Controller
             'room_number' => ['nullable', 'string', 'max:40'],
             'bed_number' => ['nullable', 'string', 'max:40'],
             'guarantor_name' => ['nullable', 'string', 'max:120'],
-            'guarantor_phone' => ['nullable', 'string', 'max:30'],
+            'guarantor_relation' => ['nullable', 'string', 'max:80'],
+            'guarantor_phone' => SecurityRules::phone(false),
+            'guarantor_tazkira_number' => ['nullable', 'string', 'max:80'],
+            'guarantor_job' => ['nullable', 'string', 'max:120'],
+            'guarantor_permanent_address' => ['nullable', 'string', 'max:255'],
+            'guarantor_current_address' => ['nullable', 'string', 'max:255'],
             'status' => ['required', Rule::in(array_keys($this->statusLabels()))],
             'application_date' => ['nullable', 'date'],
             'education_score' => ['nullable', 'numeric', 'min:0', 'max:100'],
@@ -272,10 +305,16 @@ class DormStudentController extends Controller
             'registration_paid_at' => ['nullable', 'date'],
             'joined_at' => ['nullable', 'date'],
             'notes' => ['nullable', 'string', 'max:1000'],
-            'profile_photo' => ['nullable', 'image', 'max:2048'],
+            'profile_photo' => SecurityRules::profileImage(),
             'remove_profile_photo' => ['nullable', 'boolean'],
             'documents' => ['nullable', 'array'],
-            'documents.*' => ['file', 'max:5120', 'mimes:jpg,jpeg,png,pdf,doc,docx'],
+            'documents.*' => SecurityRules::safeDocument(),
+            'student_tazkira_document' => ['nullable', ...SecurityRules::safeDocument()],
+            'student_documents' => ['nullable', 'array'],
+            'student_documents.*' => SecurityRules::safeDocument(),
+            'guarantor_tazkira_document' => ['nullable', ...SecurityRules::safeDocument()],
+            'guarantor_documents' => ['nullable', 'array'],
+            'guarantor_documents.*' => SecurityRules::safeDocument(),
             'remove_documents' => ['nullable', 'array'],
             'remove_documents.*' => ['integer', 'min:0'],
             'issue_card' => ['nullable', 'boolean'],
@@ -383,6 +422,7 @@ class DormStudentController extends Controller
                 $shouldRemove = in_array((string) $index, $request->input('remove_documents', []), true);
 
                 if ($shouldRemove && isset($document['path'])) {
+                    Storage::disk('local')->delete($document['path']);
                     Storage::disk('public')->delete($document['path']);
                 }
 
@@ -396,15 +436,57 @@ class DormStudentController extends Controller
 
     private function storeDocuments(Request $request): array
     {
-        return collect($request->file('documents', []))
-            ->map(function ($document) {
-                return [
-                    'name' => $document->getClientOriginalName(),
-                    'path' => $document->store('dorm-student-documents', 'public'),
-                    'uploaded_at' => now()->toDateTimeString(),
-                ];
-            })
-            ->all();
+        $documents = [];
+
+        foreach ($request->file('documents', []) as $document) {
+            $documents[] = $this->documentPayload($document, 'student_document', 'سند شاگرد');
+        }
+
+        foreach ($request->file('student_documents', []) as $document) {
+            $documents[] = $this->documentPayload($document, 'student_document', 'سند شاگرد');
+        }
+
+        if ($request->hasFile('student_tazkira_document')) {
+            $documents[] = $this->documentPayload($request->file('student_tazkira_document'), 'student_tazkira', 'تذکره شاگرد');
+        }
+
+        if ($request->hasFile('guarantor_tazkira_document')) {
+            $documents[] = $this->documentPayload($request->file('guarantor_tazkira_document'), 'guarantor_tazkira', 'تذکره ضامن');
+        }
+
+        foreach ($request->file('guarantor_documents', []) as $document) {
+            $documents[] = $this->documentPayload($document, 'guarantor_document', 'سند ضامن');
+        }
+
+        return $documents;
+    }
+
+    private function documentPayload($document, string $type, string $label): array
+    {
+        return [
+            'name' => $document->getClientOriginalName(),
+            'path' => $document->store('dorm-student-documents', 'local'),
+            'type' => $type,
+            'label' => $label,
+            'uploaded_at' => now()->toDateTimeString(),
+        ];
+    }
+
+    private function unsetUploadInputs(array &$validated): void
+    {
+        unset(
+            $validated['documents'],
+            $validated['student_tazkira_document'],
+            $validated['student_documents'],
+            $validated['guarantor_tazkira_document'],
+            $validated['guarantor_documents'],
+            $validated['remove_documents'],
+            $validated['profile_photo'],
+            $validated['remove_profile_photo'],
+            $validated['issue_card'],
+            $validated['card_fee'],
+            $validated['card_payment_status']
+        );
     }
 
     private function storeProfilePhoto(Request $request): ?string
@@ -436,36 +518,36 @@ class DormStudentController extends Controller
     private function statusLabels(): array
     {
         return [
-            'active' => 'Active',
-            'waiting' => 'Waiting list',
-            'on_hold' => 'On hold',
-            'rejected' => 'Rejected',
-            'suspended' => 'Suspended',
-            'graduated' => 'Graduated',
-            'left' => 'Left',
+            'active' => 'فعال',
+            'waiting' => 'لیست انتظار',
+            'on_hold' => 'ناقص',
+            'rejected' => 'رد شده',
+            'suspended' => 'تعلیق شده',
+            'graduated' => 'فارغ شده',
+            'left' => 'خارج شده',
         ];
     }
 
     private function collectionLabels(): array
     {
         return [
-            'monthly_fee' => 'Monthly fee',
-            'electricity' => 'Electricity',
-            'fine' => 'Fine',
-            'water' => 'Water',
-            'expense' => 'Representative expense',
+            'monthly_fee' => 'فیس ماهانه',
+            'electricity' => 'برق',
+            'fine' => 'جریمه',
+            'water' => 'آب',
+            'expense' => 'مصرف نماینده',
         ];
     }
 
     private function foodFinanceLabels(): array
     {
         return [
-            'contribution' => 'Food contribution',
-            'weekly_food' => 'Weekly food',
-            'monthly_fee' => 'Monthly fee',
-            'electricity' => 'Electricity',
-            'water' => 'Water',
-            'expense' => 'Expense and purchase',
+            'contribution' => 'سهم غذا',
+            'weekly_food' => 'غذای هفته‌وار',
+            'monthly_fee' => 'فیس ماهانه',
+            'electricity' => 'برق',
+            'water' => 'آب',
+            'expense' => 'مصرف و خریداری',
         ];
     }
 
@@ -481,11 +563,11 @@ class DormStudentController extends Controller
             'father_name' => $student->father_name,
             'issued_at' => $issuedAt,
             'expires_at' => $issuedAt->copy()->addMonths(6),
-            'fee_amount' => $request->input('card_fee', $student->registration_card_fee_amount ?? 50),
+            'fee_amount' => 50,
             'payment_status' => $paymentStatus,
             'paid_at' => $paymentStatus === 'paid' ? $issuedAt : null,
             'created_by' => $request->user()->id,
-            'notes' => 'Dorm card fee: 50 AFN',
+            'notes' => 'فیس کارت لیلیه: ۵۰ افغانی',
         ]);
     }
 

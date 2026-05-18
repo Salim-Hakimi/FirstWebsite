@@ -1,6 +1,6 @@
 @extends('layouts.site')
 
-@section('title', 'Contact - Fanous')
+@section('title', 'تماس - فانوس')
 
 @section('content')
     <section class="form-page">
@@ -25,10 +25,10 @@
                     <article class="request-card">
                         <div class="request-card-header">
                             <div>
-                                <h2>Fanous Dormitory Management</h2>
+                                <h2>مدیریت لیلیه فانوس</h2>
                                 <p>داشبورد مرکزی برای لیلیه و کتابخانه</p>
                             </div>
-                            <span class="status-badge">Active</span>
+                            <span class="status-badge">فعال</span>
                         </div>
                         <div class="request-meta">
                             <div>

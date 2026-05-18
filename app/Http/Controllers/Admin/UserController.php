@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\Audit;
+use App\Support\SecurityRules;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -16,7 +18,10 @@ class UserController extends Controller
     public function index(): View
     {
         return view('admin.users.index', [
-            'users' => User::query()->latest()->get(),
+            'users' => User::query()
+                ->whereIn('role', array_keys(User::roleOptions()))
+                ->latest()
+                ->get(),
             'roleLabels' => User::roleOptions(),
             'statusLabels' => User::statusOptions(),
         ]);
@@ -38,7 +43,7 @@ class UserController extends Controller
     {
         $validated = $this->validateUser($request);
 
-        User::create([
+        $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
             'phone' => $validated['phone'],
@@ -47,6 +52,7 @@ class UserController extends Controller
             'profile_photo_path' => $this->storeProfilePhoto($request),
             'password' => Hash::make($validated['password']),
         ]);
+        Audit::record('user_created', $user, [], $user->only(['name', 'email', 'phone', 'role', 'status']), $request);
 
         return redirect()
             ->route('admin.users.index')
@@ -70,6 +76,7 @@ class UserController extends Controller
 
         $validated = $this->validateUser($request, $user);
 
+        $oldValues = $user->only(['name', 'email', 'phone', 'role', 'status', 'profile_photo_path']);
         $user->fill([
             'name' => $validated['name'],
             'email' => $validated['email'],
@@ -84,10 +91,28 @@ class UserController extends Controller
         }
 
         $user->save();
+        Audit::record('user_updated', $user, $oldValues, $user->fresh()->only(['name', 'email', 'phone', 'role', 'status', 'profile_photo_path']), $request);
 
         return redirect()
             ->route('admin.users.index')
             ->with('status', 'معلومات کاربر به‌روزرسانی شد.');
+    }
+
+    public function destroy(User $user): RedirectResponse
+    {
+        $this->preventManagingProtectedUser($user);
+
+        $oldValues = $user->only(['name', 'email', 'phone', 'role', 'status']);
+        if ($user->profile_photo_path) {
+            Storage::disk('public')->delete($user->profile_photo_path);
+        }
+
+        $user->delete();
+        Audit::record('user_deleted', $user, $oldValues, [], request());
+
+        return redirect()
+            ->route('admin.users.index')
+            ->with('status', 'کاربر از سیستم حذف شد.');
     }
 
     private function validateUser(Request $request, ?User $user = null): array
@@ -97,12 +122,12 @@ class UserController extends Controller
         return $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email', 'max:120', Rule::unique('users', 'email')->ignore($user)],
-            'phone' => ['required', 'string', 'max:30'],
+            'phone' => SecurityRules::phone(),
             'role' => ['required', Rule::in($roleOptions)],
             'status' => ['required', Rule::in(array_keys(User::statusOptions()))],
-            'profile_photo' => ['nullable', 'image', 'max:2048'],
+            'profile_photo' => SecurityRules::profileImage(),
             'remove_profile_photo' => ['nullable', 'boolean'],
-            'password' => [$user ? 'nullable' : 'required', 'confirmed', 'min:8'],
+            'password' => SecurityRules::strongPassword(! $user),
         ]);
     }
 
@@ -138,8 +163,8 @@ class UserController extends Controller
             abort(403, 'شما نمی‌توانید نقش یا وضعیت حساب خودتان را از این بخش تغییر دهید.');
         }
 
-        if ($user->role === User::ROLE_OWNER && auth()->user()->role !== User::ROLE_OWNER) {
-            abort(403);
+        if (! array_key_exists($user->role, User::roleOptions())) {
+            abort(403, 'این نقش دیگر در سیستم فعال نیست.');
         }
     }
 }

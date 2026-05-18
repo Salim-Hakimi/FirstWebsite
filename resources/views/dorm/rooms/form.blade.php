@@ -1,24 +1,24 @@
 @extends('admin.layout')
 
-@section('title', $room->exists ? 'Edit Room - Fanous Admin' : 'Create Room - Fanous Admin')
+@section('title', $room->exists ? 'ویرایش اتاق - ادمین فانوس' : 'ثبت اتاق - ادمین فانوس')
 
 @section('content')
     @php
         $roomStatusNames = [
-            'active' => 'Active',
-            'maintenance' => 'Maintenance',
-            'closed' => 'Closed',
+            'active' => 'فعال',
+            'maintenance' => 'در ترمیم',
+            'closed' => 'بسته',
         ];
     @endphp
 
     <div class="student-form-hero">
         <div>
-            <span class="student-command-kicker">Room setup</span>
-            <h1>{{ $room->exists ? 'Edit Room' : 'Create Room' }}</h1>
-            <p>Define the room number, capacity, floor, and availability before students are assigned.</p>
+            <span class="student-command-kicker">تنظیم اتاق</span>
+            <h1>{{ $room->exists ? 'ویرایش اتاق' : 'ثبت اتاق' }}</h1>
+            <p>نمبر اتاق، ظرفیت، منزل و وضعیت دسترسی را پیش از تخصیص شاگردان مشخص کنید.</p>
         </div>
         <div class="student-command-actions">
-            <a href="{{ route('dorm.rooms.index') }}" class="btn btn-outline-secondary">Back to rooms</a>
+            <a href="{{ route('dorm.rooms.index') }}" class="btn btn-outline-secondary">برگشت به اتاق‌ها</a>
         </div>
     </div>
 
@@ -34,36 +34,36 @@
                     <div class="student-form-section-head">
                         <span>01</span>
                         <div>
-                            <h2>Room profile</h2>
-                            <p>Capacity accepts the dormitory standards: 4, 6, or 8 beds.</p>
+                            <h2>پروفایل اتاق</h2>
+                            <p>ظرفیت طبق معیار لیلیه فقط ۴، ۶ یا ۸ بستر پذیرفته می‌شود.</p>
                         </div>
                     </div>
 
                     <div class="student-form-grid">
                         <div class="form-group">
-                            <label for="room_number">Room number</label>
+                            <label for="room_number">نمبر اتاق</label>
                             <input id="room_number" class="form-control @error('room_number') is-invalid @enderror" name="room_number" value="{{ old('room_number', $room->room_number) }}" required>
                             @error('room_number') <span class="text-danger small">{{ $message }}</span> @enderror
                         </div>
 
                         <div class="form-group">
-                            <label for="capacity">Capacity</label>
+                            <label for="capacity">ظرفیت</label>
                             <select id="capacity" class="form-control @error('capacity') is-invalid @enderror" name="capacity" required>
                                 @foreach ([4, 6, 8] as $capacity)
-                                    <option value="{{ $capacity }}" @selected((int) old('capacity', $room->capacity) === $capacity)>{{ $capacity }} beds</option>
+                                    <option value="{{ $capacity }}" @selected((int) old('capacity', $room->capacity) === $capacity)>{{ $capacity }} بستر</option>
                                 @endforeach
                             </select>
                             @error('capacity') <span class="text-danger small">{{ $message }}</span> @enderror
                         </div>
 
                         <div class="form-group">
-                            <label for="floor">Floor</label>
-                            <input id="floor" class="form-control @error('floor') is-invalid @enderror" name="floor" value="{{ old('floor', $room->floor) }}" placeholder="Example: 2nd floor">
+                            <label for="floor">منزل</label>
+                            <input id="floor" class="form-control @error('floor') is-invalid @enderror" name="floor" value="{{ old('floor', $room->floor) }}" placeholder="مثلاً: منزل دوم">
                             @error('floor') <span class="text-danger small">{{ $message }}</span> @enderror
                         </div>
 
                         <div class="form-group">
-                            <label for="status">Status</label>
+                            <label for="status">وضعیت</label>
                             <select id="status" class="form-control @error('status') is-invalid @enderror" name="status" required>
                                 @foreach ($roomStatusNames as $value => $label)
                                     <option value="{{ $value }}" @selected(old('status', $room->status) === $value)>{{ $label }}</option>
@@ -78,37 +78,37 @@
                     <div class="student-form-section-head">
                         <span>02</span>
                         <div>
-                            <h2>Management note</h2>
-                            <p>Keep condition, facilities, or temporary restrictions visible for the dorm team.</p>
+                            <h2>یادداشت مدیریت</h2>
+                            <p>وضعیت، امکانات یا محدودیت‌های موقتی اتاق را برای تیم لیلیه ثبت کنید.</p>
                         </div>
                     </div>
 
                     <div class="form-group mb-0">
-                        <label for="notes">Notes</label>
-                        <textarea id="notes" class="form-control @error('notes') is-invalid @enderror" name="notes" rows="6" placeholder="Room condition, facilities, or management notes">{{ old('notes', $room->notes) }}</textarea>
+                        <label for="notes">یادداشت‌ها</label>
+                        <textarea id="notes" class="form-control @error('notes') is-invalid @enderror" name="notes" rows="6" placeholder="وضعیت اتاق، امکانات یا یادداشت‌های مدیریت">{{ old('notes', $room->notes) }}</textarea>
                         @error('notes') <span class="text-danger small">{{ $message }}</span> @enderror
                     </div>
                 </section>
             </div>
 
             <aside class="student-form-section is-sticky">
-                <h3 class="student-side-title">Capacity rules</h3>
+                <h3 class="student-side-title">قواعد ظرفیت</h3>
                 <div class="student-status-preview">
-                    <strong>Allowed sizes</strong>
-                    <p>Only 4, 6, and 8 bed rooms are accepted.</p>
+                    <strong>اندازه‌های مجاز</strong>
+                    <p>فقط اتاق‌های ۴، ۶ و ۸ بستره پذیرفته می‌شود.</p>
                 </div>
                 <div class="student-status-preview">
-                    <strong>Active rooms</strong>
-                    <p>Students can be assigned only to active rooms.</p>
+                    <strong>اتاق‌های فعال</strong>
+                    <p>شاگردان فقط به اتاق‌های فعال تخصیص می‌شوند.</p>
                 </div>
                 <div class="student-status-preview">
-                    <strong>Safe update</strong>
-                    <p>Capacity cannot be lower than current occupancy.</p>
+                    <strong>به‌روزرسانی مصون</strong>
+                    <p>ظرفیت نمی‌تواند کمتر از تعداد شاگردان فعلی باشد.</p>
                 </div>
 
                 <div class="student-save-panel">
-                    <button class="btn btn-primary" type="submit">{{ $room->exists ? 'Save room' : 'Create room' }}</button>
-                    <a class="btn btn-outline-secondary" href="{{ route('dorm.rooms.index') }}">Cancel</a>
+                    <button class="btn btn-primary" type="submit">{{ $room->exists ? 'ذخیره اتاق' : 'ثبت اتاق' }}</button>
+                    <a class="btn btn-outline-secondary" href="{{ route('dorm.rooms.index') }}">لغو</a>
                 </div>
             </aside>
         </div>
