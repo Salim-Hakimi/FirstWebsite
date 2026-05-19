@@ -17,6 +17,15 @@
         $overdueLoans = $overdueLoans ?? collect();
         $followUpCount = $expiringMembers->count() + $expiredCards->count() + $overdueLoans->count();
         $hasMemberFilters = filled($filters['q'] ?? null) || filled($filters['status'] ?? null);
+        $financeTypeLabels = ['income' => 'درآمد', 'expense' => 'مصرف'];
+        $libraryFinanceBalance = $libraryIncomeTotal - $libraryExpenseTotal;
+        $libraryMonthBalance = $libraryMonthIncome - $libraryMonthExpense;
+        $libraryQuickFilters = [
+            'today' => ['label' => 'امروز', 'from' => today()->toDateString(), 'to' => today()->toDateString()],
+            'week' => ['label' => 'این هفته', 'from' => now()->startOfWeek()->toDateString(), 'to' => now()->endOfWeek()->toDateString()],
+            'month' => ['label' => 'این ماه', 'from' => now()->startOfMonth()->toDateString(), 'to' => now()->endOfMonth()->toDateString()],
+            'year' => ['label' => 'امسال', 'from' => now()->startOfYear()->toDateString(), 'to' => now()->endOfYear()->toDateString()],
+        ];
 
         $memberStatusMeta = [
             'active' => ['label' => 'فعال', 'tone' => 'success'],
@@ -117,7 +126,7 @@
             <article class="dashboard-stat">
                 <div>
                     <span>توازن کتابخانه</span>
-                    <strong>{{ Locale::money($libraryIncomeTotal - $libraryExpenseTotal) }}</strong>
+                    <strong>{{ Locale::money($libraryFinanceBalance) }}</strong>
                     <small>درآمد منهای مصرف کتابخانه</small>
                 </div>
                 <span class="dashboard-stat-icon is-blue"><x-ds.icon name="chart" /></span>
@@ -125,12 +134,139 @@
 
             <article class="dashboard-stat">
                 <div>
-                    <span>درآمد امروز</span>
-                    <strong>{{ Locale::money($libraryTodayIncome) }}</strong>
-                    <small>دریافت‌های ثبت‌شده امروز</small>
+                    <span>خالص ماه جاری</span>
+                    <strong>{{ Locale::money($libraryMonthBalance) }}</strong>
+                    <small>درآمد ماه: {{ Locale::money($libraryMonthIncome) }} · مصرف ماه: {{ Locale::money($libraryMonthExpense) }}</small>
                 </div>
                 <span class="dashboard-stat-icon is-purple"><x-ds.icon name="calendar" /></span>
             </article>
+        </section>
+
+        <section class="dashboard-panel fanous-period-report-card" id="library-finance-ledger">
+            <div class="dashboard-panel-header">
+                <div>
+                    <span class="dashboard-section-kicker">دفتر مالی کتابخانه</span>
+                    <h2>گزارش درآمد و مصرف کتابخانه</h2>
+                    <p>درآمد کارت، فیس ماهانه، کمک‌ها، خرید کتاب، ترمیم و مصارف عمومی کتابخانه در همین دفتر جداگانه مدیریت می‌شود.</p>
+                </div>
+                <div class="fanous-filter-actions">
+                    <x-ds.button size="sm" variant="outline" :href="route('library.finance.export', request()->query())">خروجی CSV</x-ds.button>
+                    @if ($canWriteLibrary)
+                        <x-ds.button size="sm" type="button" data-library-panel-trigger="library-finance-record" aria-controls="library-finance-record" aria-expanded="false">ثبت مالی جدید</x-ds.button>
+                    @endif
+                </div>
+            </div>
+
+            <div class="fanous-period-report-grid">
+                @foreach ($libraryFinancePeriods as $period)
+                    <article class="fanous-period-report-item">
+                        <div class="fanous-period-report-head">
+                            <span>{{ $period['label'] }}</span>
+                            <small>{{ $period['caption'] }}</small>
+                        </div>
+                        <div class="fanous-period-report-values">
+                            <div class="is-income">
+                                <span>درآمد</span>
+                                <strong>{{ Locale::money((int) $period['income']) }}</strong>
+                            </div>
+                            <div class="is-expense">
+                                <span>مصرف</span>
+                                <strong>{{ Locale::money((int) $period['expense']) }}</strong>
+                            </div>
+                            <div>
+                                <span>باقی‌مانده</span>
+                                <strong>{{ Locale::money((int) $period['balance']) }}</strong>
+                            </div>
+                        </div>
+                    </article>
+                @endforeach
+            </div>
+
+            <form method="GET" action="{{ route('library.index') }}#library-finance-ledger" class="fanous-filter-grid fanous-finance-filter-grid">
+                <div class="fanous-quick-filters">
+                    @foreach ($libraryQuickFilters as $quickFilter)
+                        @php
+                            $isActiveQuickFilter = ($libraryFinanceFilters['finance_date_from'] ?? '') === $quickFilter['from']
+                                && ($libraryFinanceFilters['finance_date_to'] ?? '') === $quickFilter['to'];
+                            $quickFilterParams = array_filter(array_merge(request()->except(['finance_date_from', 'finance_date_to']), [
+                                'finance_date_from' => $quickFilter['from'],
+                                'finance_date_to' => $quickFilter['to'],
+                            ]), fn ($value) => filled($value));
+                        @endphp
+                        <a class="{{ $isActiveQuickFilter ? 'is-active' : '' }}" href="{{ route('library.index', $quickFilterParams) }}#library-finance-ledger">{{ $quickFilter['label'] }}</a>
+                    @endforeach
+                </div>
+
+                <label>
+                    <span>جستجو</span>
+                    <input class="form-control" name="finance_q" value="{{ $libraryFinanceFilters['finance_q'] ?? '' }}" placeholder="شخص، رسید، دسته‌بندی یا توضیحات">
+                </label>
+
+                <label>
+                    <span>نوع</span>
+                    <select class="form-control" name="finance_type">
+                        <option value="">همه نوع‌ها</option>
+                        @foreach ($financeTypeLabels as $value => $label)
+                            <option value="{{ $value }}" @selected(($libraryFinanceFilters['finance_type'] ?? '') === $value)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </label>
+
+                <label>
+                    <span>دسته‌بندی</span>
+                    <select class="form-control" name="finance_category">
+                        <option value="">همه دسته‌ها</option>
+                        @foreach ($libraryFinanceCategoryOptions as $category)
+                            <option value="{{ $category->id }}" @selected((string) ($libraryFinanceFilters['finance_category'] ?? '') === (string) $category->id)>{{ str_replace('کتابخانه - ', '', $category->name) }}</option>
+                        @endforeach
+                    </select>
+                </label>
+
+                <label>
+                    <span>روش پرداخت</span>
+                    <select class="form-control" name="finance_payment_method">
+                        <option value="">همه روش‌ها</option>
+                        @foreach ($libraryPaymentMethods as $value => $label)
+                            <option value="{{ $value }}" @selected(($libraryFinanceFilters['finance_payment_method'] ?? '') === $value)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </label>
+
+                <label>
+                    <span>از تاریخ</span>
+                    <input class="form-control" name="finance_date_from" type="date" value="{{ $libraryFinanceFilters['finance_date_from'] ?? '' }}">
+                </label>
+
+                <label>
+                    <span>تا تاریخ</span>
+                    <input class="form-control" name="finance_date_to" type="date" value="{{ $libraryFinanceFilters['finance_date_to'] ?? '' }}">
+                </label>
+
+                <div class="fanous-filter-actions">
+                    <x-ds.button type="submit">جستجو</x-ds.button>
+                    <x-ds.button variant="outline" :href="route('library.finance.export', request()->query())">CSV</x-ds.button>
+                    <x-ds.button variant="outline" :href="route('library.index').'#library-finance-ledger'">پاک کردن</x-ds.button>
+                </div>
+            </form>
+
+            @if ($libraryFinanceCategorySummaries->isNotEmpty())
+                <div class="fanous-period-report-grid">
+                    @foreach ($libraryFinanceCategorySummaries as $summary)
+                        <article class="fanous-period-report-item">
+                            <div class="fanous-period-report-head">
+                                <span>{{ $summary->category?->name ? str_replace('کتابخانه - ', '', $summary->category->name) : 'کتابخانه' }}</span>
+                                <small>{{ $financeTypeLabels[$summary->type] ?? $summary->type }} · {{ Locale::number((int) $summary->records_count) }} ثبت</small>
+                            </div>
+                            <div class="fanous-period-report-values">
+                                <div class="{{ $summary->type === 'income' ? 'is-income' : 'is-expense' }}">
+                                    <span>مجموع</span>
+                                    <strong>{{ Locale::money((int) $summary->total_amount) }}</strong>
+                                </div>
+                            </div>
+                        </article>
+                    @endforeach
+                </div>
+            @endif
         </section>
 
         <section class="fanous-library-notice">
@@ -258,7 +394,7 @@
                         <x-ds.button variant="outline" size="sm" type="button" data-library-panel-close>بستن</x-ds.button>
                     </div>
 
-                    <form method="POST" action="{{ route('library.members.store') }}" enctype="multipart/form-data" class="fanous-library-form">
+                    <form method="POST" action="{{ route('library.members.store') }}" enctype="multipart/form-data" class="fanous-library-form fanous-guarded-card-form" data-card-required-form data-card-required-message="برای ثبت عضو و محاسبه مالی، فیلدهای ضروری را تکمیل کرده و از دکمه ذخیره و چاپ کارت استفاده کنید.">
                         @csrf
                         <label><span>کد عضویت</span><input class="form-control ltr-text" name="member_code" placeholder="خودکار اگر خالی باشد"></label>
                         <label><span>نام کامل</span><input class="form-control" name="full_name" required></label>
@@ -289,8 +425,8 @@
                         <label class="fanous-form-wide"><span>آدرس</span><input class="form-control" name="address"></label>
                         <label class="fanous-form-wide"><span>یادداشت</span><textarea class="form-control" name="notes" rows="3"></textarea></label>
                         <div class="fanous-form-actions">
-                            <x-ds.button type="submit">ذخیره عضو</x-ds.button>
-                            <x-ds.button variant="outline" name="issue_card" value="1" type="submit">ذخیره و چاپ کارت</x-ds.button>
+                            <x-ds.button type="submit" data-disabled-until-card disabled>ذخیره عضو</x-ds.button>
+                            <x-ds.button variant="outline" name="issue_card" value="1" type="submit" data-card-submit disabled>ذخیره و چاپ کارت</x-ds.button>
                         </div>
                     </form>
                 </article>
@@ -436,8 +572,11 @@
                             <th>نوع</th>
                             <th>دسته‌بندی</th>
                             <th>شخص / منبع</th>
+                            <th>روش</th>
+                            <th>رسید</th>
                             <th>مبلغ</th>
                             <th>ثبت‌کننده</th>
+                            <th>عملیات</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -447,11 +586,16 @@
                                 <td><x-ds.badge :tone="$record->type === 'income' ? 'success' : 'danger'">{{ $record->type === 'income' ? 'درآمد' : 'مصرف' }}</x-ds.badge></td>
                                 <td>{{ $record->category?->name ? str_replace('کتابخانه - ', '', $record->category->name) : 'کتابخانه' }}</td>
                                 <td>{{ $record->source_or_payee ?: $record->payer_name ?: $record->payee_name ?: 'کتابخانه فانوس' }}</td>
+                                <td>{{ $libraryPaymentMethods[$record->payment_method] ?? $record->payment_method }}</td>
+                                <td class="ltr-text">{{ $record->receipt_number ?: $record->transaction_number }}</td>
                                 <td>{{ Locale::money((int) $record->amount) }}</td>
                                 <td>{{ $record->recordedBy?->name ?: 'سیستم' }}</td>
+                                <td>
+                                    <x-ds.button size="sm" variant="outline" :href="route('library.finance.transactions.receipt', $record)">رسید</x-ds.button>
+                                </td>
                             </tr>
                         @empty
-                            <tr><td colspan="6"><div class="dashboard-empty">هنوز ثبت مالی کتابخانه وجود ندارد.</div></td></tr>
+                            <tr><td colspan="9"><div class="dashboard-empty">هنوز ثبت مالی کتابخانه وجود ندارد.</div></td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -750,6 +894,55 @@
                 } else if (defaultPanel) {
                     setPanel(defaultPanel, false);
                 }
+
+                document.querySelectorAll('[data-card-required-form]').forEach((form) => {
+                    const cardSubmit = form.querySelector('[data-card-submit]');
+                    const disabledUntilCard = form.querySelectorAll('[data-disabled-until-card]');
+                    const message = form.dataset.cardRequiredMessage || 'فیلدهای ضروری را تکمیل کنید و کارت را صادر کنید.';
+
+                    const requiredControls = () => Array.from(form.querySelectorAll('input, select, textarea'))
+                        .filter((control) => control.required && !control.disabled && control.type !== 'hidden');
+
+                    const isComplete = () => requiredControls().every((control) => {
+                        if (control.type === 'checkbox' || control.type === 'radio') {
+                            return Boolean(form.querySelector(`[name="${CSS.escape(control.name)}"]:checked`));
+                        }
+
+                        return control.value.trim() !== '' && control.checkValidity();
+                    });
+
+                    const syncState = () => {
+                        const complete = isComplete();
+
+                        if (cardSubmit) {
+                            cardSubmit.disabled = !complete;
+                            cardSubmit.setAttribute('aria-disabled', String(!complete));
+                        }
+
+                        disabledUntilCard.forEach((button) => {
+                            button.disabled = true;
+                            button.setAttribute('aria-disabled', 'true');
+                            button.title = message;
+                        });
+                    };
+
+                    form.addEventListener('keydown', (event) => {
+                        if (event.key === 'Enter' && event.target instanceof HTMLElement && event.target.tagName !== 'TEXTAREA') {
+                            event.preventDefault();
+                        }
+                    });
+
+                    form.addEventListener('submit', (event) => {
+                        if (event.submitter !== cardSubmit || !isComplete()) {
+                            event.preventDefault();
+                            form.reportValidity();
+                        }
+                    });
+
+                    form.addEventListener('input', syncState);
+                    form.addEventListener('change', syncState);
+                    syncState();
+                });
             });
         </script>
     @endif

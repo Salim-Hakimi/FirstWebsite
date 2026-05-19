@@ -91,15 +91,6 @@
                         </li>
                     @endif
 
-                    @if ($currentUser->canManageFinance())
-                        <li class="nav-item menu-items {{ request()->routeIs('admin.finance.*') ? 'active' : '' }}">
-                            <a class="nav-link" href="{{ route('admin.finance.index') }}">
-                                <span class="menu-icon"><span class="menu-letter">F</span></span>
-                                <span class="menu-title">Dorm Finance</span>
-                            </a>
-                        </li>
-                    @endif
-
                     @if ($currentUser->canAccessAdmin())
                         <li class="nav-item menu-items {{ request()->routeIs('dorm.rooms.*') ? 'active' : '' }}">
                             <a class="nav-link" href="{{ route('dorm.rooms.index') }}">
@@ -111,10 +102,10 @@
 
                     @if (in_array($currentUser->role, \App\Models\User::dormRecordViewerRoles(), true))
                         <li class="nav-item menu-items {{ request()->routeIs('dorm.students.*') ? 'active' : '' }}">
-                        <a class="nav-link" href="{{ route('dorm.students.index') }}">
-                            <span class="menu-icon"><x-ds.icon name="users" /></span>
-                            <span class="menu-title" data-i18n="dormStudents">شاگردان لیلیه</span>
-                        </a>
+                            <a class="nav-link" href="{{ route('dorm.students.index') }}">
+                                <span class="menu-icon"><x-ds.icon name="users" /></span>
+                                <span class="menu-title" data-i18n="dormStudents">شاگردان لیلیه</span>
+                            </a>
                         </li>
                     @endif
 

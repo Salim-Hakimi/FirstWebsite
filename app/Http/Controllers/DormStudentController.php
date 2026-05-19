@@ -135,6 +135,14 @@ class DormStudentController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $this->validateStudent($request);
+        $issueCard = $request->boolean('issue_card');
+
+        if (($validated['status'] ?? null) === 'active' && ! $issueCard && in_array($validated['registration_payment_status'] ?? 'paid', ['paid', 'partial'], true)) {
+            throw ValidationException::withMessages([
+                'issue_card' => 'برای ثبت پرداخت و محاسبه مالی، ابتدا کارت لیلیه را صادر کنید.',
+            ]);
+        }
+
         $this->normalizeAdmissionState($validated);
         $this->ensureRoomCanAccept($validated);
         $this->syncRoomNumber($validated);
@@ -148,15 +156,15 @@ class DormStudentController extends Controller
         ]));
         Audit::record('dorm_student_created', $student, [], $student->only(['full_name', 'phone', 'status', 'dorm_room_id', 'room_number', 'bed_number']), $request);
 
-        if ($request->boolean('issue_card') && $student->status === 'active') {
+        if ($issueCard && $student->status === 'active') {
             $card = $this->issueDormCard($student, $request);
 
             return redirect()->route('membership-cards.print', $card);
         }
 
         return redirect()
-            ->route('dorm.students.registration.receipt', $student)
-            ->with('status', 'ثبت شاگرد لیلیه موفقانه انجام شد و رسید ثبت‌نام آماده چاپ است.');
+            ->route('dorm.students.index')
+            ->with('status', 'شاگرد ذخیره شد. تا زمان صدور کارت، رسید و محاسبه مالی ساخته نمی‌شود.');
     }
 
     public function issueCard(Request $request, DormStudent $student): RedirectResponse

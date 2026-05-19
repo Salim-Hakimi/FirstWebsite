@@ -32,7 +32,7 @@
         <div class="alert alert-danger">لطفاً فیلدهای مشخص شده را بررسی کرده دوباره ذخیره کنید.</div>
     @endif
 
-    <form id="student-form" method="POST" action="{{ $student->exists ? route('dorm.students.update', $student) : route('dorm.students.store') }}" enctype="multipart/form-data">
+    <form id="student-form" method="POST" action="{{ $student->exists ? route('dorm.students.update', $student) : route('dorm.students.store') }}" enctype="multipart/form-data" @unless($student->exists) data-card-required-form data-card-required-message="برای ثبت شاگرد و محاسبه مالی، فیلدهای ضروری را تکمیل کرده و از دکمه ذخیره و چاپ کارت استفاده کنید." @endunless>
         @csrf
         @if ($student->exists)
             @method('PUT')
@@ -388,7 +388,7 @@
                     @endunless
 
                     <div class="student-save-panel">
-                        <button class="btn btn-primary" type="submit">ذخیره معلومات</button>
+                        <button class="btn btn-primary" type="submit" @unless($student->exists) data-disabled-until-card disabled @endunless>ذخیره معلومات</button>
                         @if ($student->exists)
                             @if ($student->status === 'active')
                                 <button class="btn btn-outline-primary" type="submit" form="issue-card-form">{{ $latestDormCard ? 'تمدید کارت' : 'صدور کارت' }}</button>
@@ -399,7 +399,7 @@
                                 <small class="text-muted">کارت بعد از پذیرش صادر می‌شود.</small>
                             @endif
                         @else
-                            <button class="btn btn-outline-primary" type="submit" name="issue_card" value="1">ذخیره و چاپ کارت</button>
+                            <button class="btn btn-outline-primary" type="submit" name="issue_card" value="1" data-card-submit disabled>ذخیره و چاپ کارت</button>
                         @endif
                         <a class="btn btn-dark" href="{{ route('dorm.students.index') }}">لغو</a>
                     </div>
@@ -413,4 +413,62 @@
             @csrf
         </form>
     @endif
+
+    @unless ($student->exists)
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const form = document.querySelector('[data-card-required-form]');
+                if (! form) {
+                    return;
+                }
+
+                const cardSubmit = form.querySelector('[data-card-submit]');
+                const disabledUntilCard = form.querySelectorAll('[data-disabled-until-card]');
+                const message = form.dataset.cardRequiredMessage || 'فیلدهای ضروری را تکمیل کنید و کارت را صادر کنید.';
+
+                const requiredControls = () => Array.from(form.querySelectorAll('input, select, textarea'))
+                    .filter((control) => control.required && !control.disabled && control.type !== 'hidden');
+
+                const isComplete = () => requiredControls().every((control) => {
+                    if (control.type === 'checkbox' || control.type === 'radio') {
+                        return Boolean(form.querySelector(`[name="${CSS.escape(control.name)}"]:checked`));
+                    }
+
+                    return control.value.trim() !== '' && control.checkValidity();
+                });
+
+                const syncState = () => {
+                    const complete = isComplete();
+
+                    if (cardSubmit) {
+                        cardSubmit.disabled = !complete;
+                        cardSubmit.setAttribute('aria-disabled', String(!complete));
+                    }
+
+                    disabledUntilCard.forEach((button) => {
+                        button.disabled = true;
+                        button.setAttribute('aria-disabled', 'true');
+                        button.title = message;
+                    });
+                };
+
+                form.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter' && event.target instanceof HTMLElement && event.target.tagName !== 'TEXTAREA') {
+                        event.preventDefault();
+                    }
+                });
+
+                form.addEventListener('submit', (event) => {
+                    if (event.submitter !== cardSubmit || !isComplete()) {
+                        event.preventDefault();
+                        form.reportValidity();
+                    }
+                });
+
+                form.addEventListener('input', syncState);
+                form.addEventListener('change', syncState);
+                syncState();
+            });
+        </script>
+    @endunless
 @endsection

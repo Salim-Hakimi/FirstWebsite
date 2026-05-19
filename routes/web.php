@@ -104,6 +104,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/library/inventory/export', [LibraryController::class, 'inventoryExport'])->name('library.inventory.export');
         Route::get('/library/fee-reminders', [LibraryController::class, 'feeReminders'])->name('library.fee-reminders.index');
         Route::get('/library/members-export', [LibraryController::class, 'membersExport'])->name('library.members.export');
+        Route::get('/library/finance/export', [LibraryController::class, 'financeExport'])->name('library.finance.export');
+        Route::get('/library/finance/transactions/{transaction}/receipt', [LibraryController::class, 'financeReceipt'])->name('library.finance.transactions.receipt');
         Route::get('/library/members/{member}', [LibraryController::class, 'showMember'])->name('library.members.show');
     });
 

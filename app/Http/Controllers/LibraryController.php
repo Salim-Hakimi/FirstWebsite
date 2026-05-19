@@ -19,6 +19,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -29,6 +30,7 @@ class LibraryController extends Controller
         $this->syncOverdueLoans();
 
         $filters = $this->validateMemberFilters($request);
+        $financeFilters = $this->validateLibraryFinanceFilters($request);
 
         $members = $this->libraryMembersQuery($filters)
             ->latest()
@@ -48,10 +50,19 @@ class LibraryController extends Controller
             ->where('payment_status', '!=', 'paid')
             ->latest('expires_at')
             ->get();
+        $financeQuery = $this->libraryFinanceTransactions()
+            ->with(['category', 'recordedBy']);
+        $this->applyLibraryFinanceFilters($financeQuery, $financeFilters);
+
+        $categorySummaryQuery = $this->libraryFinanceTransactions()
+            ->with('category')
+            ->whereNotNull('finance_category_id');
+        $this->applyLibraryFinanceFilters($categorySummaryQuery, array_merge($financeFilters, ['finance_category' => null]));
 
         return view('library.index', [
             'members' => $members,
             'filters' => $filters,
+            'libraryFinanceFilters' => $financeFilters,
             'memberStatusLabels' => $this->memberStatusLabels(),
             'books' => Book::query()->withCount('copies')->latest()->limit(30)->get(),
             'loans' => BookLoan::query()->with(['member', 'book', 'copy'])->latest()->limit(40)->get(),
@@ -74,12 +85,27 @@ class LibraryController extends Controller
             'libraryIncomeTotal' => (int) $this->libraryFinanceTransactions()->where('type', 'income')->sum('amount'),
             'libraryExpenseTotal' => (int) $this->libraryFinanceTransactions()->where('type', 'expense')->sum('amount'),
             'libraryTodayIncome' => (int) $this->libraryFinanceTransactions()->where('type', 'income')->whereDate('transaction_date', today())->sum('amount'),
-            'libraryFinanceRecords' => $this->libraryFinanceTransactions()
-                ->with(['category', 'recordedBy'])
+            'libraryMonthIncome' => (int) $this->libraryFinanceTransactions()
+                ->where('type', 'income')
+                ->whereBetween('transaction_date', [now()->startOfMonth()->toDateString(), now()->endOfMonth()->toDateString()])
+                ->sum('amount'),
+            'libraryMonthExpense' => (int) $this->libraryFinanceTransactions()
+                ->where('type', 'expense')
+                ->whereBetween('transaction_date', [now()->startOfMonth()->toDateString(), now()->endOfMonth()->toDateString()])
+                ->sum('amount'),
+            'libraryFinanceRecords' => $financeQuery
                 ->latest('transaction_date')
                 ->latest()
-                ->limit(10)
+                ->limit(80)
                 ->get(),
+            'libraryFinanceCategorySummaries' => $categorySummaryQuery
+                ->selectRaw('finance_category_id, type, SUM(amount) as total_amount, COUNT(*) as records_count')
+                ->groupBy('finance_category_id', 'type')
+                ->orderByDesc('total_amount')
+                ->limit(8)
+                ->get(),
+            'libraryFinanceCategoryOptions' => $this->libraryFinanceCategoryOptions(),
+            'libraryFinancePeriods' => $this->libraryFinancePeriodReports(),
             'libraryPaymentMethods' => $this->libraryPaymentMethods(),
             'libraryFinanceCategories' => $this->libraryFinanceCategoryLabels(),
         ]);
@@ -146,6 +172,70 @@ class LibraryController extends Controller
             fclose($handle);
         }, $filename, [
             'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
+    public function financeExport(Request $request): StreamedResponse
+    {
+        $filters = $this->validateLibraryFinanceFilters($request);
+        $filename = 'library-finance-'.now()->format('Y-m-d').'.csv';
+
+        return response()->streamDownload(function () use ($filters): void {
+            $handle = fopen('php://output', 'w');
+
+            fputcsv($handle, [
+                'Date',
+                'Type',
+                'Category',
+                'Person or source',
+                'Receipt number',
+                'Payment method',
+                'Amount AFN',
+                'Description',
+                'Recorded by',
+            ]);
+
+            $query = $this->libraryFinanceTransactions()
+                ->with(['category', 'recordedBy'])
+                ->orderByDesc('transaction_date')
+                ->orderByDesc('id');
+            $this->applyLibraryFinanceFilters($query, $filters);
+
+            $query->chunk(200, function ($records) use ($handle): void {
+                foreach ($records as $record) {
+                    fputcsv($handle, [
+                        $record->transaction_date?->format('Y-m-d'),
+                        $record->type,
+                        $record->category?->name,
+                        $record->source_or_payee ?: $record->payer_name ?: $record->payee_name,
+                        $record->receipt_number,
+                        $record->payment_method,
+                        (int) $record->amount,
+                        $record->description ?: $record->notes,
+                        $record->recordedBy?->name,
+                    ]);
+                }
+            });
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
+    public function financeReceipt(FinanceTransaction $transaction): View
+    {
+        abort_unless($this->isLibraryFinanceTransaction($transaction), 404);
+
+        $transaction->load(['category', 'recordedBy', 'attachments']);
+
+        return view('admin.finance.receipt', [
+            'transaction' => $transaction,
+            'paymentMethods' => $this->libraryPaymentMethods(),
+            'statusLabels' => $this->financeStatusLabels(),
+            'backRoute' => 'library.index',
+            'receiptTitle' => 'کتابخانه فانوس',
+            'receiptSubtitle' => 'رسید مالی کتابخانه',
         ]);
     }
 
@@ -358,6 +448,14 @@ class LibraryController extends Controller
     public function storeMember(Request $request): RedirectResponse
     {
         $validated = $this->validateMember($request);
+        $issueCard = $request->boolean('issue_card');
+
+        if (! $issueCard && ($validated['payment_status'] ?? 'unpaid') === 'paid') {
+            throw ValidationException::withMessages([
+                'issue_card' => 'برای ثبت پرداخت و محاسبه مالی، ابتدا کارت کتابخانه را صادر کنید.',
+            ]);
+        }
+
         $joinedAt = $validated['joined_at'] ?? now()->toDateString();
         $paymentStatus = $validated['payment_status'] ?? 'unpaid';
         $validated['profile_photo_path'] = $this->storeProfilePhoto($request);
@@ -375,11 +473,11 @@ class LibraryController extends Controller
         ]));
         Audit::record('library_member_created', $member, [], $member->only(['member_code', 'full_name', 'phone', 'status', 'payment_status']), $request);
 
-        if ($paymentStatus === 'paid' && (int) $member->membership_fee > 0) {
-            $this->recordLibraryFinance('income', 'فیس ثبت‌نام کتابخانه', (int) $member->membership_fee, $member->full_name, 'فیس ثبت‌نام عضو کتابخانه: '.$member->member_code, $request);
+        if ($issueCard && $paymentStatus === 'paid' && (int) $member->membership_fee > 0 && ! $this->hasLibraryMonthlyPayment($member, $joinedAt)) {
+            $this->recordLibraryFinance('income', 'فیس ماهانه کتابخانه', (int) $member->membership_fee, $member->full_name, 'پرداخت ماهانه عضو کتابخانه: '.$member->member_code, $request, $joinedAt);
         }
 
-        if ($request->boolean('issue_card')) {
+        if ($issueCard) {
             $card = $this->issueLibraryCard($member, $request);
 
             return redirect()->route('membership-cards.print', $card);
@@ -430,6 +528,23 @@ class LibraryController extends Controller
         $paidAt = today();
         $feeAmount = (int) $member->membership_fee;
         $fineAmount = max((int) $member->monthly_fee_fine_amount, $member->calculatedMonthlyFine());
+
+        if ($this->hasLibraryMonthlyPayment($member, $paidAt)) {
+            session([
+                'library_monthly_receipt' => [
+                    'member_id' => $member->id,
+                    'paid_at' => $member->last_paid_at?->toDateString() ?? $paidAt->toDateString(),
+                    'fee_amount' => $feeAmount,
+                    'fine_amount' => 0,
+                    'total_amount' => $feeAmount,
+                    'recorded_by' => $request->user()->name,
+                ],
+            ]);
+
+            return redirect()
+                ->route('library.members.monthly-payment.receipt', $member)
+                ->with('status', 'فیس ماهانه این عضو برای همین ماه قبلاً ثبت شده است؛ ثبت تکراری ساخته نشد.');
+        }
 
         $member->update([
             'payment_status' => 'paid',
@@ -760,6 +875,88 @@ class LibraryController extends Controller
         ]);
     }
 
+    private function validateLibraryFinanceFilters(Request $request): array
+    {
+        return $request->validate([
+            'finance_q' => ['nullable', 'string', 'max:120'],
+            'finance_type' => ['nullable', Rule::in(['income', 'expense'])],
+            'finance_category' => ['nullable', 'integer', 'exists:finance_categories,id'],
+            'finance_payment_method' => ['nullable', Rule::in(array_keys($this->libraryPaymentMethods()))],
+            'finance_date_from' => ['nullable', 'date'],
+            'finance_date_to' => ['nullable', 'date', 'after_or_equal:finance_date_from'],
+        ]);
+    }
+
+    private function applyLibraryFinanceFilters($query, array $filters): void
+    {
+        $query
+            ->when($filters['finance_type'] ?? null, fn ($query, $type) => $query->where('type', $type))
+            ->when($filters['finance_category'] ?? null, fn ($query, $category) => $query->where('finance_category_id', $category))
+            ->when($filters['finance_payment_method'] ?? null, fn ($query, $method) => $query->where('payment_method', $method))
+            ->when($filters['finance_date_from'] ?? null, fn ($query, $date) => $query->whereDate('transaction_date', '>=', $date))
+            ->when($filters['finance_date_to'] ?? null, fn ($query, $date) => $query->whereDate('transaction_date', '<=', $date))
+            ->when($filters['finance_q'] ?? null, function ($query, $search) {
+                $query->where(function ($query) use ($search) {
+                    $query
+                        ->where('payer_name', 'like', "%{$search}%")
+                        ->orWhere('payee_name', 'like', "%{$search}%")
+                        ->orWhere('source_or_payee', 'like', "%{$search}%")
+                        ->orWhere('transaction_number', 'like', "%{$search}%")
+                        ->orWhere('receipt_number', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%")
+                        ->orWhere('notes', 'like', "%{$search}%")
+                        ->orWhereHas('category', fn ($categoryQuery) => $categoryQuery->where('name', 'like', "%{$search}%"));
+                });
+            });
+    }
+
+    private function libraryFinancePeriodReports(): array
+    {
+        $periods = [
+            'daily' => [
+                'label' => 'روزانه',
+                'caption' => 'امروز',
+                'start' => today()->toDateString(),
+                'end' => today()->toDateString(),
+            ],
+            'weekly' => [
+                'label' => 'هفته‌وار',
+                'caption' => 'هفته جاری',
+                'start' => now()->startOfWeek()->toDateString(),
+                'end' => now()->endOfWeek()->toDateString(),
+            ],
+            'monthly' => [
+                'label' => 'ماهانه',
+                'caption' => 'ماه جاری',
+                'start' => now()->startOfMonth()->toDateString(),
+                'end' => now()->endOfMonth()->toDateString(),
+            ],
+            'yearly' => [
+                'label' => 'سالانه',
+                'caption' => 'سال جاری',
+                'start' => now()->startOfYear()->toDateString(),
+                'end' => now()->endOfYear()->toDateString(),
+            ],
+        ];
+
+        foreach ($periods as $key => $period) {
+            $income = (int) $this->libraryFinanceTransactions()
+                ->where('type', 'income')
+                ->whereBetween('transaction_date', [$period['start'], $period['end']])
+                ->sum('amount');
+            $expense = (int) $this->libraryFinanceTransactions()
+                ->where('type', 'expense')
+                ->whereBetween('transaction_date', [$period['start'], $period['end']])
+                ->sum('amount');
+
+            $periods[$key]['income'] = $income;
+            $periods[$key]['expense'] = $expense;
+            $periods[$key]['balance'] = $income - $expense;
+        }
+
+        return $periods;
+    }
+
     private function storeProfilePhoto(Request $request): ?string
     {
         return $request->file('profile_photo')?->store('profile-photos/library-members', 'public');
@@ -1046,6 +1243,39 @@ class LibraryController extends Controller
             ->whereHas('category', fn ($query) => $query->where('name', 'like', 'کتابخانه -%'));
     }
 
+    private function libraryFinanceCategoryOptions()
+    {
+        return FinanceCategory::query()
+            ->where('is_active', true)
+            ->where('name', 'like', 'کتابخانه -%')
+            ->orderBy('type')
+            ->orderBy('name')
+            ->get();
+    }
+
+    private function isLibraryFinanceTransaction(FinanceTransaction $transaction): bool
+    {
+        $transaction->loadMissing('category');
+
+        return $transaction->category
+            && str_starts_with($transaction->category->name, 'کتابخانه -');
+    }
+
+    private function hasLibraryMonthlyPayment(LibraryMember $member, Carbon|string $date): bool
+    {
+        $paidAt = $date instanceof Carbon ? $date : Carbon::parse($date);
+
+        return $this->libraryFinanceTransactions()
+            ->where('type', 'income')
+            ->whereBetween('transaction_date', [
+                $paidAt->copy()->startOfMonth()->toDateString(),
+                $paidAt->copy()->endOfMonth()->toDateString(),
+            ])
+            ->where('description', 'like', '%'.$member->member_code.'%')
+            ->whereHas('category', fn ($query) => $query->where('name', 'like', '%فیس ماهانه کتابخانه'))
+            ->exists();
+    }
+
     private function libraryFinanceCategoryLabels(): array
     {
         return [
@@ -1069,6 +1299,15 @@ class LibraryController extends Controller
             'hawala' => 'حواله',
             'card' => 'کارت',
             'other' => 'سایر',
+        ];
+    }
+
+    private function financeStatusLabels(): array
+    {
+        return [
+            'paid' => 'پرداخت شده',
+            'partial' => 'نیمه پرداخت',
+            'pending' => 'بدهکار',
         ];
     }
 

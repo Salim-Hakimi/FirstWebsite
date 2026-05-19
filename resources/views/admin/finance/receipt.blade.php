@@ -20,13 +20,13 @@
 <body>
     <div class="actions">
         <button class="btn" onclick="window.print()">چاپ رسید</button>
-        <a class="btn" href="{{ route('admin.finance.index') }}">برگشت</a>
+        <a class="btn" href="{{ route($backRoute ?? 'admin.finance.index') }}">برگشت</a>
     </div>
     <div class="receipt">
         <div class="header">
             <div>
-                <div class="title">لیلیه فانوس</div>
-                <div>رسید {{ $transaction->type === 'income' ? 'درآمد' : 'مصرف' }}</div>
+                <div class="title">{{ $receiptTitle ?? 'لیلیه فانوس' }}</div>
+                <div>{{ $receiptSubtitle ?? 'رسید' }} {{ $transaction->type === 'income' ? 'درآمد' : 'مصرف' }}</div>
             </div>
             <div>
                 <div>شماره سند: {{ $transaction->transaction_number }}</div>
