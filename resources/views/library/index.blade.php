@@ -17,6 +17,7 @@
         $overdueLoans = $overdueLoans ?? collect();
         $followUpCount = $expiringMembers->count() + $expiredCards->count() + $overdueLoans->count();
         $hasMemberFilters = filled($filters['q'] ?? null) || filled($filters['status'] ?? null);
+        $isLibraryFinancePage = request()->routeIs('library.finance.*');
         $financeTypeLabels = ['income' => 'درآمد', 'expense' => 'مصرف'];
         $libraryFinanceBalance = $libraryIncomeTotal - $libraryExpenseTotal;
         $libraryMonthBalance = $libraryMonthIncome - $libraryMonthExpense;
@@ -104,6 +105,7 @@
             </article>
         </section>
 
+        @if ($isLibraryFinancePage)
         <section class="dashboard-stat-grid" aria-label="خلاصه مالی کتابخانه">
             <article class="dashboard-stat">
                 <div>
@@ -182,7 +184,7 @@
                 @endforeach
             </div>
 
-            <form method="GET" action="{{ route('library.index') }}#library-finance-ledger" class="fanous-filter-grid fanous-finance-filter-grid">
+            <form method="GET" action="{{ route('library.finance.index') }}#library-finance-ledger" class="fanous-filter-grid fanous-finance-filter-grid">
                 <div class="fanous-quick-filters">
                     @foreach ($libraryQuickFilters as $quickFilter)
                         @php
@@ -193,7 +195,7 @@
                                 'finance_date_to' => $quickFilter['to'],
                             ]), fn ($value) => filled($value));
                         @endphp
-                        <a class="{{ $isActiveQuickFilter ? 'is-active' : '' }}" href="{{ route('library.index', $quickFilterParams) }}#library-finance-ledger">{{ $quickFilter['label'] }}</a>
+                        <a class="{{ $isActiveQuickFilter ? 'is-active' : '' }}" href="{{ route('library.finance.index', $quickFilterParams) }}#library-finance-ledger">{{ $quickFilter['label'] }}</a>
                     @endforeach
                 </div>
 
@@ -245,7 +247,7 @@
                 <div class="fanous-filter-actions">
                     <x-ds.button type="submit">جستجو</x-ds.button>
                     <x-ds.button variant="outline" :href="route('library.finance.export', request()->query())">CSV</x-ds.button>
-                    <x-ds.button variant="outline" :href="route('library.index').'#library-finance-ledger'">پاک کردن</x-ds.button>
+                    <x-ds.button variant="outline" :href="route('library.finance.index').'#library-finance-ledger'">پاک کردن</x-ds.button>
                 </div>
             </form>
 
@@ -268,6 +270,7 @@
                 </div>
             @endif
         </section>
+        @endif
 
         <section class="fanous-library-notice">
             <span>i</span>
@@ -322,11 +325,13 @@
                         <strong>گزارش موجودی</strong>
                         <small>نسخه‌ها و وضعیت کتاب‌ها</small>
                     </a>
-                    <button class="fanous-library-action" type="button" data-library-panel-trigger="library-finance-record" aria-controls="library-finance-record" aria-expanded="false">
-                        <span><x-ds.icon name="cash" /></span>
-                        <strong>ثبت مالی کتابخانه</strong>
-                        <small>درآمد یا مصرف خارج از فیس و کارت</small>
-                    </button>
+                    @if ($isLibraryFinancePage)
+                        <button class="fanous-library-action" type="button" data-library-panel-trigger="library-finance-record" aria-controls="library-finance-record" aria-expanded="false">
+                            <span><x-ds.icon name="cash" /></span>
+                            <strong>ثبت مالی کتابخانه</strong>
+                            <small>درآمد یا مصرف خارج از فیس و کارت</small>
+                        </button>
+                    @endif
                 </div>
             </section>
 
@@ -338,6 +343,7 @@
                     </div>
                 </article>
 
+                @if ($isLibraryFinancePage)
                 <article class="dashboard-panel fanous-library-form-panel" id="library-finance-record" data-library-panel>
                     <div class="dashboard-panel-header">
                         <div>
@@ -383,6 +389,7 @@
                         </div>
                     </form>
                 </article>
+                @endif
 
                 <article class="dashboard-panel fanous-library-form-panel" id="new-library-member" data-library-panel>
                     <div class="dashboard-panel-header">
@@ -552,6 +559,7 @@
             </section>
         @endif
 
+        @if ($isLibraryFinancePage)
         <section class="dashboard-panel">
             <div class="dashboard-panel-header">
                 <div>
@@ -601,6 +609,7 @@
                 </table>
             </div>
         </section>
+        @endif
 
         <section class="fanous-library-layout">
             <div class="fanous-library-main">

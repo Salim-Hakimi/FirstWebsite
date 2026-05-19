@@ -128,10 +128,16 @@
                     @endif
 
                     @if (in_array($currentUser->role, \App\Models\User::libraryViewerRoles(), true))
-                        <li class="nav-item menu-items {{ request()->routeIs('library.*') ? 'active' : '' }}">
+                        <li class="nav-item menu-items {{ request()->routeIs('library.index', 'library.inventory.*', 'library.fee-reminders.*', 'library.members.*', 'library.books.*', 'library.loans.*') ? 'active' : '' }}">
                             <a class="nav-link" href="{{ route('library.index') }}">
                                 <span class="menu-icon"><x-ds.icon name="library" /></span>
                                 <span class="menu-title" data-i18n="library">کتابخانه</span>
+                            </a>
+                        </li>
+                        <li class="nav-item menu-items {{ request()->routeIs('library.finance.*') ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('library.finance.index') }}#library-finance-ledger">
+                                <span class="menu-icon"><x-ds.icon name="cash" /></span>
+                                <span class="menu-title" data-i18n="finance">مالی</span>
                             </a>
                         </li>
                     @endif

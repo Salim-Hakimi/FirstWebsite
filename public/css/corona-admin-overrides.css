@@ -62,6 +62,25 @@
     height: 19px;
 }
 
+.navbar .navbar-nav .create-new-button {
+    min-width: max-content;
+    width: auto;
+    min-height: 42px;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 16px !important;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: visible;
+}
+
+.navbar .navbar-nav .create-new-button .ds-icon,
+.navbar .navbar-nav .create-new-button span {
+    flex: 0 0 auto;
+}
+
 .menu-icon .ds-icon {
     opacity: .95;
 }
