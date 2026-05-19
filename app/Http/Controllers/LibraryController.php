@@ -1279,7 +1279,6 @@ class LibraryController extends Controller
     private function libraryFinanceCategoryLabels(): array
     {
         return [
-            'registration_fee' => ['type' => 'income', 'label' => 'فیس ثبت‌نام کتابخانه'],
             'card_fee' => ['type' => 'income', 'label' => 'قیمت کارت کتابخانه'],
             'monthly_fee' => ['type' => 'income', 'label' => 'فیس ماهانه کتابخانه'],
             'donation' => ['type' => 'income', 'label' => 'کمک برای کتابخانه'],

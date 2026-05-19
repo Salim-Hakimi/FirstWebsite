@@ -111,7 +111,7 @@
                 <div>
                     <span>درآمد کتابخانه</span>
                     <strong>{{ Locale::money($libraryIncomeTotal) }}</strong>
-                    <small>فیس ثبت‌نام، قیمت کارت و دریافت‌های کتابخانه</small>
+                    <small>فیس ماهانه، قیمت کارت و دریافت‌های کتابخانه</small>
                 </div>
                 <span class="dashboard-stat-icon"><x-ds.icon name="cash" /></span>
             </article>
@@ -349,7 +349,7 @@
                         <div>
                             <span class="dashboard-section-kicker">مالی کتابخانه</span>
                             <h2>ثبت درآمد یا مصرف کتابخانه</h2>
-                            <p>فیس ثبت‌نام، فیس ماهانه و قیمت کارت به صورت اتومات ثبت می‌شود؛ این فرم برای درآمد و مصرف‌های اضافی کتابخانه است.</p>
+                            <p>فیس ماهانه و قیمت کارت به صورت اتومات ثبت می‌شود؛ این فرم برای درآمد و مصرف‌های اضافی کتابخانه است.</p>
                         </div>
                         <x-ds.button variant="outline" size="sm" type="button" data-library-panel-close>بستن</x-ds.button>
                     </div>
