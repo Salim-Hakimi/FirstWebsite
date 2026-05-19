@@ -28,8 +28,8 @@
         ];
 
         $activeCount = $students->where('status', 'active')->count();
-        $waitingCount = $waitingApplicants->where('status', 'waiting')->count();
-        $onHoldCount = $waitingApplicants->where('status', 'on_hold')->count();
+        $waitingCount = $students->where('status', 'waiting')->count();
+        $onHoldCount = $students->where('status', 'on_hold')->count();
         $missingDocumentsCount = $students->filter(fn ($student) => count($student->document_names ?? []) === 0)->count();
         $recentRegistrationCount = $students->filter(fn ($student) => $student->created_at?->greaterThanOrEqualTo(now()->subDays(30)))->count();
 

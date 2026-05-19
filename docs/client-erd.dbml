@@ -11,9 +11,7 @@ Table users {
   status varchar
   theme varchar
   profile_photo_path varchar
-  password varchar
   email_verified_at timestamp
-  remember_token varchar
   created_at timestamp
   updated_at timestamp
 }
