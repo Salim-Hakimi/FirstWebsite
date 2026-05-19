@@ -18,10 +18,22 @@ class SecurityRules
 
     public static function strongPassword(bool $required = true): array
     {
+        $password = Password::min(config('security.password.min_length', 12))
+            ->letters()
+            ->mixedCase()
+            ->numbers()
+            ->symbols();
+
+        if (config('security.password.check_compromised', false)) {
+            $password->uncompromised();
+        }
+
         return [
             $required ? 'required' : 'nullable',
             'confirmed',
-            Password::min(8)->mixedCase()->numbers(),
+            'string',
+            'max:128',
+            $password,
         ];
     }
 

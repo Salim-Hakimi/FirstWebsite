@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\BlockSuspiciousRequests;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetLocale;
@@ -17,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: '*');
 
         $middleware->web(append: [
+            BlockSuspiciousRequests::class,
             SetLocale::class,
             SecurityHeaders::class,
         ]);

@@ -37,7 +37,7 @@ Route::get('/transparency', TransparencyController::class)->name('transparency')
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'createLogin'])->name('login');
-    Route::post('/login', [AuthController::class, 'storeLogin'])->middleware('throttle:5,1')->name('login.store');
+    Route::post('/login', [AuthController::class, 'storeLogin'])->middleware('throttle:login')->name('login.store');
     Route::get('/staff/setup', [AuthController::class, 'createRegister'])->name('staff.setup');
     Route::post('/staff/setup', [AuthController::class, 'storeRegister'])->middleware('throttle:3,1')->name('staff.setup.store');
 });
