@@ -459,6 +459,7 @@ class LibraryController extends Controller
         $joinedAt = $validated['joined_at'] ?? now()->toDateString();
         $paymentStatus = $validated['payment_status'] ?? 'unpaid';
         $validated['profile_photo_path'] = $this->storeProfilePhoto($request);
+        $validated['card_fee_amount'] = $validated['card_fee_amount'] ?? 50;
         $validated['monthly_fee_daily_fine'] = $validated['monthly_fee_daily_fine'] ?? 20;
         $validated['monthly_fee_fine_amount'] = $paymentStatus === 'paid' ? 0 : ($validated['monthly_fee_fine_amount'] ?? 0);
         unset($validated['issue_card'], $validated['profile_photo'], $validated['remove_profile_photo']);
@@ -467,7 +468,7 @@ class LibraryController extends Controller
             'registered_by' => $request->user()->id,
             'member_code' => ($validated['member_code'] ?? null) ?: $this->nextCode('LIB-M'),
             'joined_at' => $joinedAt,
-            'membership_expires_at' => Carbon::parse($joinedAt)->addMonth(),
+            'membership_expires_at' => Carbon::parse($joinedAt)->addMonths(6),
             'last_paid_at' => $paymentStatus === 'paid' ? $joinedAt : null,
             'next_payment_due_at' => Carbon::parse($joinedAt)->addMonth(),
         ]));
@@ -550,7 +551,6 @@ class LibraryController extends Controller
             'payment_status' => 'paid',
             'last_paid_at' => $paidAt,
             'next_payment_due_at' => $paidAt->copy()->addMonth(),
-            'membership_expires_at' => $paidAt->copy()->addMonth(),
             'monthly_fee_fine_amount' => 0,
         ]);
 
@@ -854,13 +854,14 @@ class LibraryController extends Controller
             'member_code' => ['nullable', 'string', 'max:60', Rule::unique('library_members', 'member_code')->ignore($member)],
             'full_name' => ['required', 'string', 'max:120'],
             'father_name' => ['required', 'string', 'max:120'],
-            'phone' => SecurityRules::phone(),
-            'email' => ['nullable', 'email', 'max:120'],
-            'tazkira_number' => ['nullable', 'string', 'max:80'],
+            'phone' => [...SecurityRules::phone(), Rule::unique('library_members', 'phone')->ignore($member)],
+            'email' => ['nullable', 'email', 'max:120', Rule::unique('library_members', 'email')->ignore($member)],
+            'tazkira_number' => ['nullable', 'string', 'max:80', Rule::unique('library_members', 'tazkira_number')->ignore($member)],
             'education_place' => ['nullable', 'string', 'max:160'],
             'department_or_grade' => ['nullable', 'string', 'max:160'],
             'address' => ['nullable', 'string', 'max:220'],
             'membership_fee' => ['nullable', 'integer', 'min:0'],
+            'card_fee_amount' => ['nullable', 'integer', 'min:0'],
             'monthly_fee_daily_fine' => ['nullable', 'integer', 'min:0'],
             'monthly_fee_fine_amount' => ['nullable', 'integer', 'min:0'],
             'payment_status' => ['nullable', Rule::in(['paid', 'unpaid'])],
@@ -1023,6 +1024,7 @@ class LibraryController extends Controller
     {
         $issuedAt = now();
         $paymentStatus = $request->input('payment_status', 'unpaid');
+        $cardFee = (int) ($member->card_fee_amount ?? 50);
 
         $card = $member->membershipCards()->create([
             'scope' => 'library',
@@ -1030,20 +1032,22 @@ class LibraryController extends Controller
             'holder_name' => $member->full_name,
             'father_name' => $member->father_name,
             'issued_at' => $issuedAt,
-            'expires_at' => $issuedAt->copy()->addMonth(),
-            'fee_amount' => 50,
+            'expires_at' => $issuedAt->copy()->addMonths(6),
+            'fee_amount' => $cardFee,
             'payment_status' => $paymentStatus,
             'paid_at' => $paymentStatus === 'paid' ? $issuedAt : null,
             'created_by' => $request->user()->id,
         ]);
 
-        if ($paymentStatus === 'paid') {
-            $this->recordLibraryFinance('income', 'قیمت کارت کتابخانه', 50, $member->full_name, 'صدور کارت کتابخانه: '.$card->card_number, $request);
+        if ($paymentStatus === 'paid' && $cardFee > 0) {
+            $this->recordLibraryFinance('income', 'قیمت کارت کتابخانه', $cardFee, $member->full_name, 'صدور کارت کتابخانه: '.$card->card_number, $request);
         }
 
         $member->update([
             'membership_expires_at' => $card->expires_at,
-            'next_payment_due_at' => $card->expires_at,
+            'next_payment_due_at' => $paymentStatus === 'paid'
+                ? ($member->next_payment_due_at && $member->next_payment_due_at->isFuture() ? $member->next_payment_due_at : $issuedAt->copy()->addMonth())
+                : $member->next_payment_due_at,
             'last_paid_at' => $paymentStatus === 'paid' ? $issuedAt : $member->last_paid_at,
             'monthly_fee_fine_amount' => $paymentStatus === 'paid' ? 0 : $member->monthly_fee_fine_amount,
         ]);
@@ -1322,12 +1326,12 @@ class LibraryController extends Controller
     {
         $validated['monthly_fee_daily_fine'] = $validated['monthly_fee_daily_fine'] ?? $member->monthly_fee_daily_fine ?? 20;
         $validated['monthly_fee_fine_amount'] = $validated['monthly_fee_fine_amount'] ?? $member->monthly_fee_fine_amount ?? 0;
+        $validated['card_fee_amount'] = $validated['card_fee_amount'] ?? $member->card_fee_amount ?? 50;
 
         if (($validated['payment_status'] ?? $member->payment_status) === 'paid') {
             $paidAt = now();
             $validated['last_paid_at'] = $paidAt->toDateString();
             $validated['next_payment_due_at'] = $paidAt->copy()->addMonth()->toDateString();
-            $validated['membership_expires_at'] = $paidAt->copy()->addMonth()->toDateString();
             $validated['monthly_fee_fine_amount'] = 0;
         }
     }

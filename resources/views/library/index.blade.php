@@ -413,6 +413,7 @@
                         <label><span>محل تحصیل</span><input class="form-control" name="education_place"></label>
                         <label><span>دیپارتمنت / صنف</span><input class="form-control" name="department_or_grade"></label>
                         <label><span>فیس ماهانه</span><input class="form-control" name="membership_fee" type="number" min="0" value="0"></label>
+                        <label><span>قیمت کارت</span><input class="form-control" name="card_fee_amount" type="number" min="0" value="50"></label>
                         <label>
                             <span>وضعیت پرداخت</span>
                             <select class="form-control" name="payment_status">
@@ -663,7 +664,7 @@
 
                                 <div class="fanous-library-member-meta">
                                     <div><span>شماره تماس</span><strong class="ltr-text">{{ $member->phone }}</strong></div>
-                                    <div><span>فیس عضویت</span><strong>{{ Locale::money((int) $member->membership_fee) }}</strong></div>
+                                    <div><span>فیس ماهانه</span><strong>{{ Locale::money((int) $member->membership_fee) }}</strong></div>
                                     <div><span>باقی فیس</span><strong>{{ Locale::money((int) $member->monthlyFeeBalance()) }}</strong></div>
                                     <div><span>پرداخت</span><strong><x-ds.badge :tone="$paymentTone">{{ $member->payment_status === 'paid' ? 'پرداخت شده' : 'پرداخت نشده' }}</x-ds.badge></strong></div>
                                     <div><span>تاریخ ثبت</span><strong>{{ $member->joined_at ? Locale::number($member->joined_at->format('Y/m/d')) : 'ثبت نشده' }}</strong></div>
@@ -674,9 +675,6 @@
                                     <x-ds.button size="sm" :href="route('library.members.show', $member)">مشاهده</x-ds.button>
                                     @if ($canWriteLibrary)
                                         <x-ds.button variant="outline" size="sm" :href="route('library.members.edit', $member)">ویرایش</x-ds.button>
-                                    @endif
-                                    @if ($card)
-                                        <x-ds.button variant="outline" size="sm" :href="route('membership-cards.print', $card)">چاپ کارت</x-ds.button>
                                     @endif
                                 </div>
                             </article>

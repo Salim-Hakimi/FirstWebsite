@@ -118,7 +118,7 @@
                 <div>
                     <span>درآمد کتابخانه</span>
                     <strong>{{ Locale::money($libraryIncomeTotal) }}</strong>
-                    <small>امروز: {{ Locale::money($libraryTodayIncome) }} · ماه جاری: {{ Locale::money($libraryMonthIncome) }}؛ در مجموع درآمد لیلیه حساب شده است</small>
+                    <small>امروز: {{ Locale::money($libraryTodayIncome) }} · ماه جاری: {{ Locale::money($libraryMonthIncome) }}؛ در درآمد کل لیلیه حساب شده است</small>
                 </div>
                 <span class="dashboard-stat-icon is-blue"><x-ds.icon name="cash" /></span>
             </article>
@@ -127,7 +127,7 @@
                 <div>
                     <span>خالص ماه جاری</span>
                     <strong>{{ Locale::money($monthBalance) }}</strong>
-                    <small>دریافت ماه جاری منهای مصارف همین ماه؛ شامل درآمد کتابخانه و ثبت‌نام</small>
+                    <small>دریافت ماه جاری منهای مصارف همین ماه؛ شامل درآمد ثبت‌نام و کتابخانه</small>
                 </div>
                 <span class="dashboard-stat-icon is-green"><x-ds.icon name="chart" /></span>
             </article>
@@ -138,7 +138,7 @@
                 <div>
                     <span class="dashboard-section-kicker">گزارش مالی</span>
                     <h2>درآمد و مصرف روزانه، هفته‌وار، ماهانه و سالانه</h2>
-                    <p>درآمد کتابخانه و درآمد ثبت‌نام شاگردان در مجموع درآمد لیلیه حساب می‌شود.</p>
+                    <p>درآمد ثبت‌نام شاگردان و درآمد کتابخانه در مجموع درآمد لیلیه حساب می‌شود.</p>
                 </div>
             </div>
 

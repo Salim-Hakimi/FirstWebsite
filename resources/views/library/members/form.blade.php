@@ -87,6 +87,7 @@
 
                     <div class="student-form-grid three">
                         <div class="form-group"><label data-i18n="monthlyFee">فیس ماهانه</label><input class="form-control" name="membership_fee" type="number" min="0" value="{{ old('membership_fee', $member->membership_fee) }}"></div>
+                        <div class="form-group"><label>قیمت کارت</label><input class="form-control" name="card_fee_amount" type="number" min="0" value="{{ old('card_fee_amount', $member->card_fee_amount ?? 50) }}"></div>
                         <div class="form-group">
                             <label data-i18n="paymentStatus">وضعیت پرداخت</label>
                             <select class="form-control" name="payment_status">

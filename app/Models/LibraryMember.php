@@ -22,6 +22,7 @@ class LibraryMember extends Model
         'address',
         'profile_photo_path',
         'membership_fee',
+        'card_fee_amount',
         'monthly_fee_daily_fine',
         'monthly_fee_fine_amount',
         'payment_status',

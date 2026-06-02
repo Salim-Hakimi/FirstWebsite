@@ -224,7 +224,7 @@ class DormStudentController extends Controller
 
     public function update(Request $request, DormStudent $student): RedirectResponse
     {
-        $validated = $this->validateStudent($request);
+        $validated = $this->validateStudent($request, $student);
         $this->normalizeAdmissionState($validated, $student);
         $this->ensureRoomCanAccept($validated, $student);
         $this->syncRoomNumber($validated);
@@ -279,15 +279,15 @@ class DormStudentController extends Controller
             ->with('status', 'شاگرد از لیست انتظار به لیست اصلی لیلیه منتقل شد.');
     }
 
-    private function validateStudent(Request $request): array
+    private function validateStudent(Request $request, ?DormStudent $student = null): array
     {
         return $request->validate([
             'full_name' => ['required', 'string', 'max:120'],
             'father_name' => ['required', 'string', 'max:120'],
-            'phone' => SecurityRules::phone(),
+            'phone' => [...SecurityRules::phone(), Rule::unique('dorm_students', 'phone')->ignore($student)],
             'whatsapp' => SecurityRules::phone(false),
-            'email' => ['nullable', 'email', 'max:120'],
-            'tazkira_number' => ['required', 'string', 'max:80'],
+            'email' => ['nullable', 'email', 'max:120', Rule::unique('dorm_students', 'email')->ignore($student)],
+            'tazkira_number' => ['required', 'string', 'max:80', Rule::unique('dorm_students', 'tazkira_number')->ignore($student)],
             'education_place' => ['required', 'string', 'max:160'],
             'department_or_grade' => ['nullable', 'string', 'max:160'],
             'province' => ['nullable', 'string', 'max:80'],

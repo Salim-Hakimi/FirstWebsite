@@ -134,12 +134,14 @@
                                 <span class="menu-title" data-i18n="library">کتابخانه</span>
                             </a>
                         </li>
-                        <li class="nav-item menu-items {{ request()->routeIs('library.finance.*') ? 'active' : '' }}">
-                            <a class="nav-link" href="{{ route('library.finance.index') }}#library-finance-ledger">
-                                <span class="menu-icon"><x-ds.icon name="cash" /></span>
-                                <span class="menu-title" data-i18n="finance">مالی</span>
-                            </a>
-                        </li>
+                        @if ($isLibrarian)
+                            <li class="nav-item menu-items {{ request()->routeIs('library.finance.*') ? 'active' : '' }}">
+                                <a class="nav-link" href="{{ route('library.finance.index') }}#library-finance-ledger">
+                                    <span class="menu-icon"><x-ds.icon name="cash" /></span>
+                                    <span class="menu-title" data-i18n="finance">مالی</span>
+                                </a>
+                            </li>
+                        @endif
                     @endif
 
                     <li class="nav-item menu-items {{ request()->routeIs('settings.*') ? 'active' : '' }}">

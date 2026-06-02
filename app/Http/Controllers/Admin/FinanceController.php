@@ -75,6 +75,14 @@ class FinanceController extends Controller
         $libraryIncomeTotal = (int) $this->libraryFinanceTransactionsQuery()
             ->where('type', 'income')
             ->sum('amount');
+        $libraryMonthIncome = (int) $this->libraryFinanceTransactionsQuery()
+            ->where('type', 'income')
+            ->whereBetween('transaction_date', [now()->startOfMonth()->toDateString(), now()->endOfMonth()->toDateString()])
+            ->sum('amount');
+        $libraryTodayIncome = (int) $this->libraryFinanceTransactionsQuery()
+            ->where('type', 'income')
+            ->whereDate('transaction_date', today()->toDateString())
+            ->sum('amount');
 
         return view('admin.finance.index', [
             'filters' => $filters,
@@ -99,17 +107,11 @@ class FinanceController extends Controller
             'monthRegistrationRevenue' => $monthRegistrationRevenue,
             'periodReports' => $periodReports,
             'libraryIncomeTotal' => $libraryIncomeTotal,
-            'libraryMonthIncome' => (int) $this->libraryFinanceTransactionsQuery()
-                ->where('type', 'income')
-                ->whereBetween('transaction_date', [now()->startOfMonth()->toDateString(), now()->endOfMonth()->toDateString()])
-                ->sum('amount'),
-            'libraryTodayIncome' => (int) $this->libraryFinanceTransactionsQuery()
-                ->where('type', 'income')
-                ->whereDate('transaction_date', today()->toDateString())
-                ->sum('amount'),
-            'totalIncome' => (int) $this->ledgerTransactionsQuery()->where('type', 'income')->sum('amount') + $registrationRevenue,
+            'libraryMonthIncome' => $libraryMonthIncome,
+            'libraryTodayIncome' => $libraryTodayIncome,
+            'totalIncome' => (int) $this->ledgerTransactionsQuery()->where('type', 'income')->sum('amount') + $registrationRevenue + $libraryIncomeTotal,
             'totalExpense' => (int) $this->ledgerTransactionsQuery()->where('type', 'expense')->sum('amount'),
-            'monthIncome' => (int) (clone $monthQuery)->where('type', 'income')->sum('amount') + $monthRegistrationRevenue,
+            'monthIncome' => (int) (clone $monthQuery)->where('type', 'income')->sum('amount') + $monthRegistrationRevenue + $libraryMonthIncome,
             'monthExpense' => (int) (clone $monthQuery)->where('type', 'expense')->sum('amount'),
             'missingDocuments' => $this->ledgerTransactionsQuery()
                 ->with(['category', 'donor', 'project', 'attachments'])
@@ -433,6 +435,7 @@ class FinanceController extends Controller
     private function ledgerTransactionsQuery()
     {
         return FinanceTransaction::query()
+            ->whereDoesntHave('category', fn ($query) => $query->where('name', 'like', 'کتابخانه -%'))
             ->where(function ($query) {
                 $query
                     ->where('type', '!=', 'income')
@@ -521,7 +524,7 @@ class FinanceController extends Controller
                 ->whereBetween('transaction_date', [$period['start'], $period['end']])
                 ->sum('amount');
 
-            $periods[$key]['income'] = $income + $registrationRevenue;
+            $periods[$key]['income'] = $income + $registrationRevenue + $libraryIncome;
             $periods[$key]['expense'] = $expense;
             $periods[$key]['balance'] = $periods[$key]['income'] - $expense;
             $periods[$key]['library_income'] = $libraryIncome;
@@ -597,7 +600,6 @@ class FinanceController extends Controller
                     ->where('name', 'like', '%ساخت%')
                     ->orWhere('name', 'like', '%معاش%')
                     ->orWhere('name', 'like', '%ترمیم%')
-                    ->orWhere('name', 'like', '%کتابخانه%')
                     ->orWhere('name', 'like', '%خرید%')
                     ->orWhere('name', 'like', '%وسایل%')
                     ->orWhere('name', 'like', '%مصارف دیگر%');
