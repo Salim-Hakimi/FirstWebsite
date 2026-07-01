@@ -204,6 +204,12 @@
     margin-bottom: 1rem;
 }
 
+.fanous-vue-purchaser {
+    display: grid;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
 .fanous-vue-finance-filters {
     display: grid;
     gap: .75rem;
@@ -214,6 +220,12 @@
     display: grid;
     gap: .75rem;
     grid-template-columns: minmax(0, 1fr) minmax(9rem, 12rem) minmax(9rem, 12rem);
+}
+
+.fanous-vue-purchaser-filters {
+    display: grid;
+    gap: .75rem;
+    grid-template-columns: minmax(0, 1fr) minmax(9rem, 12rem) repeat(2, minmax(8.5rem, 10rem)) minmax(8rem, 11rem);
 }
 
 .fanous-vue-finance-party {
@@ -386,7 +398,8 @@
     .fanous-vue-member-filters,
     .fanous-vue-student-filters,
     .fanous-vue-finance-filters,
-    .fanous-vue-user-filters {
+    .fanous-vue-user-filters,
+    .fanous-vue-purchaser-filters {
         grid-template-columns: 1fr;
     }
 

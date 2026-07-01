@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\DashboardSummaryController as ApiDashboardSummaryCo
 use App\Http\Controllers\Api\DormRoomsController as ApiDormRoomsController;
 use App\Http\Controllers\Api\DormStudentsController as ApiDormStudentsController;
 use App\Http\Controllers\Api\LibraryMembersController as ApiLibraryMembersController;
+use App\Http\Controllers\Api\PurchaserRecordsController as ApiPurchaserRecordsController;
 use App\Http\Controllers\Api\SessionController as ApiSessionController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
@@ -70,6 +71,9 @@ Route::middleware('auth')->group(function () {
         Route::middleware('role:'.implode(',', User::managementRoles()))
             ->get('/admin/users', ApiAdminUsersController::class)
             ->name('admin.users');
+        Route::middleware('role:'.implode(',', User::purchaserRoles()))
+            ->get('/purchaser/records', ApiPurchaserRecordsController::class)
+            ->name('purchaser.records');
     });
 
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
