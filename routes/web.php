@@ -3,6 +3,8 @@
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\FinanceController as AdminFinanceController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Api\DashboardSummaryController as ApiDashboardSummaryController;
+use App\Http\Controllers\Api\SessionController as ApiSessionController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DormRoomController;
@@ -45,6 +47,11 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [AuthController::class, 'destroy'])->middleware('auth')->name('logout');
 
 Route::middleware('auth')->group(function () {
+    Route::prefix('api')->name('api.')->group(function () {
+        Route::get('/session', ApiSessionController::class)->name('session');
+        Route::get('/dashboard/summary', ApiDashboardSummaryController::class)->name('dashboard.summary');
+    });
+
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');
     Route::put('/settings/profile', [SettingsController::class, 'updateProfile'])->middleware('throttle:10,1')->name('settings.profile.update');

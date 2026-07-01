@@ -83,6 +83,10 @@
             </article>
         </section>
 
+        <section class="dashboard-panel">
+            <div data-vue-app="dashboard-summary" data-title="خلاصه زنده سیستم" data-endpoint="{{ route('api.dashboard.summary') }}"></div>
+        </section>
+
         <section class="dashboard-main-grid">
             <article class="dashboard-panel">
                 <div class="dashboard-panel-header">

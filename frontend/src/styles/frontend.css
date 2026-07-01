@@ -110,6 +110,59 @@
     white-space: nowrap;
 }
 
+.fanous-vue-summary__header {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.fanous-vue-summary__header p {
+    margin: .25rem 0 0;
+    opacity: .72;
+}
+
+.fanous-vue-refresh {
+    background: #0e7490;
+    border: 0;
+    border-radius: 8px;
+    color: #fff;
+    cursor: pointer;
+    min-height: 2.25rem;
+    padding: .4rem .8rem;
+}
+
+.fanous-vue-refresh:disabled {
+    cursor: wait;
+    opacity: .7;
+}
+
+.fanous-vue-summary-grid {
+    display: grid;
+    gap: .75rem;
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+}
+
+.fanous-vue-summary-card {
+    background: color-mix(in srgb, #0891b2 8%, transparent);
+    border: 1px solid color-mix(in srgb, #0891b2 18%, transparent);
+    border-radius: 8px;
+    display: grid;
+    gap: .35rem;
+    padding: .9rem;
+}
+
+.fanous-vue-summary-card span,
+.fanous-vue-summary-card small {
+    opacity: .78;
+}
+
+.fanous-vue-summary-card strong {
+    font-size: 1.7rem;
+    line-height: 1.1;
+}
+
 .fanous-vue-modal {
     inset: 0;
     position: fixed;

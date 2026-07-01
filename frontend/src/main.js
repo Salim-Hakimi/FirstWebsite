@@ -6,6 +6,7 @@ import './styles/frontend.css';
 const apps = {
     spa: defineAsyncComponent(() => import('./App.vue')),
     'dashboard-card': defineAsyncComponent(() => import('./components/common/AsyncDataCard.vue')),
+    'dashboard-summary': defineAsyncComponent(() => import('./components/dashboard/DashboardSummary.vue')),
 };
 
 function readContext(element) {
