@@ -13,6 +13,7 @@ const apps = {
     'admin-finance-transactions': defineAsyncComponent(() => import('./components/finance/AdminFinanceTransactionsTable.vue')),
     'admin-users-table': defineAsyncComponent(() => import('./components/admin/AdminUsersTable.vue')),
     'purchaser-records-table': defineAsyncComponent(() => import('./components/purchaser/PurchaserRecordsTable.vue')),
+    'representative-collections-table': defineAsyncComponent(() => import('./components/representative/RepresentativeCollectionsTable.vue')),
 };
 
 function readContext(element) {
