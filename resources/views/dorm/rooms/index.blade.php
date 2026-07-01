@@ -99,6 +99,8 @@
                     <x-ds.button size="sm" :href="route('dorm.rooms.create')">اتاق جدید</x-ds.button>
                 </div>
 
+                <div data-vue-app="dorm-rooms-table" data-title="نمای سریع اتاق‌ها" data-endpoint="{{ route('api.dorm.rooms') }}"></div>
+
                 <form id="room-filters" method="GET" action="{{ route('dorm.rooms.index') }}" class="fanous-room-filters">
                     <input class="form-control" type="search" name="q" value="{{ request('q') }}" placeholder="جستجوی نام یا کد اتاق...">
                     <select class="form-control" name="status">

@@ -234,6 +234,43 @@
     opacity: .55;
 }
 
+.fanous-vue-room-summary {
+    display: grid;
+    gap: .75rem;
+    grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+}
+
+.fanous-vue-room-summary article {
+    background: color-mix(in srgb, #0e7490 8%, transparent);
+    border: 1px solid color-mix(in srgb, #0e7490 16%, transparent);
+    border-radius: 8px;
+    display: grid;
+    gap: .25rem;
+    padding: .75rem;
+}
+
+.fanous-vue-room-summary span {
+    opacity: .72;
+}
+
+.fanous-vue-room-summary strong {
+    font-size: 1.35rem;
+}
+
+.fanous-vue-usage {
+    background: color-mix(in srgb, #0e7490 12%, transparent);
+    border-radius: 999px;
+    height: .5rem;
+    min-width: 7rem;
+    overflow: hidden;
+}
+
+.fanous-vue-usage span {
+    background: #0e7490;
+    display: block;
+    height: 100%;
+}
+
 @media (max-width: 640px) {
     .fanous-vue-member-filters,
     .fanous-vue-student-filters {

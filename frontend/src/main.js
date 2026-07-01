@@ -9,6 +9,7 @@ const apps = {
     'dashboard-summary': defineAsyncComponent(() => import('./components/dashboard/DashboardSummary.vue')),
     'library-members-table': defineAsyncComponent(() => import('./components/library/LibraryMembersTable.vue')),
     'dorm-students-table': defineAsyncComponent(() => import('./components/dorm/DormStudentsTable.vue')),
+    'dorm-rooms-table': defineAsyncComponent(() => import('./components/dorm/DormRoomsTable.vue')),
 };
 
 function readContext(element) {
