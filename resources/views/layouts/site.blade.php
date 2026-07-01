@@ -3,6 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="csrf-token" content="{{ csrf_token() }}">
         <meta name="description" content="@yield('description', 'سیستم مدیریت لیلیه و کتاب‌خانه فانوس برای مدیریت محصلین، اتاق‌ها، مالی و کتاب‌خانه.')">
 
         <title>@yield('title', 'فانوس')</title>

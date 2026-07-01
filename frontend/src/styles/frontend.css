@@ -1,0 +1,156 @@
+.fanous-vue-shell {
+    color: inherit;
+    font-family: inherit;
+}
+
+.fanous-vue-card {
+    background: color-mix(in srgb, #ffffff 94%, #0f766e 6%);
+    border: 1px solid color-mix(in srgb, #0f766e 18%, transparent);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.fanous-vue-card__title,
+.fanous-vue-title {
+    margin: 0 0 .75rem;
+    font-size: 1.125rem;
+    font-weight: 700;
+}
+
+.fanous-vue-button {
+    align-items: center;
+    border: 0;
+    border-radius: 8px;
+    cursor: pointer;
+    display: inline-flex;
+    font-weight: 700;
+    gap: .5rem;
+    justify-content: center;
+    min-height: 2.5rem;
+    padding: .5rem 1rem;
+}
+
+.fanous-vue-button:disabled {
+    cursor: not-allowed;
+    opacity: .65;
+}
+
+.fanous-vue-button.is-primary {
+    background: #0891b2;
+    color: #fff;
+}
+
+.fanous-vue-spinner {
+    animation: fanous-vue-spin .8s linear infinite;
+    border: 2px solid currentColor;
+    border-inline-end-color: transparent;
+    border-radius: 999px;
+    display: inline-block;
+    height: 1rem;
+    width: 1rem;
+}
+
+.fanous-vue-state {
+    align-items: center;
+    border: 1px dashed color-mix(in srgb, currentColor 20%, transparent);
+    border-radius: 8px;
+    display: flex;
+    gap: .5rem;
+    justify-content: center;
+    min-height: 4rem;
+    padding: 1rem;
+}
+
+.fanous-vue-state.is-error {
+    background: #fef2f2;
+    color: #991b1b;
+}
+
+.fanous-vue-json {
+    direction: ltr;
+    overflow: auto;
+    text-align: left;
+    white-space: pre-wrap;
+}
+
+.fanous-vue-field {
+    display: grid;
+    gap: .35rem;
+}
+
+.fanous-vue-input,
+.fanous-vue-field :where(input, select, textarea) {
+    background: #fff;
+    border: 1px solid color-mix(in srgb, #0f766e 22%, transparent);
+    border-radius: 8px;
+    min-height: 2.5rem;
+    padding: .5rem .75rem;
+    width: 100%;
+}
+
+.fanous-vue-field__error {
+    color: #b91c1c;
+}
+
+.fanous-vue-table-wrap {
+    overflow-x: auto;
+}
+
+.fanous-vue-table {
+    border-collapse: collapse;
+    min-width: 42rem;
+    width: 100%;
+}
+
+.fanous-vue-table th,
+.fanous-vue-table td {
+    border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+    padding: .75rem;
+    text-align: start;
+    white-space: nowrap;
+}
+
+.fanous-vue-modal {
+    inset: 0;
+    position: fixed;
+    z-index: 10000;
+}
+
+.fanous-vue-modal__backdrop {
+    background: rgb(15 23 42 / 60%);
+    border: 0;
+    inset: 0;
+    position: absolute;
+}
+
+.fanous-vue-modal__panel {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 24px 70px rgb(15 23 42 / 30%);
+    inset: 50% auto auto 50%;
+    max-width: min(92vw, 40rem);
+    padding: 1rem;
+    position: absolute;
+    transform: translate(-50%, -50%);
+    width: 100%;
+}
+
+.fanous-vue-modal__header {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+}
+
+.fanous-vue-modal__header button {
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+@keyframes fanous-vue-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
