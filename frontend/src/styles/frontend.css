@@ -174,6 +174,12 @@
     grid-template-columns: minmax(0, 1fr) minmax(10rem, 14rem);
 }
 
+.fanous-vue-student-filters {
+    display: grid;
+    gap: .75rem;
+    grid-template-columns: minmax(0, 1fr) minmax(9rem, 12rem) minmax(7rem, 9rem) minmax(9rem, 11rem);
+}
+
 .fanous-vue-member-cell {
     align-items: center;
     display: flex;
@@ -229,7 +235,8 @@
 }
 
 @media (max-width: 640px) {
-    .fanous-vue-member-filters {
+    .fanous-vue-member-filters,
+    .fanous-vue-student-filters {
         grid-template-columns: 1fr;
     }
 }

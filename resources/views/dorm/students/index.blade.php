@@ -175,6 +175,8 @@
                 @endif
             </div>
 
+            <div data-vue-app="dorm-students-table" data-title="جستجوی سریع شاگردان لیلیه" data-endpoint="{{ route('api.dorm.students') }}"></div>
+
             <form id="student-filters" method="GET" action="{{ route('dorm.students.index') }}" class="fanous-student-filters">
                 <input class="form-control" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="جستجوی نام، شماره تماس یا ID...">
 
@@ -255,6 +257,5 @@
         </section>
     </div>
 @endsection
-
 
 

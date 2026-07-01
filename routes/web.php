@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\FinanceController as AdminFinanceController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\DashboardSummaryController as ApiDashboardSummaryController;
+use App\Http\Controllers\Api\DormStudentsController as ApiDormStudentsController;
 use App\Http\Controllers\Api\LibraryMembersController as ApiLibraryMembersController;
 use App\Http\Controllers\Api\SessionController as ApiSessionController;
 use App\Http\Controllers\AuthController;
@@ -51,6 +52,9 @@ Route::middleware('auth')->group(function () {
     Route::prefix('api')->name('api.')->group(function () {
         Route::get('/session', ApiSessionController::class)->name('session');
         Route::get('/dashboard/summary', ApiDashboardSummaryController::class)->name('dashboard.summary');
+        Route::middleware('role:'.implode(',', User::dormRecordViewerRoles()))
+            ->get('/dorm/students', ApiDormStudentsController::class)
+            ->name('dorm.students');
         Route::middleware('role:'.implode(',', User::libraryViewerRoles()))
             ->get('/library/members', ApiLibraryMembersController::class)
             ->name('library.members');
