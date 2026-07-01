@@ -7,6 +7,7 @@ const apps = {
     spa: defineAsyncComponent(() => import('./App.vue')),
     'dashboard-card': defineAsyncComponent(() => import('./components/common/AsyncDataCard.vue')),
     'dashboard-summary': defineAsyncComponent(() => import('./components/dashboard/DashboardSummary.vue')),
+    'library-members-table': defineAsyncComponent(() => import('./components/library/LibraryMembersTable.vue')),
 };
 
 function readContext(element) {

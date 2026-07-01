@@ -163,6 +163,77 @@
     line-height: 1.1;
 }
 
+.fanous-vue-library-members {
+    display: grid;
+    gap: 1rem;
+}
+
+.fanous-vue-member-filters {
+    display: grid;
+    gap: .75rem;
+    grid-template-columns: minmax(0, 1fr) minmax(10rem, 14rem);
+}
+
+.fanous-vue-member-cell {
+    align-items: center;
+    display: flex;
+    gap: .65rem;
+}
+
+.fanous-vue-member-cell img,
+.fanous-vue-member-cell > span {
+    align-items: center;
+    background: #e0f2fe;
+    border-radius: 999px;
+    color: #075985;
+    display: inline-flex;
+    flex: 0 0 auto;
+    font-weight: 700;
+    height: 2.25rem;
+    justify-content: center;
+    object-fit: cover;
+    width: 2.25rem;
+}
+
+.fanous-vue-member-cell small {
+    display: block;
+    opacity: .72;
+}
+
+.fanous-vue-table-actions {
+    display: inline-flex;
+    gap: .5rem;
+}
+
+.fanous-vue-table-actions a,
+.fanous-vue-pagination button {
+    background: #0e7490;
+    border: 0;
+    border-radius: 8px;
+    color: #fff;
+    cursor: pointer;
+    padding: .35rem .65rem;
+    text-decoration: none;
+}
+
+.fanous-vue-pagination {
+    align-items: center;
+    display: flex;
+    gap: .75rem;
+    justify-content: center;
+}
+
+.fanous-vue-pagination button:disabled {
+    cursor: not-allowed;
+    opacity: .55;
+}
+
+@media (max-width: 640px) {
+    .fanous-vue-member-filters {
+        grid-template-columns: 1fr;
+    }
+}
+
 .fanous-vue-modal {
     inset: 0;
     position: fixed;

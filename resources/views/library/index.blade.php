@@ -626,6 +626,8 @@
                         @endif
                     </div>
 
+                    <div data-vue-app="library-members-table" data-title="جستجوی سریع اعضای کتابخانه" data-endpoint="{{ route('api.library.members') }}"></div>
+
                     <form method="GET" action="{{ route('library.index') }}" class="fanous-library-filters">
                         <input class="form-control" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="جستجوی نام، شماره تماس یا کد عضویت">
                         <select class="form-control" name="status">
