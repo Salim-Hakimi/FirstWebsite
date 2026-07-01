@@ -16,6 +16,8 @@ class SecurityHeaders
         $response = $next($request);
 
         $response->headers->set('X-Content-Type-Options', 'nosniff');
+        $response->headers->set('X-DNS-Prefetch-Control', 'off');
+        $response->headers->set('X-Download-Options', 'noopen');
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         $response->headers->set('X-Permitted-Cross-Domain-Policies', 'none');
         $response->headers->set('Cross-Origin-Opener-Policy', 'same-origin');

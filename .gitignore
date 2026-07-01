@@ -16,6 +16,7 @@
 /public/build
 /public/hot
 /public/storage
+/public/storage_backup_*
 /storage/*.key
 /storage/pail
 /vendor
@@ -23,3 +24,9 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 /storage/mysql-repair-backup/
+/bootstrap/cache/*.tmp
+/bootstrap/cache/packages.php
+/bootstrap/cache/services.php
+/storage/logs/*.log
+/storage/logs/*.out
+/storage/logs/*.err

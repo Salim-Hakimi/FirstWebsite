@@ -1,2 +1,7 @@
 User-agent: *
-Disallow:
+Disallow: /admin
+Disallow: /dorm
+Disallow: /library
+Disallow: /representative
+Disallow: /purchaser
+Disallow: /settings
