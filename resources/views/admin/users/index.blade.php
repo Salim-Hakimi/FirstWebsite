@@ -112,6 +112,12 @@
                     <x-ds.button size="sm" :href="route('admin.users.create')">ساخت کاربر</x-ds.button>
                 </div>
 
+                <div
+                    data-vue-app="admin-users-table"
+                    data-title="جستجوی سریع کاربران"
+                    data-endpoint="{{ route('api.admin.users') }}"
+                ></div>
+
                 <div class="fanous-table-wrap">
                     <table class="fanous-users-table">
                         <thead>

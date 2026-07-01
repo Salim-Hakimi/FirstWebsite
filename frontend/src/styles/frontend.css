@@ -198,10 +198,22 @@
     margin-bottom: 1rem;
 }
 
+.fanous-vue-users {
+    display: grid;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
 .fanous-vue-finance-filters {
     display: grid;
     gap: .75rem;
     grid-template-columns: minmax(0, 1.5fr) repeat(3, minmax(8rem, 11rem)) repeat(2, minmax(8.5rem, 10rem));
+}
+
+.fanous-vue-user-filters {
+    display: grid;
+    gap: .75rem;
+    grid-template-columns: minmax(0, 1fr) minmax(9rem, 12rem) minmax(9rem, 12rem);
 }
 
 .fanous-vue-finance-party {
@@ -238,6 +250,26 @@
     opacity: .78;
 }
 
+.fanous-vue-badge.is-primary {
+    background: color-mix(in srgb, #2563eb 14%, transparent);
+    color: #1d4ed8;
+}
+
+.fanous-vue-badge.is-active {
+    background: color-mix(in srgb, #16a34a 16%, transparent);
+    color: #15803d;
+}
+
+.fanous-vue-badge.is-pending {
+    background: color-mix(in srgb, #f59e0b 18%, transparent);
+    color: #b45309;
+}
+
+.fanous-vue-badge.is-suspended {
+    background: color-mix(in srgb, #dc2626 14%, transparent);
+    color: #b91c1c;
+}
+
 .fanous-vue-amount.is-income {
     color: #15803d;
 }
@@ -249,6 +281,14 @@
 .fanous-vue-ltr {
     direction: ltr;
     display: inline-block;
+}
+
+.fanous-vue-lock-label {
+    border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+    border-radius: 8px;
+    display: inline-flex;
+    opacity: .7;
+    padding: .35rem .65rem;
 }
 
 .fanous-vue-member-cell {
@@ -345,7 +385,8 @@
 @media (max-width: 640px) {
     .fanous-vue-member-filters,
     .fanous-vue-student-filters,
-    .fanous-vue-finance-filters {
+    .fanous-vue-finance-filters,
+    .fanous-vue-user-filters {
         grid-template-columns: 1fr;
     }
 

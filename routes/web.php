@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\FinanceController as AdminFinanceController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Api\AdminFinanceTransactionsController as ApiAdminFinanceTransactionsController;
+use App\Http\Controllers\Api\AdminUsersController as ApiAdminUsersController;
 use App\Http\Controllers\Api\DashboardSummaryController as ApiDashboardSummaryController;
 use App\Http\Controllers\Api\DormRoomsController as ApiDormRoomsController;
 use App\Http\Controllers\Api\DormStudentsController as ApiDormStudentsController;
@@ -66,6 +67,9 @@ Route::middleware('auth')->group(function () {
         Route::middleware('role:'.implode(',', User::managementRoles()))
             ->get('/admin/finance/transactions', ApiAdminFinanceTransactionsController::class)
             ->name('admin.finance.transactions');
+        Route::middleware('role:'.implode(',', User::managementRoles()))
+            ->get('/admin/users', ApiAdminUsersController::class)
+            ->name('admin.users');
     });
 
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
