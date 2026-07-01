@@ -10,6 +10,7 @@ const apps = {
     'library-members-table': defineAsyncComponent(() => import('./components/library/LibraryMembersTable.vue')),
     'dorm-students-table': defineAsyncComponent(() => import('./components/dorm/DormStudentsTable.vue')),
     'dorm-rooms-table': defineAsyncComponent(() => import('./components/dorm/DormRoomsTable.vue')),
+    'admin-finance-transactions': defineAsyncComponent(() => import('./components/finance/AdminFinanceTransactionsTable.vue')),
 };
 
 function readContext(element) {

@@ -138,6 +138,18 @@
     opacity: .7;
 }
 
+.fanous-vue-refresh.is-muted {
+    background: transparent;
+    border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+    color: inherit;
+}
+
+.fanous-vue-inline-actions {
+    align-items: center;
+    display: inline-flex;
+    gap: .5rem;
+}
+
 .fanous-vue-summary-grid {
     display: grid;
     gap: .75rem;
@@ -178,6 +190,65 @@
     display: grid;
     gap: .75rem;
     grid-template-columns: minmax(0, 1fr) minmax(9rem, 12rem) minmax(7rem, 9rem) minmax(9rem, 11rem);
+}
+
+.fanous-vue-finance {
+    display: grid;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.fanous-vue-finance-filters {
+    display: grid;
+    gap: .75rem;
+    grid-template-columns: minmax(0, 1.5fr) repeat(3, minmax(8rem, 11rem)) repeat(2, minmax(8.5rem, 10rem));
+}
+
+.fanous-vue-finance-party {
+    display: grid;
+    gap: .2rem;
+}
+
+.fanous-vue-finance-party small {
+    opacity: .72;
+}
+
+.fanous-vue-badge {
+    background: color-mix(in srgb, #0e7490 12%, transparent);
+    border-radius: 999px;
+    display: inline-flex;
+    font-size: .8rem;
+    font-weight: 700;
+    margin-inline-end: .25rem;
+    padding: .2rem .55rem;
+}
+
+.fanous-vue-badge.is-income {
+    background: color-mix(in srgb, #16a34a 16%, transparent);
+    color: #15803d;
+}
+
+.fanous-vue-badge.is-expense {
+    background: color-mix(in srgb, #dc2626 14%, transparent);
+    color: #b91c1c;
+}
+
+.fanous-vue-badge.is-muted {
+    background: color-mix(in srgb, currentColor 10%, transparent);
+    opacity: .78;
+}
+
+.fanous-vue-amount.is-income {
+    color: #15803d;
+}
+
+.fanous-vue-amount.is-expense {
+    color: #b91c1c;
+}
+
+.fanous-vue-ltr {
+    direction: ltr;
+    display: inline-block;
 }
 
 .fanous-vue-member-cell {
@@ -273,8 +344,15 @@
 
 @media (max-width: 640px) {
     .fanous-vue-member-filters,
-    .fanous-vue-student-filters {
+    .fanous-vue-student-filters,
+    .fanous-vue-finance-filters {
         grid-template-columns: 1fr;
+    }
+
+    .fanous-vue-summary__header,
+    .fanous-vue-inline-actions {
+        align-items: stretch;
+        flex-direction: column;
     }
 }
 

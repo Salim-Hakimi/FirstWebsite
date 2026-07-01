@@ -294,6 +294,12 @@
                         </div>
                     </div>
 
+                    <div
+                        data-vue-app="admin-finance-transactions"
+                        data-title="جستجوی سریع ثبت‌های مالی"
+                        data-endpoint="{{ route('api.admin.finance.transactions') }}"
+                    ></div>
+
                     <div class="fanous-table-wrap">
                         <table class="fanous-finance-table">
                             <thead>
