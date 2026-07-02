@@ -186,6 +186,12 @@
     margin-bottom: 1rem;
 }
 
+.fanous-vue-library-loans {
+    display: grid;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
 .fanous-vue-member-filters {
     display: grid;
     gap: .75rem;
@@ -196,6 +202,12 @@
     display: grid;
     gap: .75rem;
     grid-template-columns: minmax(0, 1fr) minmax(9rem, 12rem) minmax(9rem, 12rem) minmax(7rem, 9rem);
+}
+
+.fanous-vue-loan-filters {
+    display: grid;
+    gap: .75rem;
+    grid-template-columns: minmax(0, 1fr) minmax(9rem, 12rem) repeat(2, minmax(8.5rem, 10rem));
 }
 
 .fanous-vue-student-filters {
@@ -320,6 +332,22 @@
 .fanous-vue-badge.is-archived {
     background: color-mix(in srgb, currentColor 10%, transparent);
     opacity: .76;
+}
+
+.fanous-vue-badge.is-borrowed {
+    background: color-mix(in srgb, #f59e0b 18%, transparent);
+    color: #b45309;
+}
+
+.fanous-vue-badge.is-late,
+.fanous-vue-badge.is-lost {
+    background: color-mix(in srgb, #dc2626 14%, transparent);
+    color: #b91c1c;
+}
+
+.fanous-vue-badge.is-returned {
+    background: color-mix(in srgb, #16a34a 16%, transparent);
+    color: #15803d;
 }
 
 .fanous-vue-amount.is-income {
@@ -447,6 +475,7 @@
 @media (max-width: 640px) {
     .fanous-vue-member-filters,
     .fanous-vue-book-filters,
+    .fanous-vue-loan-filters,
     .fanous-vue-student-filters,
     .fanous-vue-finance-filters,
     .fanous-vue-user-filters,

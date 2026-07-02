@@ -704,6 +704,12 @@
                         @endif
                     </div>
 
+                    <div
+                        data-vue-app="library-loans-table"
+                        data-title="جستجوی سریع امانت‌ها"
+                        data-endpoint="{{ route('api.library.loans') }}"
+                    ></div>
+
                     <div class="fanous-library-loan-list">
                         @forelse ($loans as $loan)
                             @php
