@@ -76,6 +76,12 @@
                 </div>
             </form>
 
+            <div
+                data-vue-app="library-fee-reminders-table"
+                data-title="جستجوی سریع یادآوری فیس"
+                data-endpoint="{{ route('api.library.fee-reminders') }}"
+            ></div>
+
             <div class="fanous-library-member-grid mt-4">
                 @forelse ($members as $member)
                     @php
