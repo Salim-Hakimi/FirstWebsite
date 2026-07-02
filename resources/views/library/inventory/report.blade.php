@@ -156,6 +156,12 @@
                 </div>
             </div>
 
+            <div
+                data-vue-app="library-inventory-copies-table"
+                data-title="جستجوی سریع نسخه‌ها"
+                data-endpoint="{{ route('api.library.inventory.copies') }}"
+            ></div>
+
             <div class="fanous-table-wrap">
                 <table class="fanous-finance-table">
                     <thead>
