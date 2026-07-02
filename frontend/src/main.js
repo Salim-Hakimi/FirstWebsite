@@ -8,6 +8,7 @@ const apps = {
     'dashboard-card': defineAsyncComponent(() => import('./components/common/AsyncDataCard.vue')),
     'dashboard-summary': defineAsyncComponent(() => import('./components/dashboard/DashboardSummary.vue')),
     'library-members-table': defineAsyncComponent(() => import('./components/library/LibraryMembersTable.vue')),
+    'library-books-table': defineAsyncComponent(() => import('./components/library/LibraryBooksTable.vue')),
     'dorm-students-table': defineAsyncComponent(() => import('./components/dorm/DormStudentsTable.vue')),
     'dorm-rooms-table': defineAsyncComponent(() => import('./components/dorm/DormRoomsTable.vue')),
     'admin-finance-transactions': defineAsyncComponent(() => import('./components/finance/AdminFinanceTransactionsTable.vue')),

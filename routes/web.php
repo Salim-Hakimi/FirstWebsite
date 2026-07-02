@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\AdminUsersController as ApiAdminUsersController;
 use App\Http\Controllers\Api\DashboardSummaryController as ApiDashboardSummaryController;
 use App\Http\Controllers\Api\DormRoomsController as ApiDormRoomsController;
 use App\Http\Controllers\Api\DormStudentsController as ApiDormStudentsController;
+use App\Http\Controllers\Api\LibraryBooksController as ApiLibraryBooksController;
 use App\Http\Controllers\Api\LibraryMembersController as ApiLibraryMembersController;
 use App\Http\Controllers\Api\PurchaserRecordsController as ApiPurchaserRecordsController;
 use App\Http\Controllers\Api\RepresentativeCollectionsController as ApiRepresentativeCollectionsController;
@@ -66,6 +67,9 @@ Route::middleware('auth')->group(function () {
         Route::middleware('role:'.implode(',', User::libraryViewerRoles()))
             ->get('/library/members', ApiLibraryMembersController::class)
             ->name('library.members');
+        Route::middleware('role:'.implode(',', User::libraryViewerRoles()))
+            ->get('/library/books', ApiLibraryBooksController::class)
+            ->name('library.books');
         Route::middleware('role:'.implode(',', User::managementRoles()))
             ->get('/admin/finance/transactions', ApiAdminFinanceTransactionsController::class)
             ->name('admin.finance.transactions');

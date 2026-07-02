@@ -787,6 +787,12 @@
                         </div>
                     </div>
 
+                    <div
+                        data-vue-app="library-books-table"
+                        data-title="جستجوی سریع کتاب‌ها"
+                        data-endpoint="{{ route('api.library.books') }}"
+                    ></div>
+
                     <div class="fanous-library-book-list">
                         @forelse ($books->take(8) as $book)
                             @php $statusMeta = $bookStatusMeta[$book->status] ?? ['label' => $book->status, 'tone' => 'primary']; @endphp

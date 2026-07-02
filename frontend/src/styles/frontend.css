@@ -180,10 +180,22 @@
     gap: 1rem;
 }
 
+.fanous-vue-library-books {
+    display: grid;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
 .fanous-vue-member-filters {
     display: grid;
     gap: .75rem;
     grid-template-columns: minmax(0, 1fr) minmax(10rem, 14rem);
+}
+
+.fanous-vue-book-filters {
+    display: grid;
+    gap: .75rem;
+    grid-template-columns: minmax(0, 1fr) minmax(9rem, 12rem) minmax(9rem, 12rem) minmax(7rem, 9rem);
 }
 
 .fanous-vue-student-filters {
@@ -294,6 +306,22 @@
     color: #b91c1c;
 }
 
+.fanous-vue-badge.is-available {
+    background: color-mix(in srgb, #16a34a 16%, transparent);
+    color: #15803d;
+}
+
+.fanous-vue-badge.is-damaged,
+.fanous-vue-badge.is-lost {
+    background: color-mix(in srgb, #f59e0b 18%, transparent);
+    color: #b45309;
+}
+
+.fanous-vue-badge.is-archived {
+    background: color-mix(in srgb, currentColor 10%, transparent);
+    opacity: .76;
+}
+
 .fanous-vue-amount.is-income {
     color: #15803d;
 }
@@ -338,6 +366,16 @@
 
 .fanous-vue-member-cell small {
     display: block;
+    opacity: .72;
+}
+
+.fanous-vue-copy-cell {
+    display: grid;
+    gap: .3rem;
+    min-width: 8rem;
+}
+
+.fanous-vue-copy-cell small {
     opacity: .72;
 }
 
@@ -408,6 +446,7 @@
 
 @media (max-width: 640px) {
     .fanous-vue-member-filters,
+    .fanous-vue-book-filters,
     .fanous-vue-student-filters,
     .fanous-vue-finance-filters,
     .fanous-vue-user-filters,
