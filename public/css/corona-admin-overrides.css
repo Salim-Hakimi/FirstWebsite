@@ -6031,16 +6031,33 @@ body.fanous-library-modal-open::after {
 
 body.fanous-library-modal-open .fanous-library-form-panel.is-active {
     position: fixed;
-    inset-block: 76px 24px;
-    inset-inline: 24px;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
     z-index: 1080;
-    width: min(980px, calc(100vw - 48px));
-    max-height: calc(100vh - 100px);
-    margin-inline: auto;
+    width: min(760px, calc(100vw - 32px));
+    max-height: min(760px, calc(100vh - 48px));
     overflow-y: auto;
-    border-radius: 18px;
-    box-shadow: 0 30px 90px rgba(0, 0, 0, .34);
+    border-radius: 14px;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 30px 90px rgba(0, 0, 0, .38);
     animation: fanous-library-modal-in .18s ease-out;
+}
+
+body.fanous-library-modal-open #return-library-copy.is-active {
+    width: min(520px, calc(100vw - 32px));
+}
+
+body.fanous-library-modal-open #new-library-loan.is-active,
+body.fanous-library-modal-open #library-finance-record.is-active {
+    width: min(680px, calc(100vw - 32px));
+}
+
+body.fanous-library-modal-open #new-library-book.is-active {
+    width: min(760px, calc(100vw - 32px));
+}
+
+body.fanous-library-modal-open #new-library-member.is-active {
+    width: min(900px, calc(100vw - 32px));
 }
 
 body.fanous-library-modal-open .fanous-library-form-panel.is-active .dashboard-panel-header {
@@ -6050,19 +6067,19 @@ body.fanous-library-modal-open .fanous-library-form-panel.is-active .dashboard-p
     margin: -1px -1px 16px;
     padding: 18px;
     border-bottom: 1px solid var(--ds-border);
-    border-radius: 18px 18px 0 0;
+    border-radius: 14px 14px 0 0;
     background: color-mix(in srgb, var(--ds-card-bg) 96%, var(--ds-primary) 4%);
 }
 
 @keyframes fanous-library-modal-in {
     from {
         opacity: 0;
-        transform: translateY(10px) scale(.985);
+        transform: translate(-50%, calc(-50% + 10px)) scale(.985);
     }
 
     to {
         opacity: 1;
-        transform: translateY(0) scale(1);
+        transform: translate(-50%, -50%) scale(1);
     }
 }
 

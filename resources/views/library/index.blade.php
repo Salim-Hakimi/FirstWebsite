@@ -859,6 +859,16 @@
                 const formArea = document.getElementById('library-action-forms');
                 const defaultPanel = @json($hasMemberFilters ? null : null);
 
+                function closePanels() {
+                    panels.forEach((panel) => panel.classList.remove('is-active'));
+                    triggers.forEach((trigger) => {
+                        trigger.classList.remove('is-active');
+                        trigger.setAttribute('aria-expanded', 'false');
+                    });
+                    emptyState?.classList.remove('is-hidden');
+                    document.body.classList.remove('fanous-library-modal-open');
+                }
+
                 function setPanel(panelId, shouldScroll) {
                     const activePanel = panels.find((panel) => panel.id === panelId);
 
@@ -878,8 +888,10 @@
 
                     document.body.classList.toggle('fanous-library-modal-open', Boolean(activePanel));
 
-                    if (activePanel && shouldScroll) {
-                        formArea?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    if (activePanel) {
+                        window.setTimeout(() => {
+                            activePanel.querySelector('input:not([type="hidden"]), select, textarea, button[type="submit"]')?.focus();
+                        }, 120);
                     }
                 }
 
@@ -892,14 +904,22 @@
 
                 document.querySelectorAll('[data-library-panel-close]').forEach((button) => {
                     button.addEventListener('click', function () {
-                        panels.forEach((panel) => panel.classList.remove('is-active'));
-                        triggers.forEach((trigger) => {
-                            trigger.classList.remove('is-active');
-                            trigger.setAttribute('aria-expanded', 'false');
-                        });
-                        emptyState?.classList.remove('is-hidden');
-                        document.body.classList.remove('fanous-library-modal-open');
+                        closePanels();
                     });
+                });
+
+                document.addEventListener('click', function (event) {
+                    if (!document.body.classList.contains('fanous-library-modal-open')) {
+                        return;
+                    }
+
+                    const activePanel = panels.find((panel) => panel.classList.contains('is-active'));
+
+                    if (!activePanel || activePanel.contains(event.target) || event.target.closest('[data-library-panel-trigger]')) {
+                        return;
+                    }
+
+                    closePanels();
                 });
 
                 document.addEventListener('keydown', function (event) {
@@ -907,13 +927,7 @@
                         return;
                     }
 
-                    panels.forEach((panel) => panel.classList.remove('is-active'));
-                    triggers.forEach((trigger) => {
-                        trigger.classList.remove('is-active');
-                        trigger.setAttribute('aria-expanded', 'false');
-                    });
-                    emptyState?.classList.remove('is-hidden');
-                    document.body.classList.remove('fanous-library-modal-open');
+                    closePanels();
                 });
 
                 if (window.location.hash && document.querySelector(window.location.hash + '[data-library-panel]')) {
