@@ -41,27 +41,27 @@ class DashboardSummaryController extends Controller
         return [
             [
                 'key' => 'active_students',
-                'label' => 'Active students',
+                'label' => 'محصلین فعال',
                 'value' => DormStudent::where('status', 'active')->count(),
-                'hint' => 'Current active dorm students',
+                'hint' => 'محصلین فعلی لیلیه',
             ],
             [
                 'key' => 'free_beds',
-                'label' => 'Free beds',
+                'label' => 'تخت‌های خالی',
                 'value' => $freeBeds,
-                'hint' => $totalBeds.' total beds, '.$occupiedBeds.' occupied',
+                'hint' => $totalBeds.' تخت مجموعی، '.$occupiedBeds.' اشغال‌شده',
             ],
             [
                 'key' => 'library_members',
-                'label' => 'Library members',
+                'label' => 'اعضای کتابخانه',
                 'value' => LibraryMember::where('status', 'active')->count(),
-                'hint' => Book::count().' book titles registered',
+                'hint' => Book::count().' عنوان کتاب ثبت‌شده',
             ],
             [
                 'key' => 'active_loans',
-                'label' => 'Active loans',
+                'label' => 'امانت‌های فعال',
                 'value' => BookLoan::whereIn('status', ['borrowed', 'late'])->count(),
-                'hint' => 'Borrowed or late books',
+                'hint' => 'کتاب‌های امانت یا دیرشده',
             ],
         ];
     }
@@ -75,27 +75,27 @@ class DashboardSummaryController extends Controller
             return [
                 [
                     'key' => 'active_members',
-                    'label' => 'Active members',
+                    'label' => 'اعضای فعال',
                     'value' => LibraryMember::where('status', 'active')->count(),
-                    'hint' => 'Members with active status',
+                    'hint' => 'اعضایی با وضعیت فعال',
                 ],
                 [
                     'key' => 'book_titles',
-                    'label' => 'Book titles',
+                    'label' => 'عنوان‌های کتاب',
                     'value' => Book::count(),
-                    'hint' => (int) Book::sum('available_copies').' available copies',
+                    'hint' => (int) Book::sum('available_copies').' نسخه قابل امانت',
                 ],
                 [
                     'key' => 'active_loans',
-                    'label' => 'Active loans',
+                    'label' => 'امانت‌های فعال',
                     'value' => BookLoan::whereIn('status', ['borrowed', 'late'])->count(),
-                    'hint' => 'Borrowed or late books',
+                    'hint' => 'کتاب‌های امانت یا دیرشده',
                 ],
                 [
                     'key' => 'today_income',
-                    'label' => 'Today income',
+                    'label' => 'درآمد امروز',
                     'value' => (int) (clone $libraryFinance)->where('type', 'income')->whereDate('transaction_date', today())->sum('amount'),
-                    'hint' => 'Library finance records',
+                    'hint' => 'ثبت‌های مالی کتابخانه',
                 ],
             ];
         }
@@ -103,9 +103,9 @@ class DashboardSummaryController extends Controller
         return [
             [
                 'key' => 'available_sections',
-                'label' => 'Available sections',
+                'label' => 'بخش‌های در دسترس',
                 'value' => count($this->navigationFor($user)),
-                'hint' => 'Sections allowed for this role',
+                'hint' => 'بخش‌های مجاز برای این نقش',
             ],
         ];
     }

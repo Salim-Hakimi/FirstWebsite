@@ -133,12 +133,6 @@
                         </div>
                     </div>
 
-                    <div
-                        data-vue-app="representative-collections-table"
-                        data-title="جستجوی سریع ثبت‌های نماینده"
-                        data-endpoint="{{ route('api.representative.collections') }}"
-                    ></div>
-
                     <div class="fanous-representative-record-list">
                         @forelse ($collections as $collection)
                             @php

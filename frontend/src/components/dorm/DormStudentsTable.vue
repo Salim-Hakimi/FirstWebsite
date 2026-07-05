@@ -28,7 +28,7 @@ const filters = reactive({
 
 const columns = [
     { key: 'student', label: 'شاگرد' },
-    { key: 'phone', label: 'تماس' },
+    { key: 'phone', label: 'واتساپ' },
     { key: 'room', label: 'اتاق' },
     { key: 'documents', label: 'اسناد' },
     { key: 'card', label: 'کارت' },

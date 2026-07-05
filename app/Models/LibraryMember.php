@@ -30,6 +30,7 @@ class LibraryMember extends Model
         'next_payment_due_at',
         'last_fee_reminder_at',
         'joined_at',
+        'left_at',
         'membership_expires_at',
         'status',
         'notes',
@@ -39,6 +40,7 @@ class LibraryMember extends Model
     {
         return [
             'joined_at' => 'date',
+            'left_at' => 'date',
             'membership_expires_at' => 'date',
             'last_paid_at' => 'date',
             'next_payment_due_at' => 'date',

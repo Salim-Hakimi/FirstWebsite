@@ -16,13 +16,17 @@ class DormStudent extends Model
         'father_name',
         'phone',
         'whatsapp',
+        'family_phone',
         'email',
         'tazkira_number',
         'education_place',
         'department_or_grade',
+        'school_graduation_year',
         'province',
+        'district',
         'room_number',
         'bed_number',
+        'active_bed_key',
         'guarantor_name',
         'guarantor_relation',
         'guarantor_phone',
@@ -45,6 +49,7 @@ class DormStudent extends Model
         'admission_decision_by',
         'status',
         'joined_at',
+        'left_at',
         'notes',
     ];
 
@@ -54,8 +59,10 @@ class DormStudent extends Model
             'document_names' => 'array',
             'application_date' => 'date',
             'education_score' => 'decimal:2',
+            'school_graduation_year' => 'integer',
             'registration_paid_at' => 'date',
             'joined_at' => 'date',
+            'left_at' => 'date',
             'admitted_at' => 'datetime',
         ];
     }

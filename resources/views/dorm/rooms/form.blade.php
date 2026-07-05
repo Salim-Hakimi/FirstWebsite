@@ -47,7 +47,13 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="capacity">ظرفیت</label>
+                            <label for="building">بلاک / تعمیر</label>
+                            <input id="building" class="form-control @error('building') is-invalid @enderror" name="building" value="{{ old('building', $room->building) }}" required placeholder="مثلاً: بلاک الف">
+                            @error('building') <span class="text-danger small">{{ $message }}</span> @enderror
+                        </div>
+
+                        <div class="form-group">
+                            <label for="capacity">تعداد تخت / ظرفیت</label>
                             <select id="capacity" class="form-control @error('capacity') is-invalid @enderror" name="capacity" required>
                                 @foreach ([4, 6, 8] as $capacity)
                                     <option value="{{ $capacity }}" @selected((int) old('capacity', $room->capacity) === $capacity)>{{ $capacity }} بستر</option>
@@ -58,7 +64,7 @@
 
                         <div class="form-group">
                             <label for="floor">منزل</label>
-                            <input id="floor" class="form-control @error('floor') is-invalid @enderror" name="floor" value="{{ old('floor', $room->floor) }}" placeholder="مثلاً: منزل دوم">
+                            <input id="floor" class="form-control @error('floor') is-invalid @enderror" name="floor" value="{{ old('floor', $room->floor) }}" required placeholder="مثلاً: منزل دوم">
                             @error('floor') <span class="text-danger small">{{ $message }}</span> @enderror
                         </div>
 

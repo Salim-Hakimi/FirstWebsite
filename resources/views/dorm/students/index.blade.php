@@ -27,25 +27,17 @@
             'left' => 'danger',
         ];
 
-        $activeCount = $students->where('status', 'active')->count();
-        $waitingCount = $students->where('status', 'waiting')->count();
-        $onHoldCount = $students->where('status', 'on_hold')->count();
-        $missingDocumentsCount = $students->filter(fn ($student) => count($student->document_names ?? []) === 0)->count();
-        $recentRegistrationCount = $students->filter(fn ($student) => $student->created_at?->greaterThanOrEqualTo(now()->subDays(30)))->count();
-
-        $rooms = $students
-            ->map(fn ($student) => $student->room?->room_number ?: $student->room_number)
-            ->filter()
-            ->unique()
-            ->sort()
-            ->values();
+        $studentSummary = $studentSummary ?? [];
+        $activeCount = $studentSummary['active'] ?? 0;
+        $waitingCount = $studentSummary['waiting'] ?? 0;
+        $onHoldCount = $studentSummary['on_hold'] ?? 0;
+        $missingDocumentsCount = $studentSummary['missing_documents'] ?? 0;
+        $recentRegistrationCount = $studentSummary['recent'] ?? 0;
+        $rooms = collect($rooms ?? []);
 
         $roomFilter = request('room');
         $dateFilter = request('date');
-        $visibleStudents = $students
-            ->when($roomFilter, fn ($items) => $items->filter(fn ($student) => (string) ($student->room?->room_number ?: $student->room_number) === (string) $roomFilter))
-            ->when($dateFilter, fn ($items) => $items->filter(fn ($student) => $student->created_at?->toDateString() === $dateFilter || $student->application_date?->toDateString() === $dateFilter))
-            ->values();
+        $visibleStudents = method_exists($students, 'getCollection') ? $students->getCollection() : $students;
     @endphp
 
     <div class="fanous-students-page" dir="rtl">
@@ -130,7 +122,7 @@
                                 @endif
                                 <div>
                                     <strong>{{ $applicant->full_name }}</strong>
-                                    <span class="ltr-text">{{ $applicant->phone }}</span>
+                                    <span class="ltr-text">{{ $applicant->whatsapp ?: $applicant->phone }}</span>
                                     <small>تاریخ درخواست: {{ $applicant->application_date ? Locale::number($applicant->application_date->format('Y/m/d')) : 'ثبت نشده' }}</small>
                                 </div>
                             </div>
@@ -174,8 +166,6 @@
                     <x-ds.button size="sm" :href="route('dorm.students.create')">ثبت شاگرد</x-ds.button>
                 @endif
             </div>
-
-            <div data-vue-app="dorm-students-table" data-title="جستجوی سریع شاگردان لیلیه" data-endpoint="{{ route('api.dorm.students') }}"></div>
 
             <form id="student-filters" method="GET" action="{{ route('dorm.students.index') }}" class="fanous-student-filters">
                 <input class="form-control" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="جستجوی نام، شماره تماس یا ID...">
@@ -232,7 +222,7 @@
                         </div>
 
                         <div class="fanous-student-info">
-                            <div><span>تماس</span><strong class="ltr-text">{{ $student->phone }}</strong></div>
+                            <div><span>واتساپ</span><strong class="ltr-text">{{ $student->whatsapp ?: $student->phone }}</strong></div>
                             <div><span>اتاق</span><strong>{{ $roomLabel }}</strong></div>
                             <div><span>تخت</span><strong>{{ $student->bed_number ?: 'ثبت نشده' }}</strong></div>
                             <div><span>تاریخ ثبت</span><strong>{{ $student->created_at ? Locale::number($student->created_at->format('Y/m/d')) : 'ثبت نشده' }}</strong></div>
@@ -254,8 +244,12 @@
                     <div class="dashboard-empty">هیچ شاگردی پیدا نشد.</div>
                 @endforelse
             </div>
+
+            @if (method_exists($students, 'links') && $students->hasPages())
+                <div class="fanous-pagination">
+                    {{ $students->links() }}
+                </div>
+            @endif
         </section>
     </div>
 @endsection
-
-

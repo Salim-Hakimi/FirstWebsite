@@ -236,8 +236,16 @@
 
                 <div class="main-panel">
                     <div class="content-wrapper @yield('content_wrapper_class')">
-                        @if (session('status'))
-                            <div class="alert alert-success">{{ session('status') }}</div>
+                        @if (session('status') || session('error'))
+                            <noscript>
+                                @if (session('status'))
+                                    <div class="alert alert-success">{{ session('status') }}</div>
+                                @endif
+
+                                @if (session('error'))
+                                    <div class="alert alert-danger">{{ session('error') }}</div>
+                                @endif
+                            </noscript>
                         @endif
 
                         @yield('content')
@@ -255,8 +263,238 @@
                 </div>
             </div>
         </div>
+        @php
+            $fanousFlashPayload = [
+                'status' => session('status'),
+                'error' => session('error'),
+                'validation' => $errors->any() ? $errors->first() : null,
+            ];
+        @endphp
         <script src="{{ asset('js/fanous-i18n.js') }}"></script>
         <script>
+            (function () {
+                const flash = {!! json_encode($fanousFlashPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!};
+                let toastRegion = null;
+
+                function createElement(tag, className, text) {
+                    const element = document.createElement(tag);
+
+                    if (className) {
+                        element.className = className;
+                    }
+
+                    if (typeof text === 'string') {
+                        element.textContent = text;
+                    }
+
+                    return element;
+                }
+
+                function resolveAlert(result) {
+                    return {
+                        isConfirmed: result === 'confirm',
+                        isDenied: result === 'deny',
+                        isDismissed: result === 'cancel',
+                        dismiss: result === 'cancel' ? 'cancel' : undefined
+                    };
+                }
+
+                function closeAlert(backdrop, result, resolve) {
+                    backdrop.classList.remove('is-visible');
+                    document.body.classList.remove('fanous-alert-open');
+
+                    window.setTimeout(function () {
+                        backdrop.remove();
+                        resolve(resolveAlert(result));
+                    }, 160);
+                }
+
+                function toast(options) {
+                    if (!toastRegion) {
+                        toastRegion = createElement('div', 'fanous-toast-region');
+                        toastRegion.setAttribute('aria-live', 'polite');
+                        document.body.appendChild(toastRegion);
+                    }
+
+                    const item = createElement('div', 'fanous-toast fanous-toast--' + (options.icon || 'info'));
+                    const icon = createElement('span', 'fanous-toast__icon', options.icon === 'success' ? '✓' : options.icon === 'error' ? '!' : 'i');
+                    const textWrap = createElement('div', 'fanous-toast__body');
+                    textWrap.appendChild(createElement('strong', null, options.title || 'پیام سیستم'));
+
+                    if (options.text) {
+                        textWrap.appendChild(createElement('span', null, options.text));
+                    }
+
+                    item.appendChild(icon);
+                    item.appendChild(textWrap);
+                    toastRegion.appendChild(item);
+
+                    window.requestAnimationFrame(function () {
+                        item.classList.add('is-visible');
+                    });
+
+                    window.setTimeout(function () {
+                        item.classList.remove('is-visible');
+                        window.setTimeout(function () { item.remove(); }, 180);
+                    }, options.timer || 3800);
+
+                    return Promise.resolve(resolveAlert('confirm'));
+                }
+
+                function fire(options) {
+                    options = Object.assign({
+                        icon: 'info',
+                        title: 'پیام سیستم',
+                        text: '',
+                        confirmButtonText: 'تایید',
+                        denyButtonText: 'ذخیره نشود',
+                        cancelButtonText: 'لغو',
+                        showCancelButton: false,
+                        showDenyButton: false
+                    }, options || {});
+
+                    if (options.toast) {
+                        return toast(options);
+                    }
+
+                    return new Promise(function (resolve) {
+                        const backdrop = createElement('div', 'fanous-alert-backdrop');
+                        const dialog = createElement('section', 'fanous-alert fanous-alert--' + options.icon);
+                        const icon = createElement('div', 'fanous-alert__icon', options.icon === 'success' ? '✓' : options.icon === 'error' ? '!' : options.icon === 'warning' ? '!' : 'i');
+                        const title = createElement('h2', null, options.title);
+                        const text = createElement('p', null, options.text);
+                        const actions = createElement('div', 'fanous-alert__actions');
+                        const confirmButton = createElement('button', 'fanous-alert__button fanous-alert__button--confirm', options.confirmButtonText);
+                        let isClosing = false;
+
+                        function finish(result) {
+                            if (isClosing) {
+                                return;
+                            }
+
+                            isClosing = true;
+                            document.removeEventListener('keydown', onKeydown);
+                            closeAlert(backdrop, result, resolve);
+                        }
+
+                        dialog.setAttribute('role', 'dialog');
+                        dialog.setAttribute('aria-modal', 'true');
+                        dialog.setAttribute('dir', 'rtl');
+                        confirmButton.type = 'button';
+                        dialog.appendChild(icon);
+                        dialog.appendChild(title);
+
+                        if (options.text) {
+                            dialog.appendChild(text);
+                        }
+
+                        if (options.footer) {
+                            dialog.appendChild(createElement('small', 'fanous-alert__footer', options.footer));
+                        }
+
+                        if (options.showCancelButton) {
+                            const cancelButton = createElement('button', 'fanous-alert__button fanous-alert__button--cancel', options.cancelButtonText);
+                            cancelButton.type = 'button';
+                            cancelButton.addEventListener('click', function () {
+                                finish('cancel');
+                            });
+                            actions.appendChild(cancelButton);
+                        }
+
+                        if (options.showDenyButton) {
+                            const denyButton = createElement('button', 'fanous-alert__button fanous-alert__button--deny', options.denyButtonText);
+                            denyButton.type = 'button';
+                            denyButton.addEventListener('click', function () {
+                                finish('deny');
+                            });
+                            actions.appendChild(denyButton);
+                        }
+
+                        confirmButton.addEventListener('click', function () {
+                            finish('confirm');
+                        });
+                        actions.appendChild(confirmButton);
+                        dialog.appendChild(actions);
+                        backdrop.appendChild(dialog);
+                        document.body.appendChild(backdrop);
+                        document.body.classList.add('fanous-alert-open');
+
+                        window.requestAnimationFrame(function () {
+                            backdrop.classList.add('is-visible');
+                            confirmButton.focus({ preventScroll: true });
+                        });
+
+                        backdrop.addEventListener('click', function (event) {
+                            if (event.target === backdrop && options.showCancelButton) {
+                                finish('cancel');
+                            }
+                        });
+
+                        function onKeydown(event) {
+                            if (event.key === 'Escape' && options.showCancelButton) {
+                                finish('cancel');
+                            }
+                        }
+
+                        document.addEventListener('keydown', onKeydown);
+                    });
+                }
+
+                window.FanousAlert = {
+                    fire: fire,
+                    success: function (text) {
+                        return fire({
+                            icon: 'success',
+                            title: 'انجام شد',
+                            text: text,
+                            toast: true
+                        });
+                    },
+                    error: function (text) {
+                        return fire({
+                            icon: 'error',
+                            title: 'مشکل پیش آمد',
+                            text: text || 'لطفاً دوباره تلاش کنید.',
+                            confirmButtonText: 'فهمیدم'
+                        });
+                    },
+                    confirmSave: function () {
+                        return fire({
+                            icon: 'question',
+                            title: 'معلومات ذخیره شود؟',
+                            text: 'پس از تایید، معلومات این فرم در سیستم ثبت می‌شود.',
+                            showDenyButton: true,
+                            showCancelButton: true,
+                            confirmButtonText: 'ذخیره',
+                            denyButtonText: 'ذخیره نشود',
+                            cancelButtonText: 'لغو'
+                        });
+                    },
+                    confirmDelete: function () {
+                        return fire({
+                            icon: 'warning',
+                            title: 'آیا مطمئن هستید؟',
+                            text: 'این عملیات قابل برگشت نیست.',
+                            showCancelButton: true,
+                            confirmButtonText: 'بلی، حذف شود',
+                            cancelButtonText: 'لغو'
+                        });
+                    }
+                };
+
+                document.addEventListener('DOMContentLoaded', function () {
+                    if (flash.status) {
+                        window.FanousAlert.success(flash.status);
+                    }
+
+                    if (flash.error) {
+                        window.FanousAlert.error(flash.error);
+                    } else if (flash.validation) {
+                        window.FanousAlert.error(flash.validation);
+                    }
+                });
+            })();
+
             document.addEventListener('click', function (event) {
                 const minimize = event.target.closest('[data-toggle="minimize"]');
                 const offcanvas = event.target.closest('[data-toggle="offcanvas"]');
@@ -268,6 +506,420 @@
                 if (offcanvas) {
                     document.querySelector('.sidebar-offcanvas')?.classList.toggle('active');
                 }
+            });
+
+            document.addEventListener('DOMContentLoaded', function () {
+                function toPersianDigits(text) {
+                    return String(text).replace(/[0-9]/g, function (digit) {
+                        return '۰۱۲۳۴۵۶۷۸۹'[Number(digit)];
+                    });
+                }
+
+                function gregorianToJalali(gy, gm, gd) {
+                    const gDays = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+                    const jDays = [31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29];
+                    gy -= 1600;
+                    gm -= 1;
+                    gd -= 1;
+                    let gDayNo = 365 * gy + Math.floor((gy + 3) / 4) - Math.floor((gy + 99) / 100) + Math.floor((gy + 399) / 400);
+
+                    for (let i = 0; i < gm; i += 1) {
+                        gDayNo += gDays[i];
+                    }
+
+                    if (gm > 1 && ((gy + 1600) % 4 === 0 && ((gy + 1600) % 100 !== 0 || (gy + 1600) % 400 === 0))) {
+                        gDayNo += 1;
+                    }
+
+                    gDayNo += gd;
+                    let jDayNo = gDayNo - 79;
+                    const jNp = Math.floor(jDayNo / 12053);
+                    jDayNo %= 12053;
+                    let jy = 979 + 33 * jNp + 4 * Math.floor(jDayNo / 1461);
+                    jDayNo %= 1461;
+
+                    if (jDayNo >= 366) {
+                        jy += Math.floor((jDayNo - 1) / 365);
+                        jDayNo = (jDayNo - 1) % 365;
+                    }
+
+                    let i = 0;
+                    for (; i < 11 && jDayNo >= jDays[i]; i += 1) {
+                        jDayNo -= jDays[i];
+                    }
+
+                    return [jy, i + 1, jDayNo + 1];
+                }
+
+                function solarDateText(year, month, day) {
+                    const parts = gregorianToJalali(Number(year), Number(month), Number(day));
+
+                    return toPersianDigits(
+                        String(parts[0]).padStart(4, '0') + '/' +
+                        String(parts[1]).padStart(2, '0') + '/' +
+                        String(parts[2]).padStart(2, '0') + ' ه.ش'
+                    );
+                }
+
+                function localizeVisibleDates(root) {
+                    const walker = document.createTreeWalker(root || document.body, NodeFilter.SHOW_TEXT, {
+                        acceptNode: function (node) {
+                            const parent = node.parentElement;
+
+                            if (!parent || parent.closest('script, style, textarea, input, select, code, pre')) {
+                                return NodeFilter.FILTER_REJECT;
+                            }
+
+                            return /\b20\d{2}-\d{2}-\d{2}\b/.test(node.nodeValue || '')
+                                ? NodeFilter.FILTER_ACCEPT
+                                : NodeFilter.FILTER_REJECT;
+                        }
+                    });
+
+                    const nodes = [];
+
+                    while (walker.nextNode()) {
+                        nodes.push(walker.currentNode);
+                    }
+
+                    nodes.forEach(function (node) {
+                        node.nodeValue = node.nodeValue.replace(/\b(20\d{2})-(\d{2})-(\d{2})\b/g, function (_, year, month, day) {
+                            return solarDateText(year, month, day);
+                        });
+                    });
+                }
+
+                window.FanousDate = { solarDateText, localizeVisibleDates };
+                localizeVisibleDates(document.body);
+
+                new MutationObserver(function (mutations) {
+                    mutations.forEach(function (mutation) {
+                        mutation.addedNodes.forEach(function (node) {
+                            if (node.nodeType === Node.ELEMENT_NODE) {
+                                localizeVisibleDates(node);
+                            }
+                        });
+                    });
+                }).observe(document.body, { childList: true, subtree: true });
+
+                const requiredSelector = 'input[required], select[required], textarea[required]';
+
+                function requiredFields(form) {
+                    return Array.from(form.querySelectorAll(requiredSelector)).filter(function (field) {
+                        return !field.disabled && field.type !== 'hidden';
+                    });
+                }
+
+                function isFieldComplete(field, form) {
+                    if (field.type === 'radio') {
+                        return Array.from(form.querySelectorAll('input[type="radio"]')).some(function (radio) {
+                            return radio.name === field.name && radio.checked;
+                        });
+                    }
+
+                    if (field.type === 'checkbox') {
+                        return field.checked;
+                    }
+
+                    if (field.type === 'file') {
+                        return field.files && field.files.length > 0;
+                    }
+
+                    return field.checkValidity() && String(field.value || '').trim() !== '';
+                }
+
+                function submitButtons(form) {
+                    return Array.from(document.querySelectorAll('button[type="submit"], input[type="submit"]')).filter(function (button) {
+                        return button.form === form;
+                    });
+                }
+
+                function firstIncompleteField(form, scope) {
+                    return requiredFields(form).find(function (field) {
+                        return (! scope || scope.contains(field)) && ! isFieldComplete(field, form);
+                    });
+                }
+
+                function updateFormState(form) {
+                    const fields = requiredFields(form);
+
+                    if (fields.length === 0) {
+                        return;
+                    }
+
+                    const complete = fields.every(function (field) {
+                        return isFieldComplete(field, form);
+                    });
+
+                    submitButtons(form).forEach(function (button) {
+                        button.disabled = !complete;
+                        button.dataset.validationLocked = complete ? 'false' : 'true';
+                        button.setAttribute('aria-disabled', complete ? 'false' : 'true');
+                        button.title = complete ? '' : 'لطفاً اول همه فیلدهای ضروری را تکمیل کنید.';
+                    });
+                }
+
+                document.querySelectorAll('form').forEach(function (form) {
+                    if (requiredFields(form).length === 0) {
+                        return;
+                    }
+
+                    requiredFields(form).forEach(function (field) {
+                        const label = field.id ? form.querySelector('label[for="' + CSS.escape(field.id) + '"]') : field.closest('.form-group')?.querySelector('label');
+                        label?.classList.add('fanous-required-label');
+                    });
+
+                    updateFormState(form);
+                    form.addEventListener('input', function () { updateFormState(form); });
+                    form.addEventListener('change', function () { updateFormState(form); });
+                    form.addEventListener('submit', function (event) {
+                        updateFormState(form);
+
+                        const invalidField = firstIncompleteField(form);
+
+                        if (invalidField) {
+                            event.preventDefault();
+                            form.fanousShowWizardSection?.(invalidField.closest('.student-form-section'));
+                            invalidField.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'center'
+                            });
+                            invalidField.classList.add('is-invalid');
+                            window.setTimeout(function () {
+                                invalidField.focus({ preventScroll: true });
+                                form.reportValidity();
+                            }, 180);
+                        }
+                    });
+                    form.addEventListener('keydown', function (event) {
+                        if (event.key !== 'Enter' || event.target.matches('textarea')) {
+                            return;
+                        }
+
+                        if (!requiredFields(form).every(function (field) { return isFieldComplete(field, form); })) {
+                            event.preventDefault();
+                            updateFormState(form);
+                        }
+                    });
+                });
+
+                function formMethod(form) {
+                    const methodField = form.querySelector('input[name="_method"]');
+                    return String(methodField?.value || form.method || 'GET').toUpperCase();
+                }
+
+                function isDeleteForm(form) {
+                    return formMethod(form) === 'DELETE';
+                }
+
+                function isDataEntryForm(form) {
+                    if (String(form.method || 'GET').toUpperCase() !== 'POST' || isDeleteForm(form)) {
+                        return false;
+                    }
+
+                    if (form.dataset.noSaveConfirm === 'true' || form.closest('.navbar') || form.action.includes('/logout')) {
+                        return false;
+                    }
+
+                    return form.matches('.fanous-library-form, .fanous-finance-form, .fanous-representative-form, .fanous-project-form')
+                        || Boolean(form.querySelector('.student-form-section'))
+                        || Boolean(form.closest('.student-form-layout'));
+                }
+
+                function submitWithOriginalButton(form, submitter) {
+                    form.dataset.fanousAlertConfirmed = 'true';
+
+                    if (submitter) {
+                        submitter.dataset.originalText = submitter.dataset.originalText || submitter.textContent;
+                        submitter.textContent = 'در حال ذخیره...';
+                        submitter.disabled = true;
+                        submitter.setAttribute('aria-busy', 'true');
+                    }
+
+                    const existingSubmitValue = Array.from(form.querySelectorAll('input[type="hidden"][data-fanous-submit-value]')).some(function (field) {
+                        return field.dataset.fanousSubmitValue === submitter?.name;
+                    });
+
+                    if (submitter && submitter.name && submitter.value && !existingSubmitValue) {
+                        const hidden = document.createElement('input');
+                        hidden.type = 'hidden';
+                        hidden.name = submitter.name;
+                        hidden.value = submitter.value;
+                        hidden.dataset.fanousSubmitValue = submitter.name;
+                        form.appendChild(hidden);
+                    }
+
+                    if (typeof form.requestSubmit === 'function') {
+                        form.requestSubmit(submitter || undefined);
+                    } else {
+                        form.submit();
+                    }
+
+                    window.setTimeout(function () {
+                        if (document.body.contains(form)) {
+                            delete form.dataset.fanousAlertConfirmed;
+                        }
+                    }, 1200);
+                }
+
+                document.querySelectorAll('form').forEach(function (form) {
+                    form.addEventListener('submit', function (event) {
+                        if (form.dataset.fanousAlertConfirmed === 'true' || event.defaultPrevented) {
+                            return;
+                        }
+
+                        if (isDeleteForm(form)) {
+                            event.preventDefault();
+                            const submitter = event.submitter;
+                            window.FanousAlert.confirmDelete().then(function (result) {
+                                if (result.isConfirmed) {
+                                    submitWithOriginalButton(form, submitter);
+                                }
+                            });
+                            return;
+                        }
+
+                        if (isDataEntryForm(form)) {
+                            event.preventDefault();
+                            const submitter = event.submitter;
+                            window.FanousAlert.confirmSave().then(function (result) {
+                                if (result.isConfirmed) {
+                                    submitWithOriginalButton(form, submitter);
+                                } else if (result.isDenied) {
+                                    window.FanousAlert.fire({
+                                        icon: 'info',
+                                        title: 'ذخیره نشد',
+                                        text: 'تغییرات این فرم ثبت نشد.',
+                                        toast: true
+                                    });
+                                }
+                            });
+                        }
+                    });
+                });
+
+                document.querySelectorAll('form').forEach(function (form) {
+                    return;
+
+                    const sections = Array.from(form.querySelectorAll('.student-form-section')).filter(function (section) {
+                        return section.closest('form') === form && ! section.classList.contains('is-sticky');
+                    });
+
+                    if (sections.length < 2 || form.dataset.noWizard === 'true') {
+                        return;
+                    }
+
+                    const container = form.querySelector('.student-form-main') || form;
+                    const stepper = document.createElement('nav');
+                    const controls = document.createElement('div');
+                    const previousButton = document.createElement('button');
+                    const nextButton = document.createElement('button');
+                    let activeIndex = 0;
+
+                    form.classList.add('fanous-wizard-form');
+                    stepper.className = 'fanous-form-stepper';
+                    stepper.setAttribute('aria-label', 'مراحل فورم');
+                    controls.className = 'fanous-form-wizard-controls';
+
+                    previousButton.type = 'button';
+                    previousButton.className = 'btn btn-outline-secondary';
+                    previousButton.textContent = 'قبلی';
+
+                    nextButton.type = 'button';
+                    nextButton.className = 'btn btn-primary';
+                    nextButton.textContent = 'بعدی';
+
+                    function sectionTitle(section, index) {
+                        const heading = section.querySelector('.student-form-section-head h2, h2, h3');
+                        return (heading?.textContent || ('مرحله ' + (index + 1))).trim();
+                    }
+
+                    function sectionRequiredFields(section) {
+                        return requiredFields(form).filter(function (field) {
+                            return section.contains(field);
+                        });
+                    }
+
+                    function sectionComplete(section) {
+                        const fields = sectionRequiredFields(section);
+                        return fields.length === 0 || fields.every(function (field) {
+                            return isFieldComplete(field, form);
+                        });
+                    }
+
+                    const stepButtons = sections.map(function (section, index) {
+                        const button = document.createElement('button');
+                        button.type = 'button';
+                        button.className = 'fanous-form-step-button';
+                        button.innerHTML = '<span>' + String(index + 1).padStart(2, '0') + '</span><strong>' + sectionTitle(section, index) + '</strong>';
+                        button.addEventListener('click', function () {
+                            if (index <= activeIndex || sections.slice(0, index).every(sectionComplete)) {
+                                showStep(index);
+                            } else {
+                                const invalidField = firstIncompleteField(form, sections[activeIndex]);
+                                invalidField?.reportValidity();
+                            }
+                        });
+                        stepper.appendChild(button);
+                        return button;
+                    });
+
+                    function updateStepState() {
+                        stepButtons.forEach(function (button, index) {
+                            button.classList.toggle('is-active', index === activeIndex);
+                            button.classList.toggle('is-complete', sectionComplete(sections[index]));
+                            button.disabled = index > activeIndex && ! sections.slice(0, index).every(sectionComplete);
+                        });
+
+                        previousButton.disabled = activeIndex === 0;
+                        nextButton.hidden = activeIndex === sections.length - 1;
+                        nextButton.disabled = ! sectionComplete(sections[activeIndex]);
+                    }
+
+                    function showStep(index) {
+                        activeIndex = Math.max(0, Math.min(index, sections.length - 1));
+
+                        sections.forEach(function (section, sectionIndex) {
+                            section.dataset.wizardStep = String(sectionIndex + 1);
+                            section.classList.toggle('is-wizard-active', sectionIndex === activeIndex);
+                        });
+
+                        updateStepState();
+                    }
+
+                    previousButton.addEventListener('click', function () {
+                        showStep(activeIndex - 1);
+                    });
+
+                    nextButton.addEventListener('click', function () {
+                        const invalidField = firstIncompleteField(form, sections[activeIndex]);
+
+                        if (invalidField) {
+                            invalidField.reportValidity();
+                            invalidField.focus({ preventScroll: true });
+                            return;
+                        }
+
+                        showStep(activeIndex + 1);
+                    });
+
+                    form.addEventListener('input', updateStepState);
+                    form.addEventListener('change', updateStepState);
+
+                    form.fanousShowWizardSection = function (section) {
+                        const index = sections.indexOf(section);
+
+                        if (index >= 0) {
+                            showStep(index);
+                        }
+                    };
+
+                    controls.appendChild(previousButton);
+                    controls.appendChild(nextButton);
+                    container.insertBefore(stepper, sections[0]);
+                    container.appendChild(controls);
+                    showStep(0);
+                });
             });
         </script>
     </body>

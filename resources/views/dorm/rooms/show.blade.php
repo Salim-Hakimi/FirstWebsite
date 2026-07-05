@@ -67,7 +67,7 @@
                         <div class="room-bed-tile {{ $bedStudent ? 'is-occupied' : '' }}">
                             <span>بستر {{ $bed }}</span>
                             <strong>{{ $bedStudent?->full_name ?: 'خالی' }}</strong>
-                            <p>{{ $bedStudent ? 'شماره تماس: '.$bedStudent->phone : 'آماده تخصیص' }}</p>
+                            <p>{{ $bedStudent ? 'واتساپ: '.($bedStudent->whatsapp ?: $bedStudent->phone) : 'آماده تخصیص' }}</p>
                         </div>
                     @endfor
                 </div>
@@ -95,7 +95,7 @@
 
                             <div class="room-resident-meta">
                                 <span><strong>بستر</strong>{{ $student->bed_number ?: 'ثبت نشده' }}</span>
-                                <span><strong>تماس</strong>{{ $student->phone ?: 'ثبت نشده' }}</span>
+                                <span><strong>واتساپ</strong>{{ $student->whatsapp ?: $student->phone ?: 'ثبت نشده' }}</span>
                                 <span><strong>آی‌دی</strong>{{ $student->tazkira_number ?: 'ثبت نشده' }}</span>
                             </div>
 
@@ -110,13 +110,16 @@
                                         </option>
                                     @endforeach
                                 </select>
-                                <input class="form-control form-control-sm" name="bed_number" placeholder="بستر">
+                                <input class="form-control form-control-sm" name="bed_number" type="number" min="1" required placeholder="بستر">
                                 <button class="btn btn-outline-primary btn-sm" type="submit">انتقال</button>
                             </form>
 
                             <form method="POST" action="{{ route('dorm.rooms.students.remove', [$room, $student]) }}">
                                 @csrf
                                 @method('DELETE')
+                                <label class="sr-only" for="left_at_{{ $student->id }}">تاریخ خروج</label>
+                                <input id="left_at_{{ $student->id }}" class="form-control form-control-sm mb-2 @error('left_at') is-invalid @enderror" name="left_at" type="date" value="{{ old('left_at', now()->toDateString()) }}" required>
+                                @error('left_at') <span class="text-danger small d-block mb-2">{{ $message }}</span> @enderror
                                 <button class="btn btn-outline-danger btn-sm" type="submit">حذف از اتاق</button>
                             </form>
                         </article>
@@ -148,7 +151,7 @@
                             <option value="">شاگرد را انتخاب کنید</option>
                             @foreach ($unassignedStudents as $student)
                                 <option value="{{ $student->id }}" @selected(old('dorm_student_id') == $student->id)>
-                                    {{ $student->full_name }} - {{ $student->phone }}
+                                    {{ $student->full_name }} - {{ $student->whatsapp ?: $student->phone }}
                                 </option>
                             @endforeach
                         </select>
@@ -157,7 +160,7 @@
 
                     <div class="form-group">
                         <label for="bed_number">نمبر بستر</label>
-                        <input id="bed_number" class="form-control @error('bed_number') is-invalid @enderror" name="bed_number" value="{{ old('bed_number') }}" placeholder="اختیاری">
+                        <input id="bed_number" class="form-control @error('bed_number') is-invalid @enderror" name="bed_number" type="number" min="1" max="{{ $room->capacity }}" value="{{ old('bed_number') }}" required placeholder="مثلاً 1">
                         @error('bed_number') <span class="text-danger small">{{ $message }}</span> @enderror
                     </div>
 

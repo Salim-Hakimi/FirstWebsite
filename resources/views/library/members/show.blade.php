@@ -79,13 +79,14 @@
 
             <div class="student-detail-grid">
                 <div><span data-i18n="fatherName">Father name</span><strong>{{ $member->father_name }}</strong></div>
-                <div><span data-i18n="phoneNumber">Phone number</span><strong>{{ $member->phone }}</strong></div>
+                <div><span data-i18n="phoneNumber">واتساپ</span><strong>{{ $member->phone }}</strong></div>
                 <div><span data-i18n="emailAddress">Email address</span><strong>{{ $member->email ?: __('No email') }}</strong></div>
                 <div><span data-i18n="idTazkira">ID / Tazkira</span><strong>{{ $member->tazkira_number ?: 'N/A' }}</strong></div>
                 <div><span data-i18n="educationPlace">Education place</span><strong>{{ $member->education_place ?: 'N/A' }}</strong></div>
                 <div><span data-i18n="departmentGrade">Department / grade</span><strong>{{ $member->department_or_grade ?: 'N/A' }}</strong></div>
                 <div><span data-i18n="address">Address</span><strong>{{ $member->address ?: 'N/A' }}</strong></div>
                 <div><span data-i18n="joinedAt">Joined at</span><strong>{{ $member->joined_at?->format('Y-m-d') ?: 'N/A' }}</strong></div>
+                <div><span>تاریخ خروج</span><strong>{{ $member->left_at?->format('Y-m-d') ?: 'ثبت نشده' }}</strong></div>
                 <div><span data-i18n="registeredBy">Registered by</span><strong>{{ $member->registeredBy?->name ?: __('Unknown') }}</strong></div>
                 <div><span data-i18n="notes">Notes</span><strong>{{ $member->notes ?: 'N/A' }}</strong></div>
             </div>
@@ -202,19 +203,21 @@
                             <span data-i18n="{{ $loanStatus['key'] }}">{{ $isLateLoan ? 'Late' : $loanStatus['label'] }}</span>
                         </p>
 
-                        @if ($canWriteLibrary && $loan->status !== 'returned')
+                        @if ($canWriteLibrary && in_array($loan->status, ['borrowed', 'late'], true))
                             <form method="POST" action="{{ route('library.loans.return', $loan) }}" class="library-return-form mt-3">
                                 @csrf
                                 @method('PUT')
-                                <input class="form-control" name="returned_at" type="date" value="{{ now()->format('Y-m-d') }}" required>
-                                <input class="form-control" name="fine_amount" type="number" min="0" value="0" data-i18n-placeholder="fineAmount" placeholder="Fine amount">
+                                <input class="form-control @error('returned_at') is-invalid @enderror" name="returned_at" type="date" value="{{ old('returned_at', now()->format('Y-m-d')) }}" required>
+                                @error('returned_at') <span class="text-danger small">{{ $message }}</span> @enderror
+                                <input class="form-control @error('fine_amount') is-invalid @enderror" name="fine_amount" type="number" min="0" value="{{ old('fine_amount', 0) }}" placeholder="مبلغ جریمه">
+                                @error('fine_amount') <span class="text-danger small">{{ $message }}</span> @enderror
                                 <select class="form-control" name="return_status">
-                                    <option value="available">Good</option>
-                                    <option value="damaged">Damaged</option>
-                                    <option value="lost">Lost</option>
+                                    <option value="available">سالم / قابل امانت</option>
+                                    <option value="damaged">خراب</option>
+                                    <option value="lost">گم‌شده</option>
                                 </select>
-                                <input class="form-control" name="condition_in" data-i18n-placeholder="conditionIn" placeholder="Condition in">
-                                <button class="btn btn-primary" type="submit" data-i18n="markReturned">Mark returned</button>
+                                <input class="form-control" name="condition_in" placeholder="وضعیت هنگام برگشت">
+                                <button class="btn btn-primary" type="submit" data-i18n="markReturned">ثبت برگشت</button>
                             </form>
                         @endif
                     </div>

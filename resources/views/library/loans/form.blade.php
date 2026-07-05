@@ -48,21 +48,22 @@
                     </div>
 
                     <div class="student-form-grid three">
-                        <div class="form-group"><label data-i18n="loanCode">کد امانت</label><input class="form-control" name="loan_code" value="{{ old('loan_code', $loan->loan_code) }}"></div>
+                        <div class="form-group"><label data-i18n="loanCode">کد امانت</label><input class="form-control @error('loan_code') is-invalid @enderror" name="loan_code" value="{{ old('loan_code', $loan->loan_code) }}">@error('loan_code') <span class="text-danger small">{{ $message }}</span> @enderror</div>
                         <div class="form-group"><label data-i18n="member">عضو</label><input class="form-control" value="{{ $loan->member?->full_name }}" disabled></div>
                         <div class="form-group"><label data-i18n="book">کتاب</label><input class="form-control" value="{{ $loan->book?->title }}" disabled></div>
                         <div class="form-group"><label>کد نسخه</label><input class="form-control" value="{{ $loan->copy?->copy_code ?: 'ثبت نشده' }}" disabled></div>
-                        <div class="form-group"><label data-i18n="borrowedAt">تاریخ امانت</label><input class="form-control" name="borrowed_at" type="date" value="{{ old('borrowed_at', $loan->borrowed_at?->format('Y-m-d')) }}" required></div>
-                        <div class="form-group"><label data-i18n="dueAt">موعد برگشت</label><input class="form-control" name="due_at" type="date" value="{{ old('due_at', $loan->due_at?->format('Y-m-d')) }}"></div>
+                        <div class="form-group"><label data-i18n="borrowedAt">تاریخ امانت</label><input class="form-control @error('borrowed_at') is-invalid @enderror" name="borrowed_at" type="date" value="{{ old('borrowed_at', $loan->borrowed_at?->format('Y-m-d')) }}" required>@error('borrowed_at') <span class="text-danger small">{{ $message }}</span> @enderror</div>
+                        <div class="form-group"><label data-i18n="dueAt">موعد برگشت</label><input class="form-control @error('due_at') is-invalid @enderror" name="due_at" type="date" value="{{ old('due_at', $loan->due_at?->format('Y-m-d')) }}">@error('due_at') <span class="text-danger small">{{ $message }}</span> @enderror</div>
                         <div class="form-group"><label data-i18n="conditionOut">حالت هنگام خروج</label><input class="form-control" name="condition_out" value="{{ old('condition_out', $loan->condition_out) }}"></div>
-                        <div class="form-group"><label data-i18n="fineAmount">مبلغ جریمه</label><input class="form-control" name="fine_amount" type="number" min="0" value="{{ old('fine_amount', $loan->fine_amount) }}"></div>
+                        <div class="form-group"><label data-i18n="fineAmount">مبلغ جریمه</label><input class="form-control @error('fine_amount') is-invalid @enderror" name="fine_amount" type="number" min="0" value="{{ old('fine_amount', $loan->fine_amount) }}">@error('fine_amount') <span class="text-danger small">{{ $message }}</span> @enderror</div>
                         <div class="form-group">
                             <label data-i18n="status">وضعیت</label>
-                            <select class="form-control" name="status">
+                            <select class="form-control @error('status') is-invalid @enderror" name="status">
                                 @foreach ($loanStatusMeta as $value => $meta)
                                     <option value="{{ $value }}" @selected($selectedStatus === $value) data-i18n="{{ $meta['key'] }}">{{ $meta['label'] }}</option>
                                 @endforeach
                             </select>
+                            @error('status') <span class="text-danger small">{{ $message }}</span> @enderror
                         </div>
                         <div class="form-group full"><label data-i18n="notes">یادداشت</label><textarea class="form-control" name="notes" rows="4">{{ old('notes', $loan->notes) }}</textarea></div>
                     </div>

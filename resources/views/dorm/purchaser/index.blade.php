@@ -187,12 +187,6 @@
             <div class="card">
                 <div class="card-body">
                     <h4 class="card-title">Latest finance records</h4>
-                    <div
-                        data-vue-app="purchaser-records-table"
-                        data-title="Quick finance records"
-                        data-endpoint="{{ route('api.purchaser.records') }}"
-                    ></div>
-
                     <div class="table-responsive">
                         <table class="table">
                             <thead>

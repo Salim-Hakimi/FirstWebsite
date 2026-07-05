@@ -4,17 +4,22 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\DormRoom;
+use App\Services\DormRoomService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class DormRoomsController extends Controller
 {
+    public function __construct(private readonly DormRoomService $rooms)
+    {
+    }
+
     public function __invoke(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'q' => ['nullable', 'string', 'max:80'],
-            'status' => ['nullable', Rule::in(array_keys($this->statusLabels()))],
+            'status' => ['nullable', Rule::in(array_keys($this->rooms->statusLabels()))],
             'floor' => ['nullable', 'string', 'max:40'],
         ]);
 
@@ -42,8 +47,60 @@ class DormRoomsController extends Controller
                 'status' => $validated['status'] ?? '',
                 'floor' => $validated['floor'] ?? '',
                 'floors' => $allRooms->pluck('floor')->filter()->unique()->values(),
-                'statuses' => $this->statusLabels(),
+                'statuses' => $this->rooms->statusLabels(),
             ],
+        ]);
+    }
+
+    public function options(): JsonResponse
+    {
+        return response()->json([
+            'statuses' => $this->rooms->statusLabels(),
+            'capacities' => [4, 6, 8],
+            'defaults' => [
+                'capacity' => 4,
+                'status' => 'active',
+            ],
+        ]);
+    }
+
+    public function show(DormRoom $room): JsonResponse
+    {
+        $room->loadCount(['activeStudents as occupied_beds']);
+
+        return response()->json([
+            'data' => $this->roomPayload($room),
+            'form' => [
+                'room_number' => $room->room_number,
+                'capacity' => (int) $room->capacity,
+                'floor' => $room->floor,
+                'status' => $room->status,
+                'notes' => $room->notes,
+            ],
+            'options' => [
+                'statuses' => $this->rooms->statusLabels(),
+                'capacities' => [4, 6, 8],
+            ],
+        ]);
+    }
+
+    public function store(Request $request): JsonResponse
+    {
+        $room = $this->rooms->create($request)->loadCount(['activeStudents as occupied_beds']);
+
+        return response()->json([
+            'message' => 'اتاق جدید ساخته شد.',
+            'data' => $this->roomPayload($room),
+        ], 201);
+    }
+
+    public function update(Request $request, DormRoom $room): JsonResponse
+    {
+        $room = $this->rooms->update($request, $room)->loadCount(['activeStudents as occupied_beds']);
+
+        return response()->json([
+            'message' => 'اتاق به‌روزرسانی شد.',
+            'data' => $this->roomPayload($room),
         ]);
     }
 
@@ -58,7 +115,7 @@ class DormRoomsController extends Controller
             'room_number' => $room->room_number,
             'floor' => $room->floor,
             'status' => $room->status,
-            'status_label' => $this->statusLabels()[$room->status] ?? $room->status,
+            'status_label' => $this->rooms->statusLabels()[$room->status] ?? $room->status,
             'capacity' => $capacity,
             'occupied_beds' => $occupiedBeds,
             'free_beds' => $freeBeds,
@@ -67,6 +124,8 @@ class DormRoomsController extends Controller
             'links' => [
                 'show' => route('dorm.rooms.show', $room),
                 'edit' => route('dorm.rooms.edit', $room),
+                'api_show' => route('api.dorm.rooms.show', $room),
+                'api_update' => route('api.dorm.rooms.update', $room),
             ],
         ];
     }
@@ -85,15 +144,6 @@ class DormRoomsController extends Controller
             'occupied_beds' => $occupiedBeds,
             'free_beds' => max(0, $totalCapacity - $occupiedBeds),
             'occupancy_rate' => $totalCapacity > 0 ? min(100, round(($occupiedBeds / $totalCapacity) * 100)) : 0,
-        ];
-    }
-
-    private function statusLabels(): array
-    {
-        return [
-            'active' => 'فعال',
-            'maintenance' => 'در تعمیر',
-            'closed' => 'بسته',
         ];
     }
 }

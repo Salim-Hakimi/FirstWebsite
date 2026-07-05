@@ -99,8 +99,6 @@
                     <x-ds.button size="sm" :href="route('dorm.rooms.create')">اتاق جدید</x-ds.button>
                 </div>
 
-                <div data-vue-app="dorm-rooms-table" data-title="نمای سریع اتاق‌ها" data-endpoint="{{ route('api.dorm.rooms') }}"></div>
-
                 <form id="room-filters" method="GET" action="{{ route('dorm.rooms.index') }}" class="fanous-room-filters">
                     <input class="form-control" type="search" name="q" value="{{ request('q') }}" placeholder="جستجوی نام یا کد اتاق...">
                     <select class="form-control" name="status">
@@ -130,13 +128,14 @@
                         @endphp
                         <article class="fanous-room-card">
                             <div class="fanous-room-head">
-                                <div class="fanous-room-title">
-                                    <span class="fanous-room-icon">ا</span>
-                                    <div>
-                                        <strong>اتاق {{ Locale::number($room->room_number) }}</strong>
-                                        <span>کد اتاق: <b class="ltr-text">{{ $room->room_number }}</b></span>
-                                    </div>
+                            <div class="fanous-room-title">
+                                <span class="fanous-room-icon">ا</span>
+                                <div>
+                                    <strong>اتاق {{ Locale::number($room->room_number) }}</strong>
+                                    <span>{{ $room->building ?: 'بلاک ثبت نشده' }} - {{ $room->floor ?: 'منزل ثبت نشده' }}</span>
+                                    <span>کد اتاق: <b class="ltr-text">{{ $room->room_number }}</b></span>
                                 </div>
+                            </div>
                                 <x-ds.badge :tone="$tone">{{ $roomStatusNames[$room->status] ?? $room->status }}</x-ds.badge>
                             </div>
 
@@ -155,6 +154,13 @@
                             <div class="fanous-room-actions">
                                 <x-ds.button variant="outline" size="sm" :href="route('dorm.rooms.edit', $room)">ویرایش</x-ds.button>
                                 <x-ds.button size="sm" :href="route('dorm.rooms.show', $room)">مدیریت</x-ds.button>
+                                @if ((int) $room->occupied_beds === 0)
+                                    <form method="POST" action="{{ route('dorm.rooms.destroy', $room) }}" class="d-inline">
+                                        @csrf
+                                        @method('DELETE')
+                                        <x-ds.button variant="danger" size="sm" type="submit">حذف</x-ds.button>
+                                    </form>
+                                @endif
                             </div>
                         </article>
                     @empty

@@ -112,12 +112,6 @@
                     <x-ds.button size="sm" :href="route('admin.users.create')">ساخت کاربر</x-ds.button>
                 </div>
 
-                <div
-                    data-vue-app="admin-users-table"
-                    data-title="جستجوی سریع کاربران"
-                    data-endpoint="{{ route('api.admin.users') }}"
-                ></div>
-
                 <div class="fanous-table-wrap">
                     <table class="fanous-users-table">
                         <thead>
@@ -170,7 +164,7 @@
                                         @if (auth()->id() !== $user->id)
                                             <div class="fanous-row-actions">
                                                 <x-ds.button variant="outline" size="sm" :href="route('admin.users.edit', $user)">ویرایش</x-ds.button>
-                                                <form method="POST" action="{{ route('admin.users.destroy', $user) }}" onsubmit="return confirm('این کاربر حذف شود؟')">
+                                                <form method="POST" action="{{ route('admin.users.destroy', $user) }}">
                                                     @csrf
                                                     @method('DELETE')
                                                     <x-ds.button variant="danger" size="sm" type="submit">حذف</x-ds.button>

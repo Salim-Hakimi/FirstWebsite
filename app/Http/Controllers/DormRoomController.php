@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\DormRoom;
 use App\Models\DormStudent;
+use App\Services\DormRoomService;
 use App\Support\Audit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,6 +14,10 @@ use Illuminate\View\View;
 
 class DormRoomController extends Controller
 {
+    public function __construct(private readonly DormRoomService $roomService)
+    {
+    }
+
     public function index(): View
     {
         $rooms = DormRoom::query()
@@ -24,22 +29,21 @@ class DormRoomController extends Controller
             'rooms' => $rooms,
             'totalCapacity' => (int) $rooms->sum('capacity'),
             'occupiedBeds' => (int) $rooms->sum('occupied_beds'),
-            'statusLabels' => $this->statusLabels(),
+            'statusLabels' => $this->roomService->statusLabels(),
         ]);
     }
 
     public function create(): View
     {
         return view('dorm.rooms.form', [
-            'room' => new DormRoom(['capacity' => 4, 'status' => 'active']),
-            'statusLabels' => $this->statusLabels(),
+            'room' => new DormRoom(['capacity' => 4, 'status' => 'active', 'building' => 'اصلی']),
+            'statusLabels' => $this->roomService->statusLabels(),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
-        $room = DormRoom::create($this->validateRoom($request));
-        Audit::record('dorm_room_created', $room, [], $room->only(['room_number', 'capacity', 'floor', 'status']), $request);
+        $this->roomService->create($request);
 
         return redirect()
             ->route('dorm.rooms.index')
@@ -50,7 +54,7 @@ class DormRoomController extends Controller
     {
         return view('dorm.rooms.form', [
             'room' => $room,
-            'statusLabels' => $this->statusLabels(),
+            'statusLabels' => $this->roomService->statusLabels(),
         ]);
     }
 
@@ -61,24 +65,50 @@ class DormRoomController extends Controller
 
         return view('dorm.rooms.show', [
             'room' => $room,
-            'statusLabels' => $this->statusLabels(),
+            'statusLabels' => $this->roomService->statusLabels(),
             'unassignedStudents' => $this->unassignedStudents(),
             'roomsForMove' => $this->roomsForMove($room),
         ]);
+    }
+
+    public function update(Request $request, DormRoom $room): RedirectResponse
+    {
+        $this->roomService->update($request, $room);
+
+        return redirect()
+            ->route('dorm.rooms.index')
+            ->with('status', 'اتاق به‌روزرسانی شد.');
+    }
+
+    public function destroy(DormRoom $room): RedirectResponse
+    {
+        if ($room->activeStudents()->exists()) {
+            throw ValidationException::withMessages([
+                'room' => 'برای حذف اتاق، اول همه محصلین فعال را تخلیه یا انتقال کنید.',
+            ]);
+        }
+
+        $oldValues = $room->only(['room_number', 'building', 'floor', 'capacity', 'status']);
+        $room->delete();
+        Audit::record('dorm_room_deleted', $room, $oldValues, [], request());
+
+        return redirect()
+            ->route('dorm.rooms.index')
+            ->with('status', 'اتاق حذف شد.');
     }
 
     public function storeAllocation(Request $request, DormRoom $room): RedirectResponse
     {
         $validated = $request->validate([
             'dorm_student_id' => ['required', 'exists:dorm_students,id'],
-            'bed_number' => ['nullable', 'string', 'max:40'],
+            'bed_number' => ['required', 'integer', 'min:1'],
         ]);
 
         $student = DormStudent::findOrFail($validated['dorm_student_id']);
 
         if ($student->dorm_room_id) {
             throw ValidationException::withMessages([
-                'dorm_student_id' => 'این محصل قبلا اتاق دارد. برای تغییر اتاق از بخش انتقال استفاده کنید.',
+                'dorm_student_id' => 'این محصل قبلاً اتاق دارد. برای تغییر اتاق از بخش انتقال استفاده کنید.',
             ]);
         }
 
@@ -98,7 +128,7 @@ class DormRoomController extends Controller
 
         $validated = $request->validate([
             'target_room_id' => ['required', 'exists:dorm_rooms,id', Rule::notIn([$room->id])],
-            'bed_number' => ['nullable', 'string', 'max:40'],
+            'bed_number' => ['required', 'integer', 'min:1'],
         ]);
 
         $targetRoom = DormRoom::findOrFail($validated['target_room_id']);
@@ -110,61 +140,34 @@ class DormRoomController extends Controller
             ->with('status', 'محصل به اتاق جدید انتقال شد.');
     }
 
-    public function removeStudent(DormRoom $room, DormStudent $student): RedirectResponse
+    public function removeStudent(Request $request, DormRoom $room, DormStudent $student): RedirectResponse
     {
         if ((int) $student->dorm_room_id !== (int) $room->id) {
             abort(404);
+        }
+
+        $validated = $request->validate([
+            'left_at' => ['required', 'date'],
+        ]);
+
+        if ($student->joined_at && $student->joined_at->gt($validated['left_at'])) {
+            throw ValidationException::withMessages([
+                'left_at' => 'تاریخ خروج نمی‌تواند قبل از تاریخ ورود باشد.',
+            ]);
         }
 
         $student->update([
             'dorm_room_id' => null,
             'room_number' => null,
             'bed_number' => null,
+            'active_bed_key' => null,
+            'left_at' => $validated['left_at'],
+            'status' => 'left',
         ]);
 
         return redirect()
             ->route('dorm.rooms.show', $room)
             ->with('status', 'محصل از اتاق خارج شد.');
-    }
-
-    public function update(Request $request, DormRoom $room): RedirectResponse
-    {
-        $validated = $this->validateRoom($request, $room);
-        $occupiedBeds = $room->activeStudents()->count();
-
-        if ($validated['capacity'] < $occupiedBeds) {
-            return back()
-                ->withInput()
-                ->withErrors(['capacity' => "ظرفیت نمی‌تواند کمتر از تعداد محصلین فعلی اتاق ({$occupiedBeds}) باشد."]);
-        }
-
-        $oldValues = $room->only(['room_number', 'capacity', 'floor', 'status', 'notes']);
-        $room->update($validated);
-        Audit::record('dorm_room_updated', $room, $oldValues, $room->fresh()->only(['room_number', 'capacity', 'floor', 'status', 'notes']), $request);
-
-        return redirect()
-            ->route('dorm.rooms.index')
-            ->with('status', 'اتاق به‌روزرسانی شد.');
-    }
-
-    private function validateRoom(Request $request, ?DormRoom $room = null): array
-    {
-        return $request->validate([
-            'room_number' => ['required', 'string', 'max:40', Rule::unique('dorm_rooms', 'room_number')->ignore($room)],
-            'capacity' => ['required', 'integer', Rule::in([4, 6, 8])],
-            'floor' => ['nullable', 'string', 'max:40'],
-            'status' => ['required', Rule::in(array_keys($this->statusLabels()))],
-            'notes' => ['nullable', 'string', 'max:700'],
-        ]);
-    }
-
-    private function statusLabels(): array
-    {
-        return [
-            'active' => 'فعال',
-            'maintenance' => 'در تعمیر',
-            'closed' => 'بسته',
-        ];
     }
 
     private function unassignedStudents()
@@ -189,7 +192,7 @@ class DormRoomController extends Controller
     private function ensureRoomCanHost(DormRoom $room, ?DormStudent $student = null, ?string $bedNumber = null, string $roomField = 'target_room_id'): void
     {
         if ($room->status !== 'active') {
-            throw ValidationException::withMessages([$roomField => 'اتاق انتخاب‌شده فعلا فعال نیست.']);
+            throw ValidationException::withMessages([$roomField => 'اتاق انتخاب‌شده فعلاً فعال نیست.']);
         }
 
         $occupiedBeds = $room->activeStudents()
@@ -198,6 +201,16 @@ class DormRoomController extends Controller
 
         if ($occupiedBeds >= $room->capacity) {
             throw ValidationException::withMessages([$roomField => 'ظرفیت این اتاق تکمیل است.']);
+        }
+
+        if ($bedNumber === null || $bedNumber === '') {
+            throw ValidationException::withMessages(['bed_number' => 'نمبر تخت ضروری است.']);
+        }
+
+        if (! ctype_digit((string) $bedNumber) || (int) $bedNumber < 1 || (int) $bedNumber > (int) $room->capacity) {
+            throw ValidationException::withMessages([
+                'bed_number' => 'نمبر تخت باید بین ۱ و ظرفیت اتاق باشد.',
+            ]);
         }
 
         if ($bedNumber) {
@@ -209,7 +222,7 @@ class DormRoomController extends Controller
                 ->exists();
 
             if ($bedIsTaken) {
-                throw ValidationException::withMessages(['bed_number' => 'این تخت در اتاق انتخاب‌شده قبلا گرفته شده است.']);
+                throw ValidationException::withMessages(['bed_number' => 'این تخت در اتاق انتخاب‌شده قبلاً گرفته شده است.']);
             }
         }
     }
@@ -220,7 +233,11 @@ class DormRoomController extends Controller
             'dorm_room_id' => $room->id,
             'room_number' => $room->room_number,
             'bed_number' => $bedNumber,
+            'active_bed_key' => $room->id.':'.$bedNumber,
+            'left_at' => null,
+            'status' => 'active',
         ]);
-        Audit::record('dorm_student_room_assigned', $student, [], $student->only(['dorm_room_id', 'room_number', 'bed_number']), request());
+
+        Audit::record('dorm_student_room_assigned', $student, [], $student->only(['dorm_room_id', 'room_number', 'bed_number', 'active_bed_key']), request());
     }
 }

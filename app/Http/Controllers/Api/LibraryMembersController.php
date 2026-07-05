@@ -82,7 +82,7 @@ class LibraryMembersController extends Controller
             'joined_at' => $member->joined_at?->toDateString(),
             'next_payment_due_at' => $member->next_payment_due_at?->toDateString(),
             'membership_expires_at' => $member->membership_expires_at?->toDateString() ?: $card?->expires_at?->toDateString(),
-            'profile_photo_url' => $member->profile_photo_path ? route('storage.public', ['path' => $member->profile_photo_path]) : null,
+            'profile_photo_url' => $member->profile_photo_path ? asset('storage/'.$member->profile_photo_path) : null,
             'links' => [
                 'show' => route('library.members.show', $member),
                 'edit' => $canWrite ? route('library.members.edit', $member) : null,

@@ -26,7 +26,7 @@ const filters = reactive({
 
 const columns = [
     { key: 'member', label: 'عضو' },
-    { key: 'phone', label: 'تماس' },
+    { key: 'phone', label: 'واتساپ' },
     { key: 'payment', label: 'پرداخت' },
     { key: 'balance', label: 'باقی' },
     { key: 'card', label: 'اعتبار کارت' },

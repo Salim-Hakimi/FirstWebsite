@@ -108,13 +108,15 @@
 
             <div class="student-detail-grid">
                 <div><span>نام پدر</span><strong>{{ $student->father_name }}</strong></div>
-                <div><span>شماره تماس</span><strong>{{ $student->phone }}</strong></div>
-                <div><span>واتساپ</span><strong>{{ $student->whatsapp ?: 'ثبت نشده' }}</strong></div>
+                <div><span>واتساپ</span><strong>{{ $student->whatsapp ?: $student->phone }}</strong></div>
+                <div><span>شماره خانواده</span><strong>{{ $student->family_phone ?: 'ثبت نشده' }}</strong></div>
                 <div><span>ایمیل</span><strong>{{ $student->email ?: 'ثبت نشده' }}</strong></div>
                 <div><span>آی‌دی / تذکره</span><strong>{{ $student->tazkira_number }}</strong></div>
                 <div><span>ولایت</span><strong>{{ $student->province ?: 'ثبت نشده' }}</strong></div>
+                <div><span>ولسوالی</span><strong>{{ $student->district ?: 'ثبت نشده' }}</strong></div>
                 <div><span>محل تحصیل</span><strong>{{ $student->education_place }}</strong></div>
                 <div><span>دیپارتمنت / صنف</span><strong>{{ $student->department_or_grade ?: 'ثبت نشده' }}</strong></div>
+                <div><span>سال فراغت مکتب</span><strong>{{ $student->school_graduation_year ? \App\Support\Locale::number($student->school_graduation_year) : 'ثبت نشده' }}</strong></div>
                 <div><span>ضامن</span><strong>{{ $student->guarantor_name ?: 'ثبت نشده' }}</strong></div>
                 <div><span>نسبت ضامن</span><strong>{{ $student->guarantor_relation ?: 'ثبت نشده' }}</strong></div>
                 <div><span>شماره ضامن</span><strong>{{ $student->guarantor_phone ?: 'ثبت نشده' }}</strong></div>

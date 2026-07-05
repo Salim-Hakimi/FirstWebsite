@@ -294,12 +294,6 @@
                         </div>
                     </div>
 
-                    <div
-                        data-vue-app="admin-finance-transactions"
-                        data-title="جستجوی سریع ثبت‌های مالی"
-                        data-endpoint="{{ route('api.admin.finance.transactions') }}"
-                    ></div>
-
                     <div class="fanous-table-wrap">
                         <table class="fanous-finance-table">
                             <thead>
@@ -337,7 +331,7 @@
                                             <div class="fanous-row-actions">
                                                 <x-ds.button variant="outline" size="sm" :href="route('admin.finance.transactions.edit', $transaction)">ویرایش</x-ds.button>
                                                 <x-ds.button variant="outline" size="sm" :href="route('admin.finance.transactions.receipt', $transaction)">رسید</x-ds.button>
-                                                <form method="POST" action="{{ route('admin.finance.transactions.destroy', $transaction) }}" onsubmit="return confirm('این ثبت مالی حذف شود؟')">
+                                                <form method="POST" action="{{ route('admin.finance.transactions.destroy', $transaction) }}">
                                                     @csrf
                                                     @method('DELETE')
                                                     <x-ds.button variant="danger" size="sm" type="submit">حذف</x-ds.button>

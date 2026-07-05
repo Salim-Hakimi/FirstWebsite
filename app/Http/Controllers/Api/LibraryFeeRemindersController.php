@@ -94,7 +94,7 @@ class LibraryFeeRemindersController extends Controller
             'next_payment_due_at' => $member->next_payment_due_at?->toDateString(),
             'last_fee_reminder_at' => $member->last_fee_reminder_at?->toDateString(),
             'message' => $message,
-            'profile_photo_url' => $member->profile_photo_path ? route('storage.public', ['path' => $member->profile_photo_path]) : null,
+            'profile_photo_url' => $member->profile_photo_path ? asset('storage/'.$member->profile_photo_path) : null,
             'links' => [
                 'show' => route('library.members.show', $member),
                 'whatsapp' => $whatsappDigits ? 'https://wa.me/'.$whatsappDigits.'?text='.rawurlencode($message) : null,

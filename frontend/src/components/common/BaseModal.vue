@@ -13,11 +13,11 @@ const emit = defineEmits(['close']);
 <template>
     <Teleport to="body">
         <div v-if="open" class="fanous-vue-modal" role="dialog" aria-modal="true">
-            <button class="fanous-vue-modal__backdrop" type="button" @click="emit('close')" />
+            <button class="fanous-vue-modal__backdrop" type="button" aria-label="بستن" @click="emit('close')" />
             <section class="fanous-vue-modal__panel">
                 <header class="fanous-vue-modal__header">
                     <h2>{{ title }}</h2>
-                    <button type="button" @click="emit('close')">×</button>
+                    <button type="button" aria-label="بستن" @click="emit('close')">×</button>
                 </header>
                 <slot />
             </section>

@@ -634,6 +634,17 @@ body.sidebar-icon-only .developer-credit-sidebar {
     border-color: #fc424a;
 }
 
+.fanous-required-label::after {
+    content: " *";
+    color: #fc424a;
+    font-weight: 800;
+}
+
+button[aria-busy="true"] {
+    cursor: progress;
+    opacity: .78;
+}
+
 .card-description {
     color: #6c7293;
 }
@@ -996,8 +1007,9 @@ body.sidebar-icon-only .developer-credit-sidebar {
 }
 
 html {
-    --fanous-sidebar-width: 244px;
-    --fanous-sidebar-mini-width: 70px;
+    --fanous-sidebar-width: 220px;
+    --fanous-sidebar-mini-width: 64px;
+    --fanous-desktop-navbar-height: 54px;
     --ds-primary: #00b8b8;
     --ds-primary-dark: #047c89;
     --ds-bg: #0f1015;
@@ -1025,6 +1037,9 @@ html {
     --shadow: 0 18px 42px rgba(0, 0, 0, .28);
     --radius: 8px;
     --transition: 160ms ease;
+    font-size: 14px;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
 }
 
 html,
@@ -1035,28 +1050,28 @@ body {
 html[data-theme="light"] {
     --ds-primary: #0891b2;
     --ds-primary-dark: #0e7490;
-    --ds-bg: #eef4f8;
+    --ds-bg: #f3f8fb;
     --ds-card-bg: #ffffff;
-    --ds-border: #d7e0ea;
+    --ds-border: #d4e1ea;
     --ds-text: #0f172a;
     --ds-muted: #64748b;
     --ds-success: #15803d;
     --ds-warning: #b45309;
     --ds-danger: #b91c1c;
     --ds-shadow: 0 18px 42px rgba(15, 23, 42, .09);
-    --background: #eef2f7;
+    --background: #f3f8fb;
     --foreground: #111827;
-    --surface: #f8fafc;
+    --surface: #f8fbfd;
     --card: #ffffff;
     --card-foreground: #111827;
     --primary: #00a8b5;
     --primary-foreground: #ffffff;
-    --border: #dbe3ee;
+    --border: #d4e1ea;
     --muted: #64748b;
     --muted-foreground: #475569;
     --hover: rgba(0, 168, 181, .12);
     --input: #ffffff;
-    --shadow: 0 18px 42px rgba(15, 23, 42, .10);
+    --shadow: 0 14px 34px rgba(15, 23, 42, .08);
 }
 
 html[dir="ltr"] body {
@@ -1471,6 +1486,31 @@ html[dir="rtl"] .table td {
         min-height: 100vh;
     }
 
+    .main-panel {
+        min-height: calc(100vh - var(--fanous-desktop-navbar-height));
+        padding-top: var(--fanous-desktop-navbar-height);
+    }
+
+    .navbar.fixed-top,
+    .navbar .navbar-brand-wrapper,
+    .navbar .navbar-menu-wrapper,
+    .sidebar .sidebar-brand-wrapper.fixed-top {
+        min-height: var(--fanous-desktop-navbar-height) !important;
+    }
+
+    .navbar .navbar-brand-wrapper,
+    .sidebar .sidebar-brand-wrapper.fixed-top {
+        height: var(--fanous-desktop-navbar-height) !important;
+    }
+
+    .navbar .navbar-menu-wrapper {
+        padding-block: 0 !important;
+    }
+
+    .sidebar .nav {
+        padding-top: calc(var(--fanous-desktop-navbar-height) + 10px);
+    }
+
     html[dir="ltr"] .page-body-wrapper {
         margin-left: var(--fanous-sidebar-width);
         margin-right: 0;
@@ -1663,6 +1703,46 @@ textarea.form-control,
     background: var(--input);
     color: var(--foreground);
     border-color: var(--border);
+}
+
+.form-control,
+select.form-control,
+textarea.form-control {
+    min-height: 38px;
+    border-radius: 8px;
+    padding: .5rem .7rem;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+textarea.form-control {
+    min-height: 86px;
+    resize: vertical;
+}
+
+.form-group {
+    margin-bottom: .85rem;
+}
+
+.form-group label,
+label {
+    line-height: 1.45;
+}
+
+.btn[type="submit"]:disabled,
+.ds-btn[type="submit"]:disabled,
+button[data-validation-locked="true"],
+input[type="submit"][data-validation-locked="true"] {
+    cursor: not-allowed !important;
+    opacity: .52 !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.table th,
+.table td {
+    padding: .6rem .7rem;
+    vertical-align: middle;
 }
 
 .form-control::placeholder,
@@ -2950,8 +3030,8 @@ html[data-theme="light"] .admin-occupancy-ring {
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 20px;
     align-items: center;
-    margin-bottom: 22px;
-    padding: clamp(22px, 4vw, 34px);
+    margin-bottom: 16px;
+    padding: clamp(16px, 2.1vw, 24px);
     background:
         linear-gradient(135deg, rgba(0, 144, 231, .24), transparent 42%),
         linear-gradient(315deg, rgba(0, 210, 91, .16), transparent 42%),
@@ -2959,9 +3039,9 @@ html[data-theme="light"] .admin-occupancy-ring {
 }
 
 .student-form-hero h1 {
-    margin: 12px 0 6px;
+    margin: 8px 0 4px;
     color: #ffffff;
-    font-size: clamp(28px, 4vw, 42px);
+    font-size: clamp(24px, 2.4vw, 32px);
     font-weight: 900;
     line-height: 1.12;
 }
@@ -2974,40 +3054,40 @@ html[data-theme="light"] .admin-occupancy-ring {
 
 .student-form-layout {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(330px, 400px);
-    gap: 22px;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+    gap: 16px;
     align-items: start;
 }
 
 .student-form-main {
     display: grid;
-    gap: 22px;
+    gap: 16px;
 }
 
 .student-form-section {
-    padding: clamp(18px, 3vw, 24px);
+    padding: clamp(14px, 1.6vw, 18px);
 }
 
 .student-form-section.is-sticky {
     position: sticky;
-    top: 86px;
+    top: 68px;
 }
 
 .student-form-section-head {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
-    gap: 13px;
+    gap: 10px;
     align-items: start;
-    margin-bottom: 18px;
+    margin-bottom: 13px;
 }
 
 .student-form-section-head.compact {
-    margin-bottom: 14px;
+    margin-bottom: 10px;
 }
 
 .student-form-step {
-    width: 42px;
-    height: 42px;
+    width: 34px;
+    height: 34px;
     display: grid;
     place-items: center;
     border-radius: 12px;
@@ -3019,7 +3099,7 @@ html[data-theme="light"] .admin-occupancy-ring {
 .student-form-section-head h2 {
     margin: 0;
     color: #ffffff;
-    font-size: 23px;
+    font-size: 19px;
     font-weight: 900;
     line-height: 1.25;
 }
@@ -3027,16 +3107,17 @@ html[data-theme="light"] .admin-occupancy-ring {
 .student-form-section-head p {
     margin: 4px 0 0;
     color: #9aa4bf;
+    font-size: 12px;
 }
 
 .student-form-photo {
-    margin-bottom: 18px;
+    margin-bottom: 12px;
 }
 
 .student-form-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
+    gap: 11px 14px;
 }
 
 .student-form-grid.three {
@@ -3045,7 +3126,7 @@ html[data-theme="light"] .admin-occupancy-ring {
 
 .student-form-grid.compact {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
+    gap: 10px;
 }
 
 .student-form-grid .full {
@@ -3055,9 +3136,9 @@ html[data-theme="light"] .admin-occupancy-ring {
 .student-document-upload-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px;
-    margin-top: 18px;
-    padding: 16px;
+    gap: 11px;
+    margin-top: 13px;
+    padding: 12px;
     border: 1px solid rgba(108, 114, 147, .18);
     border-radius: 14px;
     background: rgba(15, 16, 21, .44);
@@ -3073,14 +3154,14 @@ html[data-theme="light"] .admin-occupancy-ring {
 
 .student-form-section label {
     color: #dce2f1;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 800;
 }
 
 .student-form-section small,
 .student-checkbox-line {
     display: block;
-    margin-top: 7px;
+    margin-top: 5px;
     line-height: 1.6;
 }
 
@@ -3115,7 +3196,7 @@ html[data-theme="light"] .admin-occupancy-ring {
     border: 1px solid rgba(108, 114, 147, .18);
     border-radius: 12px;
     background: #0f1015;
-    padding: 14px;
+    padding: 11px;
 }
 
 .student-document-item strong,
@@ -3136,17 +3217,17 @@ html[data-theme="light"] .admin-occupancy-ring {
 
 .student-status-preview {
     display: grid;
-    gap: 7px;
-    margin-bottom: 18px;
+    gap: 6px;
+    margin-bottom: 13px;
     border: 1px solid rgba(108, 114, 147, .18);
     border-radius: 12px;
     background: #0f1015;
-    padding: 16px;
+    padding: 12px;
 }
 
 .student-side-divider {
     height: 1px;
-    margin: 20px 0;
+    margin: 14px 0;
     background: rgba(108, 114, 147, .22);
 }
 
@@ -3159,12 +3240,12 @@ html[data-theme="light"] .admin-occupancy-ring {
 
 .student-save-panel {
     display: grid;
-    gap: 10px;
-    margin-top: 22px;
+    gap: 8px;
+    margin-top: 16px;
 }
 
 .student-save-panel .btn {
-    min-height: 42px;
+    min-height: 38px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -3388,6 +3469,24 @@ html[data-theme="light"] .form-control::placeholder {
     opacity: 1;
 }
 
+html[data-theme="light"] .fanous-form-step-button {
+    border-color: #d7e5ee;
+    background: #f8fcff;
+    color: #52708d;
+}
+
+html[data-theme="light"] .fanous-form-step-button.is-active {
+    border-color: rgba(8, 145, 178, .45);
+    background: linear-gradient(180deg, #ffffff 0%, #e9fbff 100%);
+    color: #0f172a;
+    box-shadow: 0 14px 30px rgba(8, 145, 178, .13);
+}
+
+html[data-theme="light"] .fanous-form-wizard-controls {
+    border-color: #d7e5ee;
+    background: rgba(248, 252, 255, .9);
+}
+
 html[data-theme="light"] .badge-outline-primary,
 html[data-theme="light"] .badge-outline-success,
 html[data-theme="light"] .badge-outline-warning,
@@ -3499,7 +3598,7 @@ html[data-theme="light"] .menu-icon .menu-letter {
 html[data-theme="light"] .navbar.fixed-top,
 html[data-theme="light"] .navbar .navbar-menu-wrapper,
 html[data-theme="light"] .navbar .navbar-brand-wrapper {
-    min-height: 72px;
+    min-height: var(--fanous-desktop-navbar-height);
     border-bottom: 1px solid var(--ds-border);
     background: rgba(255, 255, 255, .88) !important;
     backdrop-filter: blur(18px);
@@ -3515,7 +3614,7 @@ html[data-theme="light"] .navbar .navbar-menu-wrapper .search input {
 .content-wrapper.fanous-dashboard-wrapper {
     width: 100%;
     max-width: none;
-    padding: clamp(18px, 2vw, 30px);
+    padding: clamp(16px, 1.35vw, 22px);
 }
 
 .content-wrapper.fanous-dashboard-wrapper .fanous-dashboard {
@@ -3526,7 +3625,7 @@ html[data-theme="light"] .navbar .navbar-menu-wrapper .search input {
 .fanous-dashboard {
     display: flex;
     flex-direction: column;
-    gap: clamp(18px, 2vw, 28px);
+    gap: clamp(16px, 1.5vw, 22px);
     width: 100%;
     min-width: 0;
 }
@@ -3566,7 +3665,7 @@ html[data-theme="light"] .navbar .navbar-menu-wrapper .search input {
     align-items: center;
     justify-content: space-between;
     gap: 18px;
-    padding: clamp(22px, 2.2vw, 30px);
+    padding: clamp(18px, 1.7vw, 24px);
     background:
         radial-gradient(circle at 15% 20%, color-mix(in srgb, var(--ds-primary) 12%, transparent), transparent 28%),
         radial-gradient(circle at 88% 20%, rgba(37, 99, 235, .08), transparent 30%),
@@ -5917,6 +6016,56 @@ html[data-theme="light"] .dashboard-action {
     display: block;
 }
 
+body.fanous-library-modal-open {
+    overflow: hidden;
+}
+
+body.fanous-library-modal-open::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 1070;
+    background: rgba(2, 8, 23, .54);
+    backdrop-filter: blur(6px);
+}
+
+body.fanous-library-modal-open .fanous-library-form-panel.is-active {
+    position: fixed;
+    inset-block: 76px 24px;
+    inset-inline: 24px;
+    z-index: 1080;
+    width: min(980px, calc(100vw - 48px));
+    max-height: calc(100vh - 100px);
+    margin-inline: auto;
+    overflow-y: auto;
+    border-radius: 18px;
+    box-shadow: 0 30px 90px rgba(0, 0, 0, .34);
+    animation: fanous-library-modal-in .18s ease-out;
+}
+
+body.fanous-library-modal-open .fanous-library-form-panel.is-active .dashboard-panel-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    margin: -1px -1px 16px;
+    padding: 18px;
+    border-bottom: 1px solid var(--ds-border);
+    border-radius: 18px 18px 0 0;
+    background: color-mix(in srgb, var(--ds-card-bg) 96%, var(--ds-primary) 4%);
+}
+
+@keyframes fanous-library-modal-in {
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(.985);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
 .fanous-library-form {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -7001,5 +7150,604 @@ canvas {
 
     .fanous-student-info strong {
         font-size: 12px;
+    }
+}
+
+/* Premium form experience for registration/editing workflows. */
+.student-form-hero,
+.student-form-section {
+    border-color: color-mix(in srgb, var(--ds-primary) 16%, var(--ds-border)) !important;
+}
+
+.student-form-hero {
+    position: relative;
+    overflow: hidden;
+}
+
+.student-form-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(135deg, color-mix(in srgb, var(--ds-primary) 10%, transparent), transparent 46%),
+        radial-gradient(circle at 14% 18%, color-mix(in srgb, #22c55e 10%, transparent), transparent 28%);
+    pointer-events: none;
+}
+
+.student-form-hero > * {
+    position: relative;
+    z-index: 1;
+}
+
+.student-form-section {
+    background:
+        linear-gradient(180deg, color-mix(in srgb, var(--ds-card-bg) 96%, var(--ds-primary) 4%), var(--ds-card-bg)) !important;
+}
+
+.fanous-form-stepper {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.fanous-form-step-button {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 9px;
+    align-items: center;
+    border: 1px solid color-mix(in srgb, var(--ds-border) 80%, transparent);
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--ds-card-bg) 92%, var(--ds-primary) 8%);
+    color: var(--ds-muted);
+    cursor: pointer;
+    padding: 10px 12px;
+    text-align: start;
+    transition: border-color var(--transition), color var(--transition), background var(--transition), transform var(--transition), box-shadow var(--transition);
+}
+
+.fanous-form-step-button span {
+    width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--ds-primary) 14%, transparent);
+    color: var(--ds-primary);
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.fanous-form-step-button strong {
+    min-width: 0;
+    color: inherit;
+    font-size: 12px;
+    font-weight: 900;
+    line-height: 1.35;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fanous-form-step-button:hover,
+.fanous-form-step-button:focus {
+    border-color: color-mix(in srgb, var(--ds-primary) 40%, var(--ds-border));
+    color: var(--ds-text);
+    outline: none;
+    transform: translateY(-1px);
+}
+
+.fanous-form-step-button.is-active {
+    border-color: color-mix(in srgb, var(--ds-primary) 66%, var(--ds-border));
+    background: color-mix(in srgb, var(--ds-primary) 16%, var(--ds-card-bg));
+    color: var(--ds-text);
+    box-shadow: 0 16px 34px color-mix(in srgb, var(--ds-primary) 13%, transparent);
+}
+
+.fanous-form-step-button.is-complete span {
+    background: color-mix(in srgb, var(--ds-success) 18%, transparent);
+    color: var(--ds-success);
+}
+
+.fanous-form-step-button:disabled {
+    cursor: not-allowed;
+    opacity: .58;
+    transform: none;
+}
+
+.fanous-wizard-form .student-form-section[data-wizard-step] {
+    display: none;
+}
+
+.fanous-wizard-form .student-form-section[data-wizard-step].is-wizard-active {
+    display: block;
+    animation: fanous-form-step-in .18s ease-out;
+}
+
+.fanous-form-wizard-controls {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: -8px;
+    padding: 12px;
+    border: 1px solid color-mix(in srgb, var(--ds-border) 76%, transparent);
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--ds-card-bg) 92%, var(--ds-primary) 8%);
+    box-shadow: 0 14px 32px rgba(0, 0, 0, .08);
+}
+
+.fanous-form-wizard-controls .btn {
+    min-width: 120px;
+    min-height: 40px;
+    border-radius: 10px;
+}
+
+@keyframes fanous-form-step-in {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.student-form-section .form-control,
+.fanous-library-form .form-control,
+.fanous-finance-form .form-control,
+.fanous-representative-form .form-control,
+.fanous-project-form .form-control {
+    min-height: 42px !important;
+    border-radius: 10px !important;
+    padding: 9px 12px !important;
+    font-size: 13px !important;
+    line-height: 1.45 !important;
+    transition: border-color var(--transition), box-shadow var(--transition), background-color var(--transition);
+}
+
+.student-form-section textarea.form-control,
+.fanous-library-form textarea.form-control,
+.fanous-finance-form textarea.form-control,
+.fanous-representative-form textarea.form-control {
+    min-height: 88px !important;
+}
+
+.student-form-section .form-control:focus,
+.fanous-library-form .form-control:focus,
+.fanous-finance-form .form-control:focus,
+.fanous-representative-form .form-control:focus {
+    border-color: color-mix(in srgb, var(--ds-primary) 72%, var(--ds-border)) !important;
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--ds-primary) 16%, transparent) !important;
+}
+
+.student-form-section label,
+.fanous-library-form label > span,
+.fanous-finance-form label > span,
+.fanous-representative-form label > span {
+    display: block;
+    margin-bottom: 5px !important;
+    color: var(--ds-text) !important;
+    font-size: 12px !important;
+    font-weight: 900 !important;
+}
+
+.student-form-section small,
+.student-checkbox-line {
+    font-size: 12px !important;
+}
+
+@media (min-width: 992px) {
+    .fanous-wizard-form {
+        max-width: 1240px;
+        margin-inline: auto;
+    }
+
+    .student-form-hero {
+        margin-bottom: 16px !important;
+        padding: 20px 24px !important;
+        border-radius: 16px !important;
+    }
+
+    .student-form-hero h1 {
+        margin-block: 7px 4px !important;
+        font-size: clamp(28px, 2.2vw, 36px) !important;
+        line-height: 1.2 !important;
+    }
+
+    .student-form-layout {
+        grid-template-columns: minmax(0, 1fr) minmax(280px, 340px) !important;
+        gap: 18px !important;
+        align-items: start !important;
+    }
+
+    .student-form-main {
+        gap: 18px !important;
+        min-height: 0 !important;
+    }
+
+    .student-form-section {
+        padding: 18px !important;
+        border-radius: 16px !important;
+    }
+
+    .fanous-wizard-form .student-form-section[data-wizard-step].is-wizard-active {
+        min-height: auto !important;
+    }
+
+    .student-form-section.is-sticky {
+        top: 76px !important;
+    }
+
+    .student-form-section-head {
+        gap: 12px !important;
+        margin-bottom: 16px !important;
+    }
+
+    .student-form-step {
+        width: 38px !important;
+        height: 38px !important;
+        border-radius: 12px !important;
+    }
+
+    .student-form-section-head h2 {
+        font-size: 21px !important;
+    }
+
+    .student-form-section-head p {
+        max-width: 720px;
+        font-size: 12px !important;
+        line-height: 1.75 !important;
+    }
+
+    .student-form-grid,
+    .student-form-grid.three {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        gap: 14px 16px !important;
+    }
+
+    .student-form-grid.compact {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .student-form-grid .full,
+    .student-document-upload-grid .full {
+        grid-column: 1 / -1 !important;
+    }
+
+    .student-form-section .form-group {
+        margin-bottom: 0 !important;
+    }
+
+    .student-photo-uploader {
+        align-items: center !important;
+        gap: 14px !important;
+        padding: 14px !important;
+        border-radius: 14px !important;
+        background: color-mix(in srgb, var(--ds-card-bg) 92%, var(--ds-primary) 8%) !important;
+    }
+
+    .student-photo-uploader img,
+    .student-photo-uploader > span {
+        width: 88px !important;
+        height: 108px !important;
+        border-radius: 14px !important;
+        font-size: 26px !important;
+    }
+
+    .student-document-upload-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 14px !important;
+        padding: 14px !important;
+        border-radius: 14px !important;
+    }
+
+    .student-card-summary,
+    .student-status-preview,
+    .student-document-item {
+        border-radius: 14px !important;
+        padding: 14px !important;
+    }
+
+    .student-save-panel .btn {
+        min-height: 40px !important;
+        border-radius: 10px !important;
+        font-size: 13px !important;
+    }
+
+    .fanous-wizard-form .student-form-side {
+        display: grid;
+        gap: 12px;
+    }
+
+    .fanous-wizard-form .student-form-side > .student-form-section,
+    .fanous-wizard-form > .student-form-section.is-sticky,
+    .fanous-wizard-form .student-form-layout > .student-form-section.is-sticky {
+        max-height: calc(100vh - 96px);
+        overflow-y: auto;
+    }
+
+    .fanous-wizard-form .student-form-side .student-form-section-head,
+    .fanous-wizard-form .student-form-side .student-side-title {
+        margin-bottom: 10px !important;
+    }
+
+    .fanous-wizard-form .student-form-side .student-status-preview,
+    .fanous-wizard-form .student-form-side .student-card-summary {
+        padding: 11px !important;
+    }
+
+    .fanous-wizard-form .student-form-side .student-card-summary strong,
+    .fanous-wizard-form .student-form-side .student-status-preview strong {
+        font-size: 13px;
+    }
+
+    .fanous-wizard-form .student-form-side .student-card-summary p,
+    .fanous-wizard-form .student-form-side .student-status-preview p,
+    .fanous-wizard-form .student-form-side small {
+        font-size: 11px;
+        line-height: 1.55;
+    }
+}
+
+@media (min-width: 1500px) {
+    .student-form-grid,
+    .student-form-grid.three {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    }
+}
+
+@media (max-width: 991px) {
+    .student-form-section .form-control,
+    .fanous-library-form .form-control,
+    .fanous-finance-form .form-control,
+    .fanous-representative-form .form-control {
+        min-height: 44px !important;
+        font-size: 14px !important;
+    }
+}
+
+body.fanous-alert-open {
+    overflow: hidden;
+}
+
+.fanous-alert-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10050;
+    display: grid;
+    place-items: center;
+    padding: 18px;
+    background:
+        radial-gradient(circle at 30% 20%, color-mix(in srgb, var(--ds-primary) 18%, transparent), transparent 34%),
+        rgba(5, 12, 24, 0.56);
+    opacity: 0;
+    visibility: hidden;
+    backdrop-filter: blur(12px);
+    transition: opacity 160ms ease, visibility 160ms ease;
+}
+
+.fanous-alert-backdrop.is-visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.fanous-alert {
+    width: min(430px, 100%);
+    direction: rtl;
+    text-align: center;
+    padding: 28px;
+    border: 1px solid color-mix(in srgb, var(--ds-border) 76%, transparent);
+    border-radius: 22px;
+    background:
+        linear-gradient(145deg, color-mix(in srgb, var(--ds-card-bg) 94%, #ffffff 6%), var(--ds-card-bg)),
+        var(--ds-card-bg);
+    color: var(--ds-text);
+    box-shadow: 0 26px 70px rgba(8, 20, 38, 0.28);
+    transform: translateY(18px) scale(0.97);
+    transition: transform 180ms ease;
+}
+
+.fanous-alert-backdrop.is-visible .fanous-alert {
+    transform: translateY(0) scale(1);
+}
+
+.fanous-alert__icon {
+    display: inline-grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    margin-bottom: 16px;
+    border-radius: 20px;
+    font-size: 30px;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.fanous-alert--success .fanous-alert__icon {
+    background: color-mix(in srgb, #16a34a 17%, transparent);
+    color: #16a34a;
+}
+
+.fanous-alert--warning .fanous-alert__icon {
+    background: color-mix(in srgb, #f59e0b 20%, transparent);
+    color: #b45309;
+}
+
+.fanous-alert--error .fanous-alert__icon {
+    background: color-mix(in srgb, #dc2626 16%, transparent);
+    color: #dc2626;
+}
+
+.fanous-alert--question .fanous-alert__icon,
+.fanous-alert--info .fanous-alert__icon {
+    background: color-mix(in srgb, var(--ds-primary) 18%, transparent);
+    color: var(--ds-primary);
+}
+
+.fanous-alert h2 {
+    margin: 0;
+    color: var(--ds-text);
+    font-size: 24px;
+    font-weight: 900;
+    letter-spacing: 0;
+}
+
+.fanous-alert p {
+    margin: 10px 0 0;
+    color: var(--ds-muted);
+    font-size: 14px;
+    line-height: 1.9;
+}
+
+.fanous-alert__footer {
+    display: block;
+    margin-top: 12px;
+    color: var(--ds-muted);
+    font-size: 12px;
+}
+
+.fanous-alert__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 24px;
+}
+
+.fanous-alert__button {
+    min-width: 112px;
+    min-height: 42px;
+    padding: 10px 18px;
+    border: 1px solid color-mix(in srgb, var(--ds-border) 90%, transparent);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--ds-card-bg) 86%, var(--ds-soft-bg) 14%);
+    color: var(--ds-text);
+    font-size: 13px;
+    font-weight: 900;
+    cursor: pointer;
+    transition: transform var(--transition), box-shadow var(--transition), background-color var(--transition), border-color var(--transition);
+}
+
+.fanous-alert__button:hover,
+.fanous-alert__button:focus-visible {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 26px color-mix(in srgb, var(--ds-primary) 18%, transparent);
+    outline: none;
+}
+
+.fanous-alert__button--confirm {
+    border-color: color-mix(in srgb, var(--ds-primary) 78%, transparent);
+    background: linear-gradient(135deg, var(--ds-primary), color-mix(in srgb, var(--ds-primary) 72%, #14b8a6 28%));
+    color: #fff;
+}
+
+.fanous-alert--warning .fanous-alert__button--confirm,
+.fanous-alert--error .fanous-alert__button--confirm {
+    border-color: #dc2626;
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+}
+
+.fanous-alert__button--cancel {
+    background: transparent;
+}
+
+.fanous-alert__button--deny {
+    color: #b45309;
+    border-color: color-mix(in srgb, #f59e0b 44%, var(--ds-border));
+    background: color-mix(in srgb, #f59e0b 9%, var(--ds-card-bg));
+}
+
+.fanous-toast-region {
+    position: fixed;
+    top: 18px;
+    inset-inline-end: 18px;
+    z-index: 10060;
+    display: grid;
+    gap: 10px;
+    width: min(360px, calc(100vw - 36px));
+    pointer-events: none;
+}
+
+.fanous-toast {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    direction: rtl;
+    padding: 14px 16px;
+    border: 1px solid color-mix(in srgb, var(--ds-border) 82%, transparent);
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--ds-card-bg) 96%, #ffffff 4%);
+    color: var(--ds-text);
+    box-shadow: 0 18px 44px rgba(8, 20, 38, 0.18);
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: opacity 180ms ease, transform 180ms ease;
+    pointer-events: auto;
+}
+
+.fanous-toast.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.fanous-toast__icon {
+    display: inline-grid;
+    flex: 0 0 auto;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+    font-weight: 900;
+}
+
+.fanous-toast--success .fanous-toast__icon {
+    background: color-mix(in srgb, #16a34a 16%, transparent);
+    color: #16a34a;
+}
+
+.fanous-toast--error .fanous-toast__icon {
+    background: color-mix(in srgb, #dc2626 16%, transparent);
+    color: #dc2626;
+}
+
+.fanous-toast--info .fanous-toast__icon {
+    background: color-mix(in srgb, var(--ds-primary) 16%, transparent);
+    color: var(--ds-primary);
+}
+
+.fanous-toast__body {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+    text-align: right;
+}
+
+.fanous-toast__body strong {
+    color: var(--ds-text);
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.fanous-toast__body span {
+    color: var(--ds-muted);
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+@media (max-width: 575px) {
+    .fanous-alert {
+        padding: 22px;
+        border-radius: 18px;
+    }
+
+    .fanous-alert__actions {
+        display: grid;
+    }
+
+    .fanous-alert__button {
+        width: 100%;
     }
 }

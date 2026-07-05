@@ -9,6 +9,7 @@ class DormRoom extends Model
 {
     protected $fillable = [
         'room_number',
+        'building',
         'capacity',
         'floor',
         'status',

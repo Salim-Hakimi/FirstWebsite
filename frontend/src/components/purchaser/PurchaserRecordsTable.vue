@@ -13,7 +13,7 @@ const props = defineProps({
     },
     title: {
         type: String,
-        default: 'Quick finance records',
+        default: 'ثبت‌های خریداری',
     },
 });
 
@@ -28,13 +28,13 @@ const filters = reactive({
 });
 
 const columns = [
-    { key: 'date', label: 'Date' },
-    { key: 'source', label: 'Student / Source' },
-    { key: 'type', label: 'Type' },
-    { key: 'period', label: 'Period' },
-    { key: 'amount', label: 'Amount' },
-    { key: 'recorded_by', label: 'Recorded by' },
-    { key: 'actions', label: 'Actions' },
+    { key: 'date', label: 'تاریخ' },
+    { key: 'source', label: 'شاگرد / منبع' },
+    { key: 'type', label: 'نوع' },
+    { key: 'period', label: 'دوره' },
+    { key: 'amount', label: 'مبلغ' },
+    { key: 'recorded_by', label: 'ثبت‌کننده' },
+    { key: 'actions', label: 'عملیات' },
 ];
 
 const { data, error, execute, loading } = useAsyncState(async () => {
@@ -48,15 +48,15 @@ const meta = computed(() => data.value?.meta || {});
 const filterMeta = computed(() => data.value?.filters || {});
 
 function money(value) {
-    return new Intl.NumberFormat('en-US').format(Number(value || 0)) + ' AFN';
+    return new Intl.NumberFormat('fa-AF').format(Number(value || 0)) + ' افغانی';
 }
 
 function dateLabel(value) {
     if (! value) {
-        return 'No date';
+        return 'ثبت نشده';
     }
 
-    return new Intl.DateTimeFormat('en-CA').format(new Date(value));
+    return new Intl.DateTimeFormat('fa-AF', { dateStyle: 'short' }).format(new Date(value));
 }
 
 function goToPage(page) {
@@ -129,8 +129,8 @@ onMounted(() => execute());
                 </option>
             </select>
 
-            <input v-model="filters.date_from" class="fanous-vue-input" type="date" aria-label="Date from">
-            <input v-model="filters.date_to" class="fanous-vue-input" type="date" aria-label="Date to">
+            <input v-model="filters.date_from" class="fanous-vue-input" type="date" aria-label="از تاریخ">
+            <input v-model="filters.date_to" class="fanous-vue-input" type="date" aria-label="تا تاریخ">
             <input v-model="filters.period" class="fanous-vue-input" placeholder="Period">
         </div>
 

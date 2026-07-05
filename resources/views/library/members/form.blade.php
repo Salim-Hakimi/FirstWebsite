@@ -67,7 +67,7 @@
                         <div class="form-group"><label data-i18n="memberCode">کد عضو</label><input class="form-control" name="member_code" value="{{ old('member_code', $member->member_code) }}"></div>
                         <div class="form-group"><label data-i18n="fullName">نام مکمل</label><input class="form-control" name="full_name" value="{{ old('full_name', $member->full_name) }}" required></div>
                         <div class="form-group"><label data-i18n="fatherName">نام پدر</label><input class="form-control" name="father_name" value="{{ old('father_name', $member->father_name) }}" required></div>
-                        <div class="form-group"><label data-i18n="phoneNumber">شماره تماس</label><input class="form-control" name="phone" value="{{ old('phone', $member->phone) }}" required></div>
+                        <div class="form-group"><label data-i18n="phoneNumber">واتساپ</label><input class="form-control" name="phone" value="{{ old('phone', $member->phone) }}" required></div>
                         <div class="form-group"><label data-i18n="emailAddress">ایمیل</label><input class="form-control" name="email" type="email" value="{{ old('email', $member->email) }}"></div>
                         <div class="form-group"><label data-i18n="idTazkira">آی‌دی / تذکره</label><input class="form-control" name="tazkira_number" value="{{ old('tazkira_number', $member->tazkira_number) }}"></div>
                         <div class="form-group"><label data-i18n="educationPlace">محل تحصیل</label><input class="form-control" name="education_place" value="{{ old('education_place', $member->education_place) }}"></div>
@@ -104,6 +104,7 @@
                             </select>
                         </div>
                         <div class="form-group"><label data-i18n="joinedAt">تاریخ ثبت</label><input class="form-control" name="joined_at" type="date" value="{{ old('joined_at', $member->joined_at?->format('Y-m-d')) }}"></div>
+                        <div class="form-group"><label>تاریخ خروج</label><input class="form-control @error('left_at') is-invalid @enderror" name="left_at" type="date" value="{{ old('left_at', $member->left_at?->format('Y-m-d')) }}">@error('left_at') <span class="text-danger small">{{ $message }}</span> @enderror</div>
                         <div class="form-group"><label data-i18n="membershipExpiry">اعتبار عضویت</label><input class="form-control" name="membership_expires_at" type="date" value="{{ old('membership_expires_at', $member->membership_expires_at?->format('Y-m-d')) }}"></div>
                         <div class="form-group"><label data-i18n="nextDue">موعد بعدی</label><input class="form-control" name="next_payment_due_at" type="date" value="{{ old('next_payment_due_at', $member->next_payment_due_at?->format('Y-m-d')) }}"></div>
                         <div class="form-group"><label>جریمه روزانه دیرکرد</label><input class="form-control" name="monthly_fee_daily_fine" type="number" min="0" value="{{ old('monthly_fee_daily_fine', $member->monthly_fee_daily_fine ?? 20) }}"></div>
@@ -143,10 +144,10 @@
                     </form>
 
                     <div class="student-save-panel">
-                        <button class="btn btn-primary" type="submit" form="library-member-form" data-i18n="saveChanges">ذخیره تغییرات</button>
-                        <button class="btn btn-outline-primary" type="submit" form="library-card-form" data-i18n="{{ $latestLibraryCard ? 'renewCard' : 'issueNewCard' }}">{{ $latestLibraryCard ? 'تمدید کارت' : 'صدور کارت جدید' }}</button>
+                        <button class="btn btn-primary" type="submit" form="library-member-form" data-i18n="saveChanges">فقط ذخیره معلومات</button>
+                        <button class="btn btn-outline-primary" type="submit" form="library-card-form" data-i18n="{{ $latestLibraryCard ? 'renewCard' : 'issueNewCard' }}">{{ $latestLibraryCard ? 'ذخیره و تمدید کارت' : 'ذخیره و صدور کارت جدید' }}</button>
                         @if ($latestLibraryCard)
-                            <a class="btn btn-outline-secondary" href="{{ route('membership-cards.print', $latestLibraryCard) }}" data-i18n="printCard">چاپ کارت</a>
+                            <a class="btn btn-outline-secondary" href="{{ route('membership-cards.print', $latestLibraryCard) }}" data-i18n="printCard">چاپ کارت فعلی</a>
                         @endif
                         <a class="btn btn-dark" href="{{ route('library.members.show', $member) }}" data-i18n="cancel">لغو</a>
                     </div>

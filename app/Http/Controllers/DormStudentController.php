@@ -9,6 +9,7 @@ use App\Models\MembershipCard;
 use App\Models\StudentCollection;
 use App\Models\User;
 use App\Support\Audit;
+use App\Support\DormStudentDirectory;
 use App\Support\SecurityRules;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,28 +25,14 @@ class DormStudentController extends Controller
         $filters = $request->validate([
             'q' => ['nullable', 'string', 'max:120'],
             'status' => ['nullable', Rule::in(array_keys($this->statusLabels()))],
+            'room' => ['nullable', 'string', 'max:40'],
+            'date' => ['nullable', 'date'],
         ]);
 
-        $students = DormStudent::query()
-            ->with(['room', 'membershipCards' => fn ($query) => $query->where('scope', 'dorm')->latest('expires_at')])
-            ->whereNotIn('status', ['waiting', 'on_hold', 'rejected'])
-            ->when(
-                ($filters['status'] ?? null) && ! in_array($filters['status'], ['waiting', 'on_hold', 'rejected'], true),
-                fn ($query) => $query->where('status', $filters['status'])
-            )
-            ->when($filters['q'] ?? null, function ($query, $search) {
-                $query->where(function ($query) use ($search) {
-                    $query
-                        ->where('full_name', 'like', "%{$search}%")
-                        ->orWhere('father_name', 'like', "%{$search}%")
-                        ->orWhere('phone', 'like', "%{$search}%")
-                        ->orWhere('tazkira_number', 'like', "%{$search}%")
-                        ->orWhere('room_number', 'like', "%{$search}%")
-                        ->orWhereHas('room', fn ($query) => $query->where('room_number', 'like', "%{$search}%"));
-                });
-            })
+        $students = DormStudentDirectory::visibleQuery($filters)
             ->latest()
-            ->get();
+            ->paginate(12)
+            ->withQueryString();
 
         $waitingApplicants = DormStudent::query()
             ->whereIn('status', ['waiting', 'on_hold'])
@@ -53,7 +40,18 @@ class DormStudentController extends Controller
             ->orderByRaw('COALESCE(education_score, 0) DESC')
             ->orderByRaw('COALESCE(application_date, created_at) ASC')
             ->with('room')
+            ->limit(6)
             ->get();
+
+        $visibleStatusQuery = DormStudent::query()->whereNotIn('status', ['waiting', 'on_hold', 'rejected']);
+        $rooms = DormRoom::query()
+            ->orderBy('room_number')
+            ->pluck('room_number')
+            ->merge(DormStudent::query()->whereNotNull('room_number')->distinct()->pluck('room_number'))
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values();
 
         return view('dorm.students.index', [
             'students' => $students,
@@ -61,6 +59,16 @@ class DormStudentController extends Controller
             'admissionRooms' => $this->roomsForAdmission(),
             'filters' => $filters,
             'statusLabels' => $this->statusLabels(),
+            'rooms' => $rooms,
+            'studentSummary' => [
+                'active' => (clone $visibleStatusQuery)->where('status', 'active')->count(),
+                'waiting' => DormStudent::query()->where('status', 'waiting')->count(),
+                'on_hold' => DormStudent::query()->where('status', 'on_hold')->count(),
+                'missing_documents' => (clone $visibleStatusQuery)
+                    ->where(fn ($query) => $query->whereNull('document_names')->orWhere('document_names', '[]'))
+                    ->count(),
+                'recent' => (clone $visibleStatusQuery)->where('created_at', '>=', now()->subDays(30))->count(),
+            ],
         ]);
     }
 
@@ -250,7 +258,7 @@ class DormStudentController extends Controller
 
         $validated = $request->validate([
             'dorm_room_id' => ['required', 'exists:dorm_rooms,id'],
-            'bed_number' => ['nullable', 'string', 'max:40'],
+            'bed_number' => ['required', 'integer', 'min:1'],
             'admission_note' => ['nullable', 'string', 'max:700'],
         ]);
 
@@ -268,6 +276,8 @@ class DormStudentController extends Controller
             'dorm_room_id' => $validated['dorm_room_id'],
             'room_number' => $validated['room_number'] ?? null,
             'bed_number' => $validated['bed_number'] ?? null,
+            'active_bed_key' => $validated['active_bed_key'] ?? null,
+            'left_at' => null,
             'joined_at' => $student->joined_at ?: now()->toDateString(),
             'admitted_at' => now(),
             'admission_decision_by' => $request->user()->id,
@@ -281,19 +291,22 @@ class DormStudentController extends Controller
 
     private function validateStudent(Request $request, ?DormStudent $student = null): array
     {
-        return $request->validate([
+        $validated = $request->validate([
             'full_name' => ['required', 'string', 'max:120'],
             'father_name' => ['required', 'string', 'max:120'],
-            'phone' => [...SecurityRules::phone(), Rule::unique('dorm_students', 'phone')->ignore($student)],
-            'whatsapp' => SecurityRules::phone(false),
+            'phone' => ['nullable', 'string', 'max:30'],
+            'whatsapp' => [...SecurityRules::phone(), Rule::unique('dorm_students', 'phone')->ignore($student)],
+            'family_phone' => SecurityRules::phone(false),
             'email' => ['nullable', 'email', 'max:120', Rule::unique('dorm_students', 'email')->ignore($student)],
             'tazkira_number' => ['required', 'string', 'max:80', Rule::unique('dorm_students', 'tazkira_number')->ignore($student)],
             'education_place' => ['required', 'string', 'max:160'],
             'department_or_grade' => ['nullable', 'string', 'max:160'],
+            'school_graduation_year' => ['nullable', 'integer', 'min:1300', 'max:1500'],
             'province' => ['nullable', 'string', 'max:80'],
-            'dorm_room_id' => ['nullable', 'exists:dorm_rooms,id'],
+            'district' => ['nullable', 'string', 'max:100'],
+            'dorm_room_id' => [Rule::requiredIf(fn () => $request->input('status') === 'active'), 'nullable', 'exists:dorm_rooms,id'],
             'room_number' => ['nullable', 'string', 'max:40'],
-            'bed_number' => ['nullable', 'string', 'max:40'],
+            'bed_number' => [Rule::requiredIf(fn () => $request->input('status') === 'active'), 'nullable', 'integer', 'min:1'],
             'guarantor_name' => ['nullable', 'string', 'max:120'],
             'guarantor_relation' => ['nullable', 'string', 'max:80'],
             'guarantor_phone' => SecurityRules::phone(false),
@@ -312,6 +325,7 @@ class DormStudentController extends Controller
             'registration_payment_status' => ['nullable', Rule::in(['paid', 'unpaid', 'partial'])],
             'registration_paid_at' => ['nullable', 'date'],
             'joined_at' => ['nullable', 'date'],
+            'left_at' => ['nullable', 'date', 'after_or_equal:joined_at'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'profile_photo' => SecurityRules::profileImage(),
             'remove_profile_photo' => ['nullable', 'boolean'],
@@ -329,6 +343,10 @@ class DormStudentController extends Controller
             'card_fee' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
             'card_payment_status' => ['nullable', Rule::in(['paid', 'unpaid'])],
         ]);
+
+        $validated['phone'] = $validated['whatsapp'];
+
+        return $validated;
     }
 
     private function roomsForForm(?DormStudent $student = null)
@@ -348,8 +366,16 @@ class DormStudentController extends Controller
 
     private function ensureRoomCanAccept(array $validated, ?DormStudent $student = null): void
     {
-        if (empty($validated['dorm_room_id']) || ($validated['status'] ?? null) !== 'active') {
+        if (($validated['status'] ?? null) !== 'active') {
             return;
+        }
+
+        if (empty($validated['dorm_room_id'])) {
+            throw ValidationException::withMessages(['dorm_room_id' => 'انتخاب اتاق برای شاگرد فعال ضروری است.']);
+        }
+
+        if (empty($validated['bed_number'])) {
+            throw ValidationException::withMessages(['bed_number' => 'نمبر تخت برای شاگرد فعال ضروری است.']);
         }
 
         $room = DormRoom::withCount(['activeStudents as occupied_beds'])->findOrFail($validated['dorm_room_id']);
@@ -357,11 +383,17 @@ class DormStudentController extends Controller
         $occupiedBeds = $isSameRoom ? $room->occupied_beds - 1 : $room->occupied_beds;
 
         if ($room->status !== 'active') {
-            throw ValidationException::withMessages(['dorm_room_id' => 'This room is not active.']);
+            throw ValidationException::withMessages(['dorm_room_id' => 'این اتاق فعلاً فعال نیست.']);
         }
 
         if ($occupiedBeds >= $room->capacity) {
-            throw ValidationException::withMessages(['dorm_room_id' => 'This room has no available beds.']);
+            throw ValidationException::withMessages(['dorm_room_id' => 'ظرفیت این اتاق تکمیل است.']);
+        }
+
+        if ((int) $validated['bed_number'] < 1 || (int) $validated['bed_number'] > (int) $room->capacity) {
+            throw ValidationException::withMessages([
+                'bed_number' => 'نمبر تخت باید بین ۱ و ظرفیت اتاق باشد.',
+            ]);
         }
 
         if (! empty($validated['bed_number'])) {
@@ -373,7 +405,7 @@ class DormStudentController extends Controller
                 ->exists();
 
             if ($bedIsTaken) {
-                throw ValidationException::withMessages(['bed_number' => 'This bed is already assigned in the selected room.']);
+                throw ValidationException::withMessages(['bed_number' => 'این تخت در اتاق انتخاب‌شده قبلاً گرفته شده است.']);
             }
         }
     }
@@ -382,6 +414,9 @@ class DormStudentController extends Controller
     {
         if (! empty($validated['dorm_room_id'])) {
             $validated['room_number'] = DormRoom::find($validated['dorm_room_id'])?->room_number;
+            $validated['active_bed_key'] = (($validated['status'] ?? null) === 'active' && ! empty($validated['bed_number']))
+                ? $validated['dorm_room_id'].':'.$validated['bed_number']
+                : null;
         }
     }
 
@@ -393,10 +428,15 @@ class DormStudentController extends Controller
             $validated['dorm_room_id'] = null;
             $validated['room_number'] = null;
             $validated['bed_number'] = null;
+            $validated['active_bed_key'] = null;
         }
 
         if (($validated['status'] ?? null) === 'active' && empty($validated['joined_at'])) {
             $validated['joined_at'] = now()->toDateString();
+        }
+
+        if (($validated['status'] ?? null) === 'active') {
+            $validated['left_at'] = null;
         }
     }
 

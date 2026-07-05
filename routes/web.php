@@ -58,6 +58,10 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [AuthController::class, 'destroy'])->middleware('auth')->name('logout');
 
 Route::middleware('auth')->group(function () {
+    Route::view('/app/{any?}', 'app')
+        ->where('any', '.*')
+        ->name('vue.dashboard');
+
     Route::prefix('api')->name('api.')->group(function () {
         Route::get('/session', ApiSessionController::class)->name('session');
         Route::get('/dashboard/summary', ApiDashboardSummaryController::class)->name('dashboard.summary');
@@ -67,6 +71,18 @@ Route::middleware('auth')->group(function () {
         Route::middleware('role:'.implode(',', User::managementRoles()))
             ->get('/dorm/rooms', ApiDormRoomsController::class)
             ->name('dorm.rooms');
+        Route::middleware('role:'.implode(',', User::managementRoles()))
+            ->get('/dorm/rooms/options', [ApiDormRoomsController::class, 'options'])
+            ->name('dorm.rooms.options');
+        Route::middleware('role:'.implode(',', User::managementRoles()))
+            ->post('/dorm/rooms', [ApiDormRoomsController::class, 'store'])
+            ->name('dorm.rooms.store');
+        Route::middleware('role:'.implode(',', User::managementRoles()))
+            ->get('/dorm/rooms/{room}', [ApiDormRoomsController::class, 'show'])
+            ->name('dorm.rooms.show');
+        Route::middleware('role:'.implode(',', User::managementRoles()))
+            ->post('/dorm/rooms/{room}', [ApiDormRoomsController::class, 'update'])
+            ->name('dorm.rooms.update');
         Route::middleware('role:'.implode(',', User::libraryViewerRoles()))
             ->get('/library/members', ApiLibraryMembersController::class)
             ->name('library.members');
@@ -88,6 +104,21 @@ Route::middleware('auth')->group(function () {
         Route::middleware('role:'.implode(',', User::managementRoles()))
             ->get('/admin/users', ApiAdminUsersController::class)
             ->name('admin.users');
+        Route::middleware('role:'.implode(',', User::managementRoles()))
+            ->get('/admin/users/options', [ApiAdminUsersController::class, 'options'])
+            ->name('admin.users.options');
+        Route::middleware('role:'.implode(',', User::managementRoles()))
+            ->post('/admin/users', [ApiAdminUsersController::class, 'store'])
+            ->name('admin.users.store');
+        Route::middleware('role:'.implode(',', User::managementRoles()))
+            ->get('/admin/users/{user}', [ApiAdminUsersController::class, 'show'])
+            ->name('admin.users.show');
+        Route::middleware('role:'.implode(',', User::managementRoles()))
+            ->post('/admin/users/{user}', [ApiAdminUsersController::class, 'update'])
+            ->name('admin.users.update');
+        Route::middleware('role:'.implode(',', User::managementRoles()))
+            ->delete('/admin/users/{user}', [ApiAdminUsersController::class, 'destroy'])
+            ->name('admin.users.destroy');
         Route::middleware('role:'.implode(',', User::purchaserRoles()))
             ->get('/purchaser/records', ApiPurchaserRecordsController::class)
             ->name('purchaser.records');
@@ -118,6 +149,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('/rooms/{room}/students/{student}', [DormRoomController::class, 'removeStudent'])->name('rooms.students.remove');
         Route::get('/rooms/{room}/edit', [DormRoomController::class, 'edit'])->name('rooms.edit');
         Route::put('/rooms/{room}', [DormRoomController::class, 'update'])->middleware('throttle:20,1')->name('rooms.update');
+        Route::delete('/rooms/{room}', [DormRoomController::class, 'destroy'])->middleware('throttle:10,1')->name('rooms.destroy');
 
         Route::get('/students/create', [DormStudentController::class, 'create'])->name('students.create');
         Route::post('/students', [DormStudentController::class, 'store'])->middleware('throttle:10,1')->name('students.store');

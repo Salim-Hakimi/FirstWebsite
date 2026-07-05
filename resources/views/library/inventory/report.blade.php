@@ -151,16 +151,10 @@
             <div class="dashboard-panel-header">
                 <div>
                     <span class="dashboard-section-kicker">نسخه‌ها</span>
-                    <h2>موجودی مطابق فیلتر</h2>
-                    <p>{{ Locale::number($copies->count()) }} نسخه با فیلتر فعلی پیدا شد.</p>
+                    <h2>نسخه‌های فیزیکی مطابق فیلتر</h2>
+                    <p>{{ Locale::number($copies->count()) }} نسخه فیزیکی پیدا شد؛ اگر یک کتاب چند نسخه داشته باشد، هر نسخه در یک ردیف جدا نمایش داده می‌شود.</p>
                 </div>
             </div>
-
-            <div
-                data-vue-app="library-inventory-copies-table"
-                data-title="جستجوی سریع نسخه‌ها"
-                data-endpoint="{{ route('api.library.inventory.copies') }}"
-            ></div>
 
             <div class="fanous-table-wrap">
                 <table class="fanous-finance-table">

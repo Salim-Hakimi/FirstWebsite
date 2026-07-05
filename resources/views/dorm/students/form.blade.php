@@ -91,14 +91,19 @@
                             @error('province') <span class="text-danger small">{{ $message }}</span> @enderror
                         </div>
                         <div class="form-group">
-                            <label>شماره تماس</label>
-                            <input class="form-control @error('phone') is-invalid @enderror" name="phone" value="{{ old('phone', $student->phone) }}" required>
-                            @error('phone') <span class="text-danger small">{{ $message }}</span> @enderror
+                            <label>ولسوالی</label>
+                            <input class="form-control @error('district') is-invalid @enderror" name="district" value="{{ old('district', $student->district) }}">
+                            @error('district') <span class="text-danger small">{{ $message }}</span> @enderror
                         </div>
                         <div class="form-group">
-                            <label>WhatsApp</label>
-                            <input class="form-control @error('whatsapp') is-invalid @enderror" name="whatsapp" value="{{ old('whatsapp', $student->whatsapp) }}">
+                            <label>واتساپ</label>
+                            <input class="form-control @error('whatsapp') is-invalid @enderror" name="whatsapp" value="{{ old('whatsapp', $student->whatsapp ?: $student->phone) }}" required>
                             @error('whatsapp') <span class="text-danger small">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="form-group">
+                            <label>شماره خانواده</label>
+                            <input class="form-control @error('family_phone') is-invalid @enderror" name="family_phone" value="{{ old('family_phone', $student->family_phone) }}">
+                            @error('family_phone') <span class="text-danger small">{{ $message }}</span> @enderror
                         </div>
                         <div class="form-group">
                             <label>ایمیل</label>
@@ -119,6 +124,11 @@
                             <label>دیپارتمنت / صنف</label>
                             <input class="form-control @error('department_or_grade') is-invalid @enderror" name="department_or_grade" value="{{ old('department_or_grade', $student->department_or_grade) }}">
                             @error('department_or_grade') <span class="text-danger small">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="form-group">
+                            <label>سال فراغت از مکتب</label>
+                            <input class="form-control @error('school_graduation_year') is-invalid @enderror" name="school_graduation_year" type="number" min="1300" max="1500" value="{{ old('school_graduation_year', $student->school_graduation_year) }}" placeholder="مثلاً ۱۴۰۳">
+                            @error('school_graduation_year') <span class="text-danger small">{{ $message }}</span> @enderror
                         </div>
                     </div>
                 </section>

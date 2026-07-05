@@ -4,12 +4,17 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\UserAccountService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class AdminUsersController extends Controller
 {
+    public function __construct(private readonly UserAccountService $userAccounts)
+    {
+    }
+
     public function __invoke(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -62,6 +67,68 @@ class AdminUsersController extends Controller
         ]);
     }
 
+    public function options(Request $request): JsonResponse
+    {
+        return response()->json([
+            'roles' => $request->user()->manageableRoleOptions(),
+            'statuses' => User::statusOptions(),
+            'defaults' => [
+                'role' => User::ROLE_GUARD,
+                'status' => User::STATUS_ACTIVE,
+            ],
+        ]);
+    }
+
+    public function show(Request $request, User $user): JsonResponse
+    {
+        $this->userAccounts->preventManagingProtectedUser($user, $request->user()?->id);
+
+        return response()->json([
+            'data' => $this->userPayload($user, $request->user()?->id),
+            'form' => [
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'role' => $user->role,
+                'status' => $user->status,
+                'profile_photo_url' => $user->profile_photo_path ? asset('storage/'.$user->profile_photo_path) : null,
+            ],
+            'options' => [
+                'roles' => $request->user()->manageableRoleOptions(),
+                'statuses' => User::statusOptions(),
+            ],
+        ]);
+    }
+
+    public function store(Request $request): JsonResponse
+    {
+        $user = $this->userAccounts->create($request);
+
+        return response()->json([
+            'message' => 'کاربر جدید ساخته شد.',
+            'data' => $this->userPayload($user, $request->user()?->id),
+        ], 201);
+    }
+
+    public function update(Request $request, User $user): JsonResponse
+    {
+        $user = $this->userAccounts->update($request, $user);
+
+        return response()->json([
+            'message' => 'معلومات کاربر به‌روزرسانی شد.',
+            'data' => $this->userPayload($user, $request->user()?->id),
+        ]);
+    }
+
+    public function destroy(Request $request, User $user): JsonResponse
+    {
+        $this->userAccounts->delete($request, $user);
+
+        return response()->json([
+            'message' => 'کاربر از سیستم حذف شد.',
+        ]);
+    }
+
     private function userPayload(User $user, ?int $currentUserId): array
     {
         $isCurrentUser = $currentUserId === $user->id;
@@ -77,9 +144,12 @@ class AdminUsersController extends Controller
             'status_label' => User::statusOptions()[$user->status] ?? $user->status,
             'is_current_user' => $isCurrentUser,
             'created_at' => $user->created_at?->toDateString(),
-            'profile_photo_url' => $user->profile_photo_path ? route('storage.public', ['path' => $user->profile_photo_path]) : null,
+            'profile_photo_url' => $user->profile_photo_path ? asset('storage/'.$user->profile_photo_path) : null,
             'links' => [
                 'edit' => $isCurrentUser ? null : route('admin.users.edit', $user),
+                'api_show' => $isCurrentUser ? null : route('api.admin.users.show', $user),
+                'api_update' => $isCurrentUser ? null : route('api.admin.users.update', $user),
+                'api_destroy' => $isCurrentUser ? null : route('api.admin.users.destroy', $user),
             ],
         ];
     }

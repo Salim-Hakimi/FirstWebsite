@@ -46,10 +46,10 @@
                     </div>
 
                     <div class="student-form-grid three">
-                        <div class="form-group"><label>ISBN</label><input class="form-control" name="isbn" value="{{ old('isbn', $book->isbn) }}"></div>
-                        <div class="form-group"><label data-i18n="barcode">بارکد</label><input class="form-control" name="barcode" value="{{ old('barcode', $book->barcode) }}"></div>
+                        <div class="form-group"><label>ISBN</label><input class="form-control @error('isbn') is-invalid @enderror" name="isbn" value="{{ old('isbn', $book->isbn) }}">@error('isbn') <span class="text-danger small">{{ $message }}</span> @enderror</div>
+                        <div class="form-group"><label data-i18n="barcode">بارکد</label><input class="form-control @error('barcode') is-invalid @enderror" name="barcode" value="{{ old('barcode', $book->barcode) }}">@error('barcode') <span class="text-danger small">{{ $message }}</span> @enderror</div>
                         <div class="form-group"><label data-i18n="shelfCode">کد قفسه</label><input class="form-control" name="shelf_code" value="{{ old('shelf_code', $book->shelf_code) }}"></div>
-                        <div class="form-group full"><label data-i18n="bookTitle">نام کتاب</label><input class="form-control" name="title" value="{{ old('title', $book->title) }}" required></div>
+                        <div class="form-group full"><label data-i18n="bookTitle">نام کتاب</label><input class="form-control @error('title') is-invalid @enderror" name="title" value="{{ old('title', $book->title) }}" required>@error('title') <span class="text-danger small">{{ $message }}</span> @enderror</div>
                         <div class="form-group"><label data-i18n="author">نویسنده</label><input class="form-control" name="author" value="{{ old('author', $book->author) }}"></div>
                         <div class="form-group"><label data-i18n="publisher">ناشر</label><input class="form-control" name="publisher" value="{{ old('publisher', $book->publisher) }}"></div>
                         <div class="form-group"><label data-i18n="language">زبان</label><input class="form-control" name="language" value="{{ old('language', $book->language) }}"></div>
@@ -57,7 +57,7 @@
                         <div class="form-group"><label data-i18n="publishedYear">سال نشر</label><input class="form-control" name="published_year" type="number" min="1000" max="{{ now()->year }}" value="{{ old('published_year', $book->published_year) }}"></div>
                         <div class="form-group"><label data-i18n="pages">صفحات</label><input class="form-control" name="pages" type="number" min="1" value="{{ old('pages', $book->pages) }}"></div>
                         <div class="form-group"><label data-i18n="category">دسته‌بندی</label><input class="form-control" name="category" value="{{ old('category', $book->category) }}"></div>
-                        <div class="form-group"><label data-i18n="totalCopies">تعداد نسخه</label><input class="form-control" name="total_copies" type="number" min="1" value="{{ old('total_copies', $book->total_copies) }}" required></div>
+                        <div class="form-group"><label data-i18n="totalCopies">تعداد نسخه</label><input class="form-control @error('total_copies') is-invalid @enderror" name="total_copies" type="number" min="1" value="{{ old('total_copies', $book->total_copies) }}" required>@error('total_copies') <span class="text-danger small">{{ $message }}</span> @enderror</div>
                         <div class="form-group">
                             <label data-i18n="status">وضعیت</label>
                             <select class="form-control" name="status">

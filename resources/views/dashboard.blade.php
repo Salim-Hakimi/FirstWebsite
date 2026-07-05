@@ -64,10 +64,6 @@
             </section>
 
             <section class="dashboard-panel">
-                <div data-vue-app="dashboard-summary" data-title="خلاصه زنده کتابخانه" data-endpoint="{{ route('api.dashboard.summary') }}"></div>
-            </section>
-
-            <section class="dashboard-panel">
                 <div class="dashboard-panel-header">
                     <div>
                         <span class="dashboard-section-kicker">دسترسی سریع</span>
@@ -225,10 +221,6 @@
             <div class="student-command-actions">
                 <a class="btn btn-outline-secondary" href="{{ route('settings.edit') }}">تنظیمات حساب</a>
             </div>
-        </section>
-
-        <section class="student-workspace-panel">
-            <div data-vue-app="dashboard-summary" data-title="خلاصه زنده دسترسی‌ها" data-endpoint="{{ route('api.dashboard.summary') }}"></div>
         </section>
 
         <section class="student-workspace-panel">

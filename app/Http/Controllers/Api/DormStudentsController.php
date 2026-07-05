@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\DormStudent;
+use App\Support\DormStudentDirectory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -24,38 +25,7 @@ class DormStudentsController extends Controller
         $perPage = (int) ($validated['per_page'] ?? 8);
         $canManage = $request->user()?->canAccessAdmin() ?? false;
 
-        $students = DormStudent::query()
-            ->with(['room', 'membershipCards' => fn ($query) => $query->where('scope', 'dorm')->latest('expires_at')])
-            ->whereNotIn('status', ['waiting', 'on_hold', 'rejected'])
-            ->when(
-                ($validated['status'] ?? null) && ! in_array($validated['status'], ['waiting', 'on_hold', 'rejected'], true),
-                fn ($query) => $query->where('status', $validated['status'])
-            )
-            ->when($validated['room'] ?? null, function ($query, string $room): void {
-                $query->where(function ($query) use ($room): void {
-                    $query
-                        ->where('room_number', $room)
-                        ->orWhereHas('room', fn ($roomQuery) => $roomQuery->where('room_number', $room));
-                });
-            })
-            ->when($validated['date'] ?? null, function ($query, string $date): void {
-                $query->where(function ($query) use ($date): void {
-                    $query
-                        ->whereDate('created_at', $date)
-                        ->orWhereDate('application_date', $date);
-                });
-            })
-            ->when($validated['q'] ?? null, function ($query, string $search): void {
-                $query->where(function ($query) use ($search): void {
-                    $query
-                        ->where('full_name', 'like', "%{$search}%")
-                        ->orWhere('father_name', 'like', "%{$search}%")
-                        ->orWhere('phone', 'like', "%{$search}%")
-                        ->orWhere('tazkira_number', 'like', "%{$search}%")
-                        ->orWhere('room_number', 'like', "%{$search}%")
-                        ->orWhereHas('room', fn ($roomQuery) => $roomQuery->where('room_number', 'like', "%{$search}%"));
-                });
-            })
+        $students = DormStudentDirectory::visibleQuery($validated)
             ->latest()
             ->paginate($perPage)
             ->withQueryString();
@@ -89,7 +59,7 @@ class DormStudentsController extends Controller
             'student_code' => 'STD-'.str_pad((string) $student->id, 5, '0', STR_PAD_LEFT),
             'full_name' => $student->full_name,
             'father_name' => $student->father_name,
-            'phone' => $student->phone,
+            'phone' => $student->whatsapp ?: $student->phone,
             'status' => $student->status,
             'room_number' => $student->status === 'active' ? ($roomNumber ?: null) : null,
             'bed_number' => $student->bed_number,
@@ -97,7 +67,7 @@ class DormStudentsController extends Controller
             'joined_at' => $student->joined_at?->toDateString(),
             'created_at' => $student->created_at?->toDateString(),
             'card_expires_at' => $card?->expires_at?->toDateString(),
-            'profile_photo_url' => $student->profile_photo_path ? route('storage.public', ['path' => $student->profile_photo_path]) : null,
+            'profile_photo_url' => $student->profile_photo_path ? asset('storage/'.$student->profile_photo_path) : null,
             'links' => [
                 'show' => route('dorm.students.show', $student),
                 'edit' => $canManage ? route('dorm.students.edit', $student) : null,

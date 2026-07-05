@@ -11,6 +11,7 @@ class BookLoan extends Model
         'library_member_id',
         'book_id',
         'book_copy_id',
+        'active_book_copy_id',
         'recorded_by',
         'loan_code',
         'borrowed_at',

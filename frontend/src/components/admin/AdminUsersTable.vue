@@ -15,7 +15,13 @@ const props = defineProps({
         type: String,
         default: 'جستجوی سریع کاربران',
     },
+    vueActions: {
+        type: Boolean,
+        default: false,
+    },
 });
+
+const emit = defineEmits(['edit']);
 
 const filters = reactive({
     q: '',
@@ -74,6 +80,10 @@ watch(
 );
 
 onMounted(() => execute());
+
+defineExpose({
+    reload: execute,
+});
 </script>
 
 <template>
@@ -130,7 +140,7 @@ onMounted(() => execute());
             <template #cell-contact="{ row }">
                 <div class="fanous-vue-finance-party">
                     <span class="fanous-vue-ltr">{{ row.email }}</span>
-                    <small>{{ row.phone || 'شماره تماس ثبت نشده' }}</small>
+                    <small>{{ row.phone || 'واتساپ ثبت نشده' }}</small>
                 </div>
             </template>
 
@@ -148,7 +158,8 @@ onMounted(() => execute());
 
             <template #cell-actions="{ row }">
                 <div class="fanous-vue-table-actions">
-                    <a v-if="row.links.edit" :href="row.links.edit">ویرایش</a>
+                    <button v-if="vueActions && row.links.api_show" type="button" @click="emit('edit', row)">ویرایش</button>
+                    <a v-else-if="row.links.edit" :href="row.links.edit">ویرایش</a>
                     <span v-else class="fanous-vue-lock-label">قفل</span>
                 </div>
             </template>

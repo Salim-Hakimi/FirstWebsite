@@ -15,7 +15,13 @@ const props = defineProps({
         type: String,
         default: 'نمای سریع اتاق‌ها',
     },
+    vueActions: {
+        type: Boolean,
+        default: false,
+    },
 });
+
+const emit = defineEmits(['edit']);
 
 const filters = reactive({
     q: '',
@@ -51,6 +57,10 @@ watch(
 );
 
 onMounted(() => execute());
+
+defineExpose({
+    reload: execute,
+});
 </script>
 
 <template>
@@ -135,7 +145,8 @@ onMounted(() => execute());
             <template #cell-actions="{ row }">
                 <div class="fanous-vue-table-actions">
                     <a :href="row.links.show">مدیریت</a>
-                    <a :href="row.links.edit">ویرایش</a>
+                    <button v-if="vueActions && row.links.api_show" type="button" @click="emit('edit', row)">ویرایش</button>
+                    <a v-else :href="row.links.edit">ویرایش</a>
                 </div>
             </template>
         </DataTable>

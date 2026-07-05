@@ -406,7 +406,7 @@
                         <label><span>کد عضویت</span><input class="form-control ltr-text" name="member_code" placeholder="خودکار اگر خالی باشد"></label>
                         <label><span>نام کامل</span><input class="form-control" name="full_name" required></label>
                         <label><span>نام پدر</span><input class="form-control" name="father_name" required></label>
-                        <label><span>شماره تماس</span><input class="form-control ltr-text" name="phone" required></label>
+                        <label><span>واتساپ</span><input class="form-control ltr-text" name="phone" required></label>
                         <label><span>ایمیل</span><input class="form-control ltr-text" name="email" type="email"></label>
                         <label><span>عکس پروفایل</span><input class="form-control" name="profile_photo" type="file" accept="image/*"></label>
                         <label><span>تذکره / ID</span><input class="form-control ltr-text" name="tazkira_number"></label>
@@ -451,9 +451,9 @@
 
                     <form method="POST" action="{{ route('library.books.store') }}" class="fanous-library-form">
                         @csrf
-                        <label><span>ISBN</span><input class="form-control ltr-text" name="isbn"></label>
-                        <label><span>بارکد</span><input class="form-control ltr-text" name="barcode" placeholder="خودکار اگر خالی باشد"></label>
-                        <label class="fanous-form-wide"><span>عنوان کتاب</span><input class="form-control" name="title" required></label>
+                        <label><span>ISBN</span><input class="form-control ltr-text @error('isbn') is-invalid @enderror" name="isbn" value="{{ old('isbn') }}">@error('isbn') <span class="text-danger small">{{ $message }}</span> @enderror</label>
+                        <label><span>بارکد</span><input class="form-control ltr-text @error('barcode') is-invalid @enderror" name="barcode" value="{{ old('barcode') }}" placeholder="خودکار اگر خالی باشد">@error('barcode') <span class="text-danger small">{{ $message }}</span> @enderror</label>
+                        <label class="fanous-form-wide"><span>عنوان کتاب</span><input class="form-control @error('title') is-invalid @enderror" name="title" value="{{ old('title') }}" required>@error('title') <span class="text-danger small">{{ $message }}</span> @enderror</label>
                         <label><span>نویسنده</span><input class="form-control" name="author"></label>
                         <label><span>ناشر</span><input class="form-control" name="publisher"></label>
                         <label><span>زبان</span><input class="form-control" name="language"></label>
@@ -462,7 +462,7 @@
                         <label><span>صفحات</span><input class="form-control" name="pages" type="number" min="1"></label>
                         <label><span>دسته‌بندی</span><input class="form-control" name="category"></label>
                         <label><span>کد قفسه</span><input class="form-control ltr-text" name="shelf_code"></label>
-                        <label><span>تعداد نسخه‌ها</span><input class="form-control" name="total_copies" type="number" min="1" value="1" required></label>
+                        <label><span>تعداد نسخه‌ها</span><input class="form-control @error('total_copies') is-invalid @enderror" name="total_copies" type="number" min="1" value="{{ old('total_copies', 1) }}" required>@error('total_copies') <span class="text-danger small">{{ $message }}</span> @enderror</label>
                         <label>
                             <span>وضعیت</span>
                             <select class="form-control" name="status">
@@ -491,25 +491,28 @@
                         <label><span>کد امانت</span><input class="form-control ltr-text" name="loan_code" placeholder="خودکار اگر خالی باشد"></label>
                         <label>
                             <span>عضو</span>
-                            <select class="form-control" name="library_member_id" required>
+                            <select class="form-control @error('library_member_id') is-invalid @enderror" name="library_member_id" required>
                                 <option value="">انتخاب عضو</option>
                                 @foreach ($activeMembers as $member)
                                     <option value="{{ $member->id }}">{{ $member->full_name }} - {{ $member->member_code }}</option>
                                 @endforeach
                             </select>
+                            @error('library_member_id') <span class="text-danger small">{{ $message }}</span> @enderror
                         </label>
                         <label>
                             <span>کتاب</span>
-                            <select class="form-control" name="book_id" required>
+                            <select class="form-control @error('book_id') is-invalid @enderror" name="book_id" required>
                                 <option value="">انتخاب کتاب</option>
                                 @foreach ($availableBooks as $book)
                                     <option value="{{ $book->id }}">{{ $book->title }} - {{ Locale::number($book->available_copies) }} موجود</option>
                                 @endforeach
                             </select>
+                            @error('book_id') <span class="text-danger small">{{ $message }}</span> @enderror
                         </label>
                         <label>
                             <span>بارکد / کد نسخه</span>
-                            <input class="form-control ltr-text" name="copy_code" list="available-copy-codes" placeholder="اسکن یا درج کد نسخه" required>
+                            <input class="form-control ltr-text @error('copy_code') is-invalid @enderror" name="copy_code" list="available-copy-codes" value="{{ old('copy_code') }}" placeholder="اسکن یا درج کد نسخه" required>
+                            @error('copy_code') <span class="text-danger small">{{ $message }}</span> @enderror
                             <datalist id="available-copy-codes">
                                 @foreach ($availableBooks as $book)
                                     @foreach ($book->availableCopies as $copy)
@@ -518,8 +521,8 @@
                                 @endforeach
                             </datalist>
                         </label>
-                        <label><span>تاریخ امانت</span><input class="form-control" name="borrowed_at" type="date" value="{{ now()->format('Y-m-d') }}" required></label>
-                        <label><span>تاریخ برگشت</span><input class="form-control" name="due_at" type="date" value="{{ now()->addDays(7)->format('Y-m-d') }}"></label>
+                        <label><span>تاریخ امانت</span><input class="form-control @error('borrowed_at') is-invalid @enderror" name="borrowed_at" type="date" value="{{ old('borrowed_at', now()->format('Y-m-d')) }}" required>@error('borrowed_at') <span class="text-danger small">{{ $message }}</span> @enderror</label>
+                        <label><span>تاریخ برگشت</span><input class="form-control @error('due_at') is-invalid @enderror" name="due_at" type="date" value="{{ old('due_at', now()->addDays(7)->format('Y-m-d')) }}">@error('due_at') <span class="text-danger small">{{ $message }}</span> @enderror</label>
                         <label><span>وضعیت هنگام خروج</span><input class="form-control" name="condition_out"></label>
                         <label class="fanous-form-wide"><span>یادداشت</span><input class="form-control" name="notes"></label>
                         <div class="fanous-form-actions"><x-ds.button type="submit">ذخیره امانت</x-ds.button></div>
@@ -543,8 +546,8 @@
                             <input class="form-control ltr-text @error('copy_code') is-invalid @enderror" name="copy_code" value="{{ old('copy_code') }}" placeholder="اسکن نسخه برگشتی" required autofocus>
                             @error('copy_code') <span class="text-danger small">{{ $message }}</span> @enderror
                         </label>
-                        <label><span>تاریخ برگشت</span><input class="form-control" name="returned_at" type="date" value="{{ now()->format('Y-m-d') }}" required></label>
-                        <label><span>جریمه</span><input class="form-control" name="fine_amount" type="number" min="0" value="0"></label>
+                        <label><span>تاریخ برگشت</span><input class="form-control @error('returned_at') is-invalid @enderror" name="returned_at" type="date" value="{{ old('returned_at', now()->format('Y-m-d')) }}" required>@error('returned_at') <span class="text-danger small">{{ $message }}</span> @enderror</label>
+                        <label><span>جریمه</span><input class="form-control @error('fine_amount') is-invalid @enderror" name="fine_amount" type="number" min="0" value="{{ old('fine_amount', 0) }}">@error('fine_amount') <span class="text-danger small">{{ $message }}</span> @enderror</label>
                         <label>
                             <span>وضعیت برگشت</span>
                             <select class="form-control" name="return_status">
@@ -626,8 +629,6 @@
                         @endif
                     </div>
 
-                    <div data-vue-app="library-members-table" data-title="جستجوی سریع اعضای کتابخانه" data-endpoint="{{ route('api.library.members') }}"></div>
-
                     <form method="GET" action="{{ route('library.index') }}" class="fanous-library-filters">
                         <input class="form-control" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="جستجوی نام، شماره تماس یا کد عضویت">
                         <select class="form-control" name="status">
@@ -665,7 +666,7 @@
                                 </div>
 
                                 <div class="fanous-library-member-meta">
-                                    <div><span>شماره تماس</span><strong class="ltr-text">{{ $member->phone }}</strong></div>
+                                    <div><span>واتساپ</span><strong class="ltr-text">{{ $member->phone }}</strong></div>
                                     <div><span>فیس ماهانه</span><strong>{{ Locale::money((int) $member->membership_fee) }}</strong></div>
                                     <div><span>باقی فیس</span><strong>{{ Locale::money((int) $member->monthlyFeeBalance()) }}</strong></div>
                                     <div><span>پرداخت</span><strong><x-ds.badge :tone="$paymentTone">{{ $member->payment_status === 'paid' ? 'پرداخت شده' : 'پرداخت نشده' }}</x-ds.badge></strong></div>
@@ -703,12 +704,6 @@
                             <x-ds.button size="sm" type="button" data-library-panel-trigger="new-library-loan" aria-controls="new-library-loan" aria-expanded="false">ثبت امانت جدید</x-ds.button>
                         @endif
                     </div>
-
-                    <div
-                        data-vue-app="library-loans-table"
-                        data-title="جستجوی سریع امانت‌ها"
-                        data-endpoint="{{ route('api.library.loans') }}"
-                    ></div>
 
                     <div class="fanous-library-loan-list">
                         @forelse ($loans as $loan)
@@ -792,12 +787,6 @@
                             <h2>فهرست کوتاه موجودی</h2>
                         </div>
                     </div>
-
-                    <div
-                        data-vue-app="library-books-table"
-                        data-title="جستجوی سریع کتاب‌ها"
-                        data-endpoint="{{ route('api.library.books') }}"
-                    ></div>
 
                     <div class="fanous-library-book-list">
                         @forelse ($books->take(8) as $book)
@@ -887,6 +876,8 @@
                         emptyState.classList.toggle('is-hidden', Boolean(activePanel));
                     }
 
+                    document.body.classList.toggle('fanous-library-modal-open', Boolean(activePanel));
+
                     if (activePanel && shouldScroll) {
                         formArea?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }
@@ -907,7 +898,22 @@
                             trigger.setAttribute('aria-expanded', 'false');
                         });
                         emptyState?.classList.remove('is-hidden');
+                        document.body.classList.remove('fanous-library-modal-open');
                     });
+                });
+
+                document.addEventListener('keydown', function (event) {
+                    if (event.key !== 'Escape') {
+                        return;
+                    }
+
+                    panels.forEach((panel) => panel.classList.remove('is-active'));
+                    triggers.forEach((trigger) => {
+                        trigger.classList.remove('is-active');
+                        trigger.setAttribute('aria-expanded', 'false');
+                    });
+                    emptyState?.classList.remove('is-hidden');
+                    document.body.classList.remove('fanous-library-modal-open');
                 });
 
                 if (window.location.hash && document.querySelector(window.location.hash + '[data-library-panel]')) {

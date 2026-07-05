@@ -2,6 +2,9 @@
 
 namespace App\Support;
 
+use Carbon\CarbonInterface;
+use DateTimeInterface;
+
 class Locale
 {
     public const DEFAULT = 'fa';
@@ -41,6 +44,33 @@ class Locale
     public static function money(int|float|string|null $value): string
     {
         return self::number($value).' افغانی';
+    }
+
+    public static function date(DateTimeInterface|string|null $value): string
+    {
+        if (! $value) {
+            return 'ثبت نشده';
+        }
+
+        if ($value instanceof CarbonInterface || $value instanceof DateTimeInterface) {
+            $year = (int) $value->format('Y');
+            $month = (int) $value->format('m');
+            $day = (int) $value->format('d');
+        } else {
+            $timestamp = strtotime($value);
+
+            if ($timestamp === false) {
+                return (string) $value;
+            }
+
+            $year = (int) date('Y', $timestamp);
+            $month = (int) date('m', $timestamp);
+            $day = (int) date('d', $timestamp);
+        }
+
+        [$jy, $jm, $jd] = self::gregorianToJalali($year, $month, $day);
+
+        return self::toPersianDigits(sprintf('%04d/%02d/%02d ه.ش', $jy, $jm, $jd));
     }
 
     public static function percent(int|float|string|null $value): string
@@ -223,7 +253,7 @@ class Locale
         ]);
     }
 
-    private static function toPersianDigits(string $text): string
+    public static function toPersianDigits(string $text): string
     {
         return strtr($text, [
             '0' => '۰',
@@ -240,6 +270,46 @@ class Locale
             '.' => '٫',
             '%' => '٪',
         ]);
+    }
+
+    /**
+     * @return array{0:int,1:int,2:int}
+     */
+    private static function gregorianToJalali(int $gy, int $gm, int $gd): array
+    {
+        $gDaysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+        $jDaysInMonth = [31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29];
+        $gy -= 1600;
+        $gm -= 1;
+        $gd -= 1;
+
+        $gDayNo = 365 * $gy + intdiv($gy + 3, 4) - intdiv($gy + 99, 100) + intdiv($gy + 399, 400);
+
+        for ($i = 0; $i < $gm; $i++) {
+            $gDayNo += $gDaysInMonth[$i];
+        }
+
+        if ($gm > 1 && (($gy + 1600) % 4 === 0 && (($gy + 1600) % 100 !== 0 || ($gy + 1600) % 400 === 0))) {
+            $gDayNo++;
+        }
+
+        $gDayNo += $gd;
+        $jDayNo = $gDayNo - 79;
+        $jNp = intdiv($jDayNo, 12053);
+        $jDayNo %= 12053;
+        $jy = 979 + 33 * $jNp + 4 * intdiv($jDayNo, 1461);
+        $jDayNo %= 1461;
+
+        if ($jDayNo >= 366) {
+            $jy += intdiv($jDayNo - 1, 365);
+            $jDayNo = ($jDayNo - 1) % 365;
+        }
+
+        for ($i = 0; $i < 11 && $jDayNo >= $jDaysInMonth[$i]; $i++) {
+            $jDayNo -= $jDaysInMonth[$i];
+        }
+
+        return [$jy, $i + 1, $jDayNo + 1];
     }
 
     private static function normalizeText(string $text): string

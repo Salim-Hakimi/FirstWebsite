@@ -599,6 +599,7 @@ class LibraryController extends Controller
     public function storeBook(Request $request): RedirectResponse
     {
         $validated = $this->validateBook($request);
+        $this->ensureBookIsNotDuplicate($validated);
 
         $book = Book::create(array_merge($validated, [
             'registered_by' => $request->user()->id,
@@ -633,6 +634,15 @@ class LibraryController extends Controller
     public function updateBook(Request $request, Book $book): RedirectResponse
     {
         $validated = $this->validateBook($request, $book);
+        $this->ensureBookIsNotDuplicate($validated, $book);
+
+        $activeLoanCount = $book->loans()->whereIn('status', ['borrowed', 'late'])->count();
+        if ((int) $validated['total_copies'] < $activeLoanCount) {
+            throw ValidationException::withMessages([
+                'total_copies' => 'تعداد نسخه‌ها نمی‌تواند کمتر از امانت‌های فعال همین کتاب باشد.',
+            ]);
+        }
+
         $copyDifference = (int) $validated['total_copies'] - (int) $book->total_copies;
         $validated['available_copies'] = max(0, (int) $book->available_copies + $copyDifference);
 
@@ -659,13 +669,17 @@ class LibraryController extends Controller
             ->exists();
 
         if ($hasActiveLoan && $validated['status'] !== 'on_loan') {
-            return back()->withErrors(['status' => 'This copy has an active loan. Return it first before changing its inventory status.']);
+            return back()->withErrors(['status' => 'این نسخه امانت فعال دارد؛ اول برگشت آن را ثبت کنید.']);
+        }
+
+        if (! $hasActiveLoan && $validated['status'] === 'on_loan') {
+            return back()->withErrors(['status' => 'وضعیت امانت را از فرم ثبت امانت کتاب ثبت کنید.']);
         }
 
         $copy->update($validated);
         $this->syncBookAvailability($copy->book);
 
-        return back()->with('status', 'Book copy status updated: '.$copy->copy_code);
+        return back()->with('status', 'وضعیت نسخه کتاب به‌روزرسانی شد: '.$copy->copy_code);
     }
 
     public function storeLoan(Request $request): RedirectResponse
@@ -685,17 +699,34 @@ class LibraryController extends Controller
                 ->first();
 
             if (! $copy) {
-                abort(422, 'This copy code is not available for loan.');
+                throw ValidationException::withMessages([
+                    'copy_code' => 'این نسخه کتاب فعلاً برای امانت در دسترس نیست.',
+                ]);
             }
 
             $book = Book::lockForUpdate()->findOrFail($copy->book_id);
 
             if ((int) $book->id !== (int) $validated['book_id']) {
-                abort(422, 'The selected book does not match this copy code.');
+                throw ValidationException::withMessages([
+                    'copy_code' => 'کد نسخه با کتاب انتخاب‌شده مطابقت ندارد.',
+                ]);
             }
 
             if ($book->available_copies < 1) {
-                abort(422, 'این کتاب فعلاً نسخه قابل امانت ندارد.');
+                throw ValidationException::withMessages([
+                    'book_id' => 'این کتاب فعلاً نسخه قابل امانت ندارد.',
+                ]);
+            }
+
+            $activeDuplicateLoan = BookLoan::query()
+                ->where('book_copy_id', $copy->id)
+                ->whereIn('status', ['borrowed', 'late'])
+                ->exists();
+
+            if ($activeDuplicateLoan) {
+                throw ValidationException::withMessages([
+                    'copy_code' => 'این نسخه قبلاً امانت داده شده و هنوز برگشت نشده است.',
+                ]);
             }
 
             $book->decrement('available_copies');
@@ -704,6 +735,7 @@ class LibraryController extends Controller
             BookLoan::create(array_merge($validated, [
                 'recorded_by' => $request->user()->id,
                 'book_copy_id' => $copy->id,
+                'active_book_copy_id' => $copy->id,
                 'book_id' => $book->id,
                 'loan_code' => $validated['loan_code'] ?: $this->nextCode('LOAN'),
                 'status' => 'borrowed',
@@ -730,6 +762,16 @@ class LibraryController extends Controller
         $validated = $this->validateLoan($request, $loan);
         unset($validated['book_id'], $validated['library_member_id']);
 
+        if (in_array($validated['status'] ?? $loan->status, ['returned', 'lost'], true)) {
+            throw ValidationException::withMessages([
+                'status' => 'برای برگشت یا ثبت گم‌شدن کتاب، از فرم برگشت کتاب استفاده کنید.',
+            ]);
+        }
+
+        if (in_array($validated['status'] ?? $loan->status, ['borrowed', 'late'], true) && $loan->book_copy_id) {
+            $validated['active_book_copy_id'] = $loan->book_copy_id;
+        }
+
         $oldValues = $loan->only(['loan_code', 'borrowed_at', 'due_at', 'status', 'fine_amount']);
         $loan->update($validated);
         Audit::record('library_loan_updated', $loan, $oldValues, $loan->fresh()->only(['loan_code', 'borrowed_at', 'due_at', 'status', 'fine_amount']), $request);
@@ -745,6 +787,12 @@ class LibraryController extends Controller
             'condition_in' => ['nullable', 'string', 'max:120'],
             'return_status' => ['nullable', Rule::in(['available', 'damaged', 'lost'])],
         ]);
+
+        if ($loan->borrowed_at && Carbon::parse($validated['returned_at'])->lt($loan->borrowed_at)) {
+            throw ValidationException::withMessages([
+                'returned_at' => 'تاریخ برگشت نمی‌تواند قبل از تاریخ امانت باشد.',
+            ]);
+        }
 
         $this->markLoanReturned($loan, $validated);
         Audit::record('library_loan_returned', $loan, [], ['returned_at' => $validated['returned_at'], 'fine_amount' => $validated['fine_amount'] ?? 0], $request);
@@ -771,7 +819,7 @@ class LibraryController extends Controller
             ->first();
 
         if (! $copy) {
-            return back()->withErrors(['copy_code' => 'No book copy was found for this barcode.'])->withInput();
+            return back()->withErrors(['copy_code' => 'برای این بارکد/کد نسخه، کتابی پیدا نشد.'])->withInput();
         }
 
         $loan = BookLoan::query()
@@ -781,13 +829,17 @@ class LibraryController extends Controller
             ->first();
 
         if (! $loan) {
-            return back()->withErrors(['copy_code' => 'No active loan was found for this copy.'])->withInput();
+            return back()->withErrors(['copy_code' => 'برای این نسخه امانت فعال پیدا نشد.'])->withInput();
+        }
+
+        if ($loan->borrowed_at && Carbon::parse($validated['returned_at'])->lt($loan->borrowed_at)) {
+            return back()->withErrors(['returned_at' => 'تاریخ برگشت نمی‌تواند قبل از تاریخ امانت باشد.'])->withInput();
         }
 
         $this->markLoanReturned($loan, $validated);
         Audit::record('library_loan_returned_by_copy', $loan, [], ['copy_code' => $copy->copy_code, 'returned_at' => $validated['returned_at'], 'fine_amount' => $validated['fine_amount'] ?? 0], $request);
 
-        return back()->with('status', 'Book returned by barcode: '.$copy->copy_code);
+        return back()->with('status', 'برگشت کتاب با بارکد ثبت شد: '.$copy->copy_code);
     }
 
     private function validateInventoryFilters(Request $request): array
@@ -850,7 +902,7 @@ class LibraryController extends Controller
 
     private function validateMember(Request $request, ?LibraryMember $member = null): array
     {
-        return $request->validate([
+        $validated = $request->validate([
             'member_code' => ['nullable', 'string', 'max:60', Rule::unique('library_members', 'member_code')->ignore($member)],
             'full_name' => ['required', 'string', 'max:120'],
             'father_name' => ['required', 'string', 'max:120'],
@@ -866,6 +918,7 @@ class LibraryController extends Controller
             'monthly_fee_fine_amount' => ['nullable', 'integer', 'min:0'],
             'payment_status' => ['nullable', Rule::in(['paid', 'unpaid'])],
             'joined_at' => ['nullable', 'date'],
+            'left_at' => [Rule::requiredIf(fn () => $request->input('status') === 'left'), 'nullable', 'date', 'after_or_equal:joined_at'],
             'membership_expires_at' => ['nullable', 'date'],
             'next_payment_due_at' => ['nullable', 'date'],
             'status' => ['nullable', Rule::in(['active', 'suspended', 'left'])],
@@ -874,6 +927,12 @@ class LibraryController extends Controller
             'remove_profile_photo' => ['nullable', 'boolean'],
             'issue_card' => ['nullable', 'boolean'],
         ]);
+
+        if (($validated['status'] ?? $member?->status) !== 'left') {
+            $validated['left_at'] = null;
+        }
+
+        return $validated;
     }
 
     private function validateLibraryFinanceFilters(Request $request): array
@@ -986,8 +1045,8 @@ class LibraryController extends Controller
 
     private function validateBook(Request $request, ?Book $book = null): array
     {
-        return $request->validate([
-            'isbn' => ['nullable', 'string', 'max:40'],
+        $validated = $request->validate([
+            'isbn' => ['nullable', 'string', 'max:40', Rule::unique('books', 'isbn')->ignore($book)],
             'title' => ['required', 'string', 'max:180'],
             'author' => ['nullable', 'string', 'max:160'],
             'publisher' => ['nullable', 'string', 'max:160'],
@@ -1002,6 +1061,35 @@ class LibraryController extends Controller
             'status' => ['nullable', Rule::in(['available', 'damaged', 'lost', 'archived'])],
             'notes' => ['nullable', 'string', 'max:700'],
         ]);
+
+        $validated['isbn'] = filled($validated['isbn'] ?? null) ? trim((string) $validated['isbn']) : null;
+        $validated['barcode'] = filled($validated['barcode'] ?? null) ? trim((string) $validated['barcode']) : null;
+
+        return $validated;
+    }
+
+    private function ensureBookIsNotDuplicate(array $validated, ?Book $book = null): void
+    {
+        $query = Book::query()
+            ->when($book, fn ($query) => $query->whereKeyNot($book->id))
+            ->where('title', trim((string) $validated['title']));
+
+        foreach (['author', 'publisher', 'edition'] as $column) {
+            $value = trim((string) ($validated[$column] ?? ''));
+            $query->where(function ($innerQuery) use ($column, $value): void {
+                $value === ''
+                    ? $innerQuery->whereNull($column)->orWhere($column, '')
+                    : $innerQuery->where($column, $value);
+            });
+        }
+
+        $duplicate = $query->exists();
+
+        if ($duplicate) {
+            throw ValidationException::withMessages([
+                'title' => 'کتابی با همین عنوان، نویسنده، ناشر و چاپ قبلاً ثبت شده است. اگر نسخه جدید است، تعداد نسخه‌ها را در همان کتاب افزایش دهید.',
+            ]);
+        }
     }
 
     private function validateLoan(Request $request, ?BookLoan $loan = null): array
@@ -1107,8 +1195,12 @@ class LibraryController extends Controller
     private function markLoanReturned(BookLoan $loan, array $validated): void
     {
         DB::transaction(function () use ($loan, $validated): void {
-            if ($loan->status === 'returned') {
-                return;
+            $loan->refresh();
+
+            if (! in_array($loan->status, ['borrowed', 'late'], true)) {
+                throw ValidationException::withMessages([
+                    'copy_code' => 'برگشت این امانت قبلاً ثبت شده یا وضعیت آن قابل برگشت نیست.',
+                ]);
             }
 
             $returnStatus = $validated['return_status'] ?? 'available';
@@ -1119,6 +1211,7 @@ class LibraryController extends Controller
                 'condition_in' => $validated['condition_in'] ?? null,
                 'fine_amount' => $validated['fine_amount'] ?? 0,
                 'status' => $loanStatus,
+                'active_book_copy_id' => null,
             ]);
 
             if ($loan->copy) {
