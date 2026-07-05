@@ -46,5 +46,6 @@
             data-vue-base="/app"
             data-vue-context-id="fanous-vue-context"
         ></div>
+        <script src="{{ asset('js/fanous-page-modal.js') }}"></script>
     </body>
 </html>

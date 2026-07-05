@@ -111,7 +111,7 @@
                                 <small><span class="ltr-text">{{ $copy->copy_code }}</span> · {{ $statusMeta[$copy->status]['label'] ?? $copy->status }} · قفسه: <span class="ltr-text">{{ $copy->shelf_code ?: 'N/A' }}</span> · {{ Locale::money((int) $copy->purchase_price) }}</small>
                             </div>
                             @if ($canWriteLibrary && $copy->book)
-                                <x-ds.button variant="outline" size="sm" :href="route('library.books.edit', $copy->book)">مدیریت</x-ds.button>
+                                <x-ds.button variant="outline" size="sm" :href="route('library.books.edit', $copy->book)" data-fanous-page-modal data-modal-title="ویرایش کتاب">مدیریت</x-ds.button>
                             @endif
                         </div>
                     @empty
@@ -137,7 +137,7 @@
                                 <small>{{ $book->author ?: 'نویسنده نامشخص' }} · {{ Locale::number($book->total_copies) }} نسخه ثبت‌شده</small>
                             </div>
                             @if ($canWriteLibrary)
-                                <x-ds.button variant="outline" size="sm" :href="route('library.books.edit', $book)">ویرایش</x-ds.button>
+                                <x-ds.button variant="outline" size="sm" :href="route('library.books.edit', $book)" data-fanous-page-modal data-modal-title="ویرایش کتاب">ویرایش</x-ds.button>
                             @endif
                         </div>
                     @empty
@@ -184,7 +184,7 @@
                                 <td>{{ Locale::money((int) $copy->purchase_price) }}</td>
                                 <td>
                                     @if ($canWriteLibrary && $copy->book)
-                                        <x-ds.button variant="outline" size="sm" :href="route('library.books.edit', $copy->book)">مدیریت</x-ds.button>
+                                        <x-ds.button variant="outline" size="sm" :href="route('library.books.edit', $copy->book)" data-fanous-page-modal data-modal-title="ویرایش کتاب">مدیریت</x-ds.button>
                                     @else
                                         <span>ندارد</span>
                                     @endif

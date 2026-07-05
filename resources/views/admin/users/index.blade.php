@@ -55,7 +55,7 @@
             </div>
 
             <div class="fanous-page-actions">
-                <x-ds.button :href="route('admin.users.create')">
+                <x-ds.button :href="route('admin.users.create')" data-fanous-page-modal data-modal-title="ساخت کاربر">
                     <span aria-hidden="true">+</span>
                     افزودن کاربر جدید
                 </x-ds.button>
@@ -109,7 +109,7 @@
                         <p>هر حساب در این فهرست دارای نقش و وضعیت دسترسی مشخص است.</p>
                     </div>
 
-                    <x-ds.button size="sm" :href="route('admin.users.create')">ساخت کاربر</x-ds.button>
+                    <x-ds.button size="sm" :href="route('admin.users.create')" data-fanous-page-modal data-modal-title="ساخت کاربر">ساخت کاربر</x-ds.button>
                 </div>
 
                 <div class="fanous-table-wrap">

@@ -51,7 +51,7 @@
             <div class="fanous-page-actions">
                 <x-ds.button variant="outline" href="#student-filters">فیلتر شاگردان</x-ds.button>
                 @if (auth()->user()->canAccessAdmin())
-                    <x-ds.button :href="route('dorm.students.create')">
+                    <x-ds.button :href="route('dorm.students.create')" data-fanous-page-modal data-modal-title="ثبت شاگرد جدید">
                         <span aria-hidden="true">+</span>
                         ثبت شاگرد جدید
                     </x-ds.button>
@@ -163,7 +163,7 @@
                 </div>
 
                 @if (auth()->user()->canAccessAdmin())
-                    <x-ds.button size="sm" :href="route('dorm.students.create')">ثبت شاگرد</x-ds.button>
+                    <x-ds.button size="sm" :href="route('dorm.students.create')" data-fanous-page-modal data-modal-title="ثبت شاگرد جدید">ثبت شاگرد</x-ds.button>
                 @endif
             </div>
 

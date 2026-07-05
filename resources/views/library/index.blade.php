@@ -677,7 +677,7 @@
                                 <div class="fanous-library-member-actions">
                                     <x-ds.button size="sm" :href="route('library.members.show', $member)">مشاهده</x-ds.button>
                                     @if ($canWriteLibrary)
-                                        <x-ds.button variant="outline" size="sm" :href="route('library.members.edit', $member)">ویرایش</x-ds.button>
+                                        <x-ds.button variant="outline" size="sm" :href="route('library.members.edit', $member)" data-fanous-page-modal data-modal-title="ویرایش عضو کتابخانه">ویرایش</x-ds.button>
                                     @endif
                                 </div>
                             </article>
@@ -746,7 +746,7 @@
                                         <x-ds.button variant="outline" size="sm" :href="route('library.members.show', $loan->member)">پروفایل</x-ds.button>
                                     @endif
                                     @if ($canWriteLibrary)
-                                        <x-ds.button variant="outline" size="sm" :href="route('library.loans.edit', $loan)">ویرایش</x-ds.button>
+                                        <x-ds.button variant="outline" size="sm" :href="route('library.loans.edit', $loan)" data-fanous-page-modal data-modal-title="ویرایش امانت کتاب">ویرایش</x-ds.button>
                                     @endif
                                 </div>
                             </article>
@@ -801,7 +801,7 @@
                                 <div class="fanous-row-actions">
                                     <x-ds.badge :tone="$statusMeta['tone']">{{ $statusMeta['label'] }}</x-ds.badge>
                                     @if ($canWriteLibrary)
-                                        <x-ds.button variant="outline" size="sm" :href="route('library.books.edit', $book)">ویرایش</x-ds.button>
+                                        <x-ds.button variant="outline" size="sm" :href="route('library.books.edit', $book)" data-fanous-page-modal data-modal-title="ویرایش کتاب">ویرایش</x-ds.button>
                                     @endif
                                 </div>
                             </div>

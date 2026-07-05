@@ -34,6 +34,8 @@ defineProps({
                     :key="action.href"
                     :class="{ 'is-primary': action.primary }"
                     :href="action.href"
+                    :data-fanous-page-modal="action.modal ? '' : null"
+                    :data-modal-title="action.modalTitle || action.label"
                 >
                     {{ action.label }}
                 </a>

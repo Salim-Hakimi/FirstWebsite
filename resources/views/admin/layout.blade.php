@@ -33,7 +33,7 @@
             @vite('resources/js/app.js')
         @endif
     </head>
-    <body>
+    <body class="{{ request()->boolean('fanous_modal') ? 'fanous-embedded-modal' : '' }}">
         <div class="container-scroller">
             <nav class="sidebar sidebar-offcanvas" id="sidebar">
                 <div class="sidebar-brand-wrapper d-none d-lg-flex align-items-center justify-content-center fixed-top">
@@ -198,7 +198,7 @@
                         <ul class="navbar-nav navbar-nav-right">
                             @if ($currentUser->canManageUsers())
                                 <li class="nav-item d-none d-lg-block">
-                                    <a class="nav-link btn btn-success create-new-button" href="{{ route('dorm.students.create') }}"><x-ds.icon name="plus" /> <span>ثبت شاگرد جدید</span></a>
+                                    <a class="nav-link btn btn-success create-new-button" href="{{ route('dorm.students.create') }}" data-fanous-page-modal data-modal-title="ثبت شاگرد جدید"><x-ds.icon name="plus" /> <span>ثبت شاگرد جدید</span></a>
                                 </li>
                             @elseif ($isLibrarian)
                                 <li class="nav-item d-none d-lg-block">
@@ -271,6 +271,7 @@
             ];
         @endphp
         <script src="{{ asset('js/fanous-i18n.js') }}"></script>
+        <script src="{{ asset('js/fanous-page-modal.js') }}"></script>
         <script>
             (function () {
                 const flash = {!! json_encode($fanousFlashPayload, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!};

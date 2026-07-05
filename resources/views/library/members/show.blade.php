@@ -40,7 +40,7 @@
                 <p>{{ $member->member_code ?: 'N/A' }} · {{ $member->education_place ?: 'Education not recorded' }}</p>
                 <div class="student-profile-actions">
                     @if ($canWriteLibrary)
-                        <a class="btn btn-primary btn-sm" href="{{ route('library.members.edit', $member) }}" data-i18n="editMember">Edit member</a>
+                        <a class="btn btn-primary btn-sm" href="{{ route('library.members.edit', $member) }}" data-fanous-page-modal data-modal-title="ویرایش عضو کتابخانه" data-i18n="editMember">Edit member</a>
                     @endif
                     @if ($latestCard)
                         <a class="btn btn-outline-secondary btn-sm" href="{{ route('membership-cards.print', $latestCard) }}" data-i18n="printCard">Print card</a>
@@ -227,7 +227,7 @@
                             <span class="badge badge-outline-warning">{{ number_format((int) $loan->fine_amount) }} AFN</span>
                         @endif
                         @if ($canWriteLibrary)
-                            <a class="btn btn-outline-secondary btn-sm" href="{{ route('library.loans.edit', $loan) }}" data-i18n="edit">Edit</a>
+                            <a class="btn btn-outline-secondary btn-sm" href="{{ route('library.loans.edit', $loan) }}" data-fanous-page-modal data-modal-title="ویرایش امانت کتاب" data-i18n="edit">Edit</a>
                         @endif
                     </div>
                 </div>

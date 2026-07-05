@@ -43,7 +43,7 @@
 
             <div class="fanous-page-actions">
                 <x-ds.button variant="outline" href="#room-filters">فیلتر اتاق‌ها</x-ds.button>
-                <x-ds.button :href="route('dorm.rooms.create')">
+                <x-ds.button :href="route('dorm.rooms.create')" data-fanous-page-modal data-modal-title="افزودن اتاق جدید">
                     <x-ds.icon name="plus" />
                     افزودن اتاق جدید
                 </x-ds.button>
@@ -96,7 +96,7 @@
                         <h2>فهرست اتاق‌ها</h2>
                         <p>برای هر اتاق ظرفیت، تخت خالی، تخت اشغال‌شده و عملیات مدیریت را ببینید.</p>
                     </div>
-                    <x-ds.button size="sm" :href="route('dorm.rooms.create')">اتاق جدید</x-ds.button>
+                    <x-ds.button size="sm" :href="route('dorm.rooms.create')" data-fanous-page-modal data-modal-title="افزودن اتاق جدید">اتاق جدید</x-ds.button>
                 </div>
 
                 <form id="room-filters" method="GET" action="{{ route('dorm.rooms.index') }}" class="fanous-room-filters">

@@ -170,7 +170,7 @@
             </div>
 
             <div class="dashboard-quick-grid">
-                <a class="dashboard-action" href="{{ route('dorm.students.create') }}">
+                <a class="dashboard-action" href="{{ route('dorm.students.create') }}" data-fanous-page-modal data-modal-title="ثبت شاگرد جدید">
                     <span class="dashboard-action-icon"><x-ds.icon name="user" /></span>
                     <span>
                         <strong>ثبت شاگرد جدید</strong>
@@ -178,7 +178,7 @@
                     </span>
                 </a>
 
-                <a class="dashboard-action" href="{{ route('dorm.rooms.create') }}">
+                <a class="dashboard-action" href="{{ route('dorm.rooms.create') }}" data-fanous-page-modal data-modal-title="ساخت اتاق جدید">
                     <span class="dashboard-action-icon"><x-ds.icon name="building" /></span>
                     <span>
                         <strong>افزودن اتاق</strong>
