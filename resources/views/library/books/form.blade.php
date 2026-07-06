@@ -87,37 +87,44 @@
                         <p>{{ $book->shelf_code ?: 'ثبت نشده' }}</p>
                     </div>
 
+                    @php
+                        $copySummary = $book->copies()
+                            ->selectRaw('status, COUNT(*) as total')
+                            ->groupBy('status')
+                            ->pluck('total', 'status');
+                        $shelves = $book->copies()
+                            ->whereNotNull('shelf_code')
+                            ->where('shelf_code', '!=', '')
+                            ->distinct()
+                            ->orderBy('shelf_code')
+                            ->pluck('shelf_code');
+                    @endphp
+
                     <div class="student-side-divider"></div>
-                    <h3 class="student-side-title">نسخه‌های فزیکی</h3>
-                    <div class="student-document-list">
-                        @forelse ($book->copies()->orderBy('copy_code')->get() as $copy)
-                            <form method="POST" action="{{ route('library.book-copies.update', $copy) }}" class="student-card-summary library-copy-editor">
-                                @csrf
-                                @method('PUT')
-                                <span class="student-timeline-icon">C</span>
-                                <div>
-                                    <strong>{{ $copy->copy_code }}</strong>
-                                    <p>{{ $copy->barcode ?: 'No barcode' }}</p>
-                                    <div class="student-form-grid compact mt-2">
-                                        <select class="form-control form-control-sm" name="status" @disabled($copy->status === 'on_loan')>
-                                            @foreach (['available' => 'قابل استفاده', 'on_loan' => 'در امانت', 'damaged' => 'خراب', 'lost' => 'گم‌شده', 'archived' => 'آرشیف'] as $value => $label)
-                                                <option value="{{ $value }}" @selected($copy->status === $value)>{{ $label }}</option>
-                                            @endforeach
-                                        </select>
-                                        <input class="form-control form-control-sm" name="shelf_code" value="{{ $copy->shelf_code }}" placeholder="قفسه">
-                                        <input class="form-control form-control-sm" name="condition" value="{{ $copy->condition }}" placeholder="حالت">
-                                        <input class="form-control form-control-sm" name="purchase_price" type="number" min="0" value="{{ $copy->purchase_price }}" placeholder="قیمت افغانی">
-                                    </div>
-                                    <input class="form-control form-control-sm mt-2" name="notes" value="{{ $copy->notes }}" placeholder="یادداشت نسخه">
-                                    @if ($copy->status === 'on_loan')
-                                        <small class="text-warning">این نسخه در امانت است. پیش از تغییر وضعیت موجودی، آن را برگشت کنید.</small>
-                                    @endif
-                                </div>
-                                <button class="btn btn-outline-secondary btn-sm" type="submit">ذخیره</button>
-                            </form>
-                        @empty
-                            <div class="student-directory-empty">نسخه‌ها بعد از ذخیره این کتاب ساخته می‌شوند.</div>
-                        @endforelse
+                    <h3 class="student-side-title">خلاصه نسخه‌های کتاب</h3>
+                    <div class="library-copy-summary">
+                        <div>
+                            <span>کل نسخه‌ها</span>
+                            <strong>{{ \App\Support\Locale::number((int) $book->total_copies) }}</strong>
+                        </div>
+                        <div>
+                            <span>موجود</span>
+                            <strong>{{ \App\Support\Locale::number((int) $copySummary->get('available', 0)) }}</strong>
+                        </div>
+                        <div>
+                            <span>در امانت</span>
+                            <strong>{{ \App\Support\Locale::number((int) $copySummary->get('on_loan', 0)) }}</strong>
+                        </div>
+                        <div>
+                            <span>خراب / گم‌شده</span>
+                            <strong>{{ \App\Support\Locale::number((int) $copySummary->get('damaged', 0) + (int) $copySummary->get('lost', 0)) }}</strong>
+                        </div>
+                    </div>
+
+                    <div class="library-copy-shelf">
+                        <span>قفسه‌ها</span>
+                        <strong>{{ $shelves->isNotEmpty() ? $shelves->join('، ') : ($book->shelf_code ?: 'ثبت نشده') }}</strong>
+                        <small>برای تغییر تعداد نسخه‌ها، مقدار «تعداد نسخه» را ویرایش و ذخیره کنید. لیبل هر نسخه از دکمه چاپ لیبل‌ها ساخته می‌شود.</small>
                     </div>
 
                     <div class="student-save-panel">

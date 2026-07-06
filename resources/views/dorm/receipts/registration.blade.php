@@ -178,6 +178,21 @@
         }
 
         @media print {
+            @page {
+                size: 80mm 140mm;
+                margin: 0;
+            }
+
+            html,
+            body {
+                width: 80mm !important;
+                min-height: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: hidden !important;
+                background: #ffffff !important;
+            }
+
             .sidebar,
             .navbar,
             .footer,
@@ -195,8 +210,50 @@
             }
 
             .admission-receipt {
+                position: fixed;
+                inset: 0 auto auto 0;
+                width: 80mm;
+                max-height: 140mm;
                 border: 0;
                 border-radius: 0;
+                box-shadow: none;
+                padding: 5mm;
+                font-size: 9px;
+                overflow: hidden;
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+
+            .admission-receipt-head,
+            .admission-total {
+                gap: 8px;
+                padding-bottom: 8px;
+            }
+
+            .admission-grid {
+                grid-template-columns: 1fr;
+                gap: 6px;
+                margin-top: 8px;
+            }
+
+            .admission-field,
+            .admission-line-items {
+                border-radius: 4px;
+                padding: 6px 8px;
+            }
+
+            .admission-total {
+                margin-top: 8px;
+                padding: 8px;
+            }
+
+            .admission-total strong {
+                font-size: 18px;
+            }
+
+            .admission-footer {
+                gap: 12px;
+                margin-top: 16px;
             }
         }
 

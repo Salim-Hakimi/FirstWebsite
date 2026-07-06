@@ -2467,6 +2467,13 @@ html[data-theme="light"] .waitlist-score-grid span {
     overflow-wrap: anywhere;
 }
 
+.student-timeline-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
 .library-loan-row {
     align-items: flex-start;
 }
@@ -4695,7 +4702,8 @@ html[data-theme="light"] .dashboard-action {
 .fanous-finance-modal:target {
     position: fixed;
     inset-block-start: 50%;
-    inset-inline-start: 50%;
+    left: 50%;
+    right: auto;
     z-index: 5000;
     display: flex;
     flex-direction: column;
@@ -6035,6 +6043,38 @@ html[data-theme="light"] .dashboard-action {
     min-width: 0;
 }
 
+.fanous-library-section-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    border: 1px solid var(--ds-border);
+    border-radius: 18px;
+    background: color-mix(in srgb, var(--ds-card-bg) 88%, var(--ds-primary) 4%);
+    padding: 10px;
+}
+
+.fanous-library-section-tabs a {
+    min-height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    border-radius: 14px;
+    color: var(--ds-muted);
+    padding: 8px 14px;
+    font-weight: 800;
+    text-decoration: none;
+    transition: background var(--transition), border-color var(--transition), color var(--transition), box-shadow var(--transition);
+}
+
+.fanous-library-section-tabs a:hover,
+.fanous-library-section-tabs a.is-active {
+    border-color: color-mix(in srgb, var(--ds-primary) 34%, var(--ds-border));
+    background: var(--ds-card-bg);
+    color: var(--ds-text);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, .08);
+}
+
 .fanous-library-notice {
     display: flex;
     align-items: flex-start;
@@ -6153,7 +6193,8 @@ body.fanous-library-modal-open::after {
 body.fanous-library-modal-open .fanous-library-form-panel.is-active {
     position: fixed;
     inset-block-start: 50%;
-    inset-inline-start: 50%;
+    left: 50%;
+    right: auto;
     z-index: 1080;
     width: min(760px, calc(100vw - 32px));
     max-height: min(760px, calc(100vh - 48px));
@@ -6234,11 +6275,267 @@ body.fanous-library-modal-open .fanous-library-form-panel.is-active .dashboard-p
     grid-column: 1 / -1;
 }
 
+/* Polished library data-entry modals, aligned with the dorm form language. */
+body.fanous-library-modal-open::after {
+    background:
+        linear-gradient(135deg, rgba(2, 8, 23, .72), rgba(15, 23, 42, .56)),
+        color-mix(in srgb, var(--ds-primary) 10%, transparent);
+    backdrop-filter: blur(10px) saturate(1.05);
+}
+
+body.fanous-library-modal-open .fanous-library-form-panel.is-active {
+    width: min(1040px, calc(100vw - 44px));
+    max-height: min(820px, calc(100vh - 44px));
+    padding: 0;
+    border: 1px solid color-mix(in srgb, var(--ds-primary) 26%, var(--ds-border));
+    border-radius: 18px;
+    background:
+        linear-gradient(180deg, color-mix(in srgb, var(--ds-card-bg) 96%, var(--ds-primary) 4%), var(--ds-card-bg));
+    box-shadow: 0 34px 100px rgba(0, 0, 0, .42);
+}
+
+body.fanous-library-modal-open #return-library-copy.is-active {
+    width: min(680px, calc(100vw - 44px));
+}
+
+body.fanous-library-modal-open #new-library-loan.is-active,
+body.fanous-library-modal-open #library-finance-record.is-active {
+    width: min(860px, calc(100vw - 44px));
+}
+
+body.fanous-library-modal-open #new-library-book.is-active {
+    width: min(1000px, calc(100vw - 44px));
+}
+
+body.fanous-library-modal-open #new-library-member.is-active {
+    width: min(1080px, calc(100vw - 44px));
+}
+
+body.fanous-library-modal-open .fanous-library-form-panel.is-active .dashboard-panel-header {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin: 0;
+    padding: 24px 28px 20px;
+    border: 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--ds-primary) 18%, var(--ds-border));
+    border-radius: 18px 18px 0 0;
+    background:
+        linear-gradient(135deg, color-mix(in srgb, var(--ds-primary) 12%, var(--ds-card-bg)), color-mix(in srgb, var(--ds-success) 8%, var(--ds-card-bg)) 58%, var(--ds-card-bg));
+    box-shadow: 0 14px 28px rgba(15, 23, 42, .08);
+}
+
+body.fanous-library-modal-open .fanous-library-form-panel.is-active .dashboard-section-kicker {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    padding-inline: 12px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--ds-primary) 14%, transparent);
+    color: var(--ds-primary);
+    font-size: 12px;
+    font-weight: 900;
+}
+
+body.fanous-library-modal-open .fanous-library-form-panel.is-active .dashboard-panel-header h2 {
+    margin: 10px 0 6px;
+    color: var(--ds-text);
+    font-size: clamp(24px, 2.1vw, 34px);
+    line-height: 1.2;
+    font-weight: 950;
+}
+
+body.fanous-library-modal-open .fanous-library-form-panel.is-active .dashboard-panel-header p {
+    max-width: 720px;
+    margin: 0;
+    color: var(--ds-muted);
+    font-size: 13px;
+    line-height: 1.85;
+}
+
+body.fanous-library-modal-open .fanous-library-form-panel.is-active .dashboard-panel-header [data-library-panel-close] {
+    flex: 0 0 auto;
+    min-height: 38px;
+    border-radius: 11px;
+}
+
+body.fanous-library-modal-open .fanous-library-form-panel.is-active .fanous-library-form {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 12px;
+    padding: 22px 28px 28px;
+    align-items: stretch;
+}
+
+body.fanous-library-modal-open .fanous-library-form > label {
+    grid-column: span 3;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin: 0;
+    padding: 10px;
+    border: 1px solid color-mix(in srgb, var(--ds-border) 78%, transparent);
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--ds-card-bg) 94%, var(--ds-primary) 6%);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, .05);
+}
+
+body.fanous-library-modal-open #new-library-loan .fanous-library-form > label,
+body.fanous-library-modal-open #return-library-copy .fanous-library-form > label,
+body.fanous-library-modal-open #library-finance-record .fanous-library-form > label {
+    grid-column: span 6;
+}
+
+body.fanous-library-modal-open .fanous-library-form > label.fanous-form-wide,
+body.fanous-library-modal-open #new-library-book .fanous-library-form > label:nth-of-type(3),
+body.fanous-library-modal-open #return-library-copy .fanous-library-form > label:first-of-type {
+    grid-column: 1 / -1;
+}
+
+body.fanous-library-modal-open .fanous-library-form label > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin: 0 !important;
+    color: var(--ds-text) !important;
+    font-size: 12px !important;
+    line-height: 1.35;
+    font-weight: 950 !important;
+}
+
+body.fanous-library-modal-open .fanous-library-form label:has([required]) > span::after {
+    content: "*";
+    color: var(--ds-danger);
+    font-size: 13px;
+    font-weight: 950;
+}
+
+body.fanous-library-modal-open .fanous-library-form .form-control {
+    width: 100%;
+    min-height: 42px !important;
+    border-radius: 10px !important;
+    background-color: color-mix(in srgb, var(--ds-card-bg) 96%, white 4%);
+}
+
+body.fanous-library-modal-open .fanous-library-form textarea.form-control {
+    min-height: 78px !important;
+    resize: vertical;
+}
+
+body.fanous-library-modal-open .fanous-library-form .text-danger.small {
+    display: block;
+    margin-top: 1px;
+    color: var(--ds-danger) !important;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+body.fanous-library-modal-open .fanous-library-form .fanous-form-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 10px;
+    margin: 8px -28px -28px;
+    padding: 14px 28px;
+    border-top: 1px solid color-mix(in srgb, var(--ds-border) 78%, transparent);
+    border-radius: 0 0 18px 18px;
+    background: color-mix(in srgb, var(--ds-card-bg) 96%, var(--ds-primary) 4%);
+    box-shadow: 0 -14px 30px rgba(15, 23, 42, .08);
+}
+
+body.fanous-library-modal-open .fanous-library-form .fanous-form-actions .btn {
+    min-width: 132px;
+    min-height: 42px;
+    border-radius: 11px;
+    font-weight: 900;
+}
+
+html[data-theme="light"] body.fanous-library-modal-open .fanous-library-form > label {
+    background: linear-gradient(180deg, #ffffff, color-mix(in srgb, #ffffff 88%, var(--ds-primary) 12%));
+}
+
+@media (max-width: 991.98px) {
+    body.fanous-library-modal-open .fanous-library-form-panel.is-active,
+    body.fanous-library-modal-open #return-library-copy.is-active,
+    body.fanous-library-modal-open #new-library-loan.is-active,
+    body.fanous-library-modal-open #library-finance-record.is-active,
+    body.fanous-library-modal-open #new-library-book.is-active,
+    body.fanous-library-modal-open #new-library-member.is-active {
+        inset: 12px;
+        width: auto;
+        max-height: calc(100vh - 24px);
+        transform: none;
+    }
+
+    body.fanous-library-modal-open .fanous-library-form-panel.is-active .dashboard-panel-header {
+        padding: 18px;
+    }
+
+    body.fanous-library-modal-open .fanous-library-form-panel.is-active .fanous-library-form {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        padding: 16px;
+    }
+
+    body.fanous-library-modal-open .fanous-library-form > label,
+    body.fanous-library-modal-open #new-library-loan .fanous-library-form > label,
+    body.fanous-library-modal-open #return-library-copy .fanous-library-form > label,
+    body.fanous-library-modal-open #library-finance-record .fanous-library-form > label {
+        grid-column: span 1;
+    }
+
+    body.fanous-library-modal-open .fanous-library-form > label.fanous-form-wide,
+    body.fanous-library-modal-open #new-library-book .fanous-library-form > label:nth-of-type(3),
+    body.fanous-library-modal-open #return-library-copy .fanous-library-form > label:first-of-type {
+        grid-column: 1 / -1;
+    }
+
+    body.fanous-library-modal-open .fanous-library-form .fanous-form-actions {
+        margin: 8px -16px -16px;
+        padding: 12px 16px;
+    }
+}
+
+@media (max-width: 575.98px) {
+    body.fanous-library-modal-open .fanous-library-form-panel.is-active .dashboard-panel-header {
+        display: grid;
+    }
+
+    body.fanous-library-modal-open .fanous-library-form-panel.is-active .fanous-library-form {
+        grid-template-columns: 1fr;
+    }
+
+    body.fanous-library-modal-open .fanous-library-form > label,
+    body.fanous-library-modal-open #new-library-loan .fanous-library-form > label,
+    body.fanous-library-modal-open #return-library-copy .fanous-library-form > label,
+    body.fanous-library-modal-open #library-finance-record .fanous-library-form > label {
+        grid-column: 1 / -1;
+    }
+
+    body.fanous-library-modal-open .fanous-library-form .fanous-form-actions .btn {
+        width: 100%;
+    }
+}
+
 .fanous-library-layout {
     display: grid;
     grid-template-columns: minmax(0, 1.5fr) minmax(340px, .75fr);
     gap: clamp(16px, 2vw, 24px);
     align-items: start;
+}
+
+.fanous-library-layout.is-books-only {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.fanous-library-layout.is-books-only .fanous-library-sidebar {
+    position: static;
 }
 
 .fanous-library-main,
@@ -6411,6 +6708,83 @@ body.fanous-library-modal-open .fanous-library-form-panel.is-active .dashboard-p
     gap: 8px;
     justify-content: flex-end;
     margin-block-start: auto;
+}
+
+.fanous-library-member-billing {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    border: 1px dashed color-mix(in srgb, var(--ds-primary) 28%, var(--ds-border));
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--ds-card-bg) 94%, var(--ds-primary) 6%);
+    padding: 9px 11px;
+}
+
+.fanous-library-member-billing span:last-child {
+    color: var(--ds-muted);
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.6;
+}
+
+.fanous-library-member-card.fanous-student-card,
+.fanous-library-member-card .fanous-student-info div {
+    border-radius: 18px;
+}
+
+.fanous-library-member-card .fanous-student-head {
+    align-items: flex-start;
+}
+
+.fanous-library-member-card .fanous-student-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+}
+
+.library-copy-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.library-copy-summary div,
+.library-copy-shelf {
+    border: 1px solid var(--ds-border);
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--ds-card-bg) 92%, var(--ds-primary) 8%);
+    padding: 12px;
+}
+
+.library-copy-summary span,
+.library-copy-shelf span,
+.library-copy-shelf small {
+    display: block;
+    color: var(--ds-muted);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.library-copy-summary strong,
+.library-copy-shelf strong {
+    display: block;
+    margin-top: 5px;
+    color: var(--ds-text);
+    font-size: 20px;
+    font-weight: 900;
+    overflow-wrap: anywhere;
+}
+
+.library-copy-shelf {
+    margin-top: 10px;
+}
+
+.library-copy-shelf small {
+    margin-top: 8px;
+    font-weight: 700;
+    line-height: 1.7;
 }
 
 .fanous-library-loan-list,
@@ -6656,26 +7030,30 @@ body.fanous-library-modal-open .fanous-library-form-panel.is-active .dashboard-p
 }
 
 .fanous-account-avatar-wrap {
-    width: 96px;
-    height: 96px;
-    border-radius: 28px;
+    width: 116px;
+    height: 138px;
+    border-radius: 22px;
     display: grid;
     place-items: center;
-    background: color-mix(in srgb, var(--ds-primary) 12%, transparent);
+    padding: 6px;
+    background: color-mix(in srgb, var(--ds-primary) 12%, var(--ds-card-bg));
     border: 1px solid color-mix(in srgb, var(--ds-primary) 30%, var(--ds-border));
+    box-shadow: 0 16px 34px rgba(15, 23, 42, .12);
+    overflow: hidden;
 }
 
 .fanous-account-avatar {
-    width: 78px;
-    height: 78px;
+    width: 100%;
+    height: 100%;
     display: grid;
     place-items: center;
-    border-radius: 24px;
+    border-radius: 17px;
     background: linear-gradient(135deg, var(--ds-primary), #2563eb);
     color: #fff;
     font-size: 30px;
     font-weight: 900;
     object-fit: cover;
+    object-position: center top;
 }
 
 .fanous-account-preview h2 {

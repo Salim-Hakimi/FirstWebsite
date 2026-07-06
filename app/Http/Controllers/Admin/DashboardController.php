@@ -61,8 +61,7 @@ class DashboardController extends Controller
 
         $monthlyGuaranteeDeposits = (int) $monthlyRegistrationStudents->sum(fn ($student) => $student->guarantee_deposit_amount ?? 1000);
         $monthlyDormRegistrationFees = (int) $monthlyRegistrationStudents->sum(fn ($student) => $student->dorm_expense_fee_amount ?? 1000);
-        $monthlyDormCardFees = (int) $monthlyRegistrationStudents->sum(fn ($student) => $student->registration_card_fee_amount ?? 50);
-        $monthlyRegistrationIncome = $monthlyDormRegistrationFees + $monthlyDormCardFees;
+        $monthlyRegistrationIncome = $monthlyDormRegistrationFees;
 
         return view('admin.dashboard', [
             'totalUsers' => User::count(),
@@ -84,7 +83,7 @@ class DashboardController extends Controller
             'monthlyRegistrationCount' => $monthlyRegistrationStudents->count(),
             'monthlyGuaranteeDeposits' => $monthlyGuaranteeDeposits,
             'monthlyDormRegistrationFees' => $monthlyDormRegistrationFees,
-            'monthlyDormCardFees' => $monthlyDormCardFees,
+            'monthlyDormCardFees' => 0,
             'monthlyRegistrationIncome' => $monthlyRegistrationIncome,
             'recentStudents' => DormStudent::query()
                 ->latest()

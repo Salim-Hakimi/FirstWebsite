@@ -155,6 +155,21 @@
         }
 
         @media print {
+            @page {
+                size: 80mm 120mm;
+                margin: 0;
+            }
+
+            html,
+            body {
+                width: 80mm !important;
+                min-height: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: hidden !important;
+                background: #ffffff !important;
+            }
+
             .sidebar,
             .navbar,
             .footer,
@@ -172,8 +187,49 @@
             }
 
             .receipt-paper {
+                position: fixed;
+                inset: 0 auto auto 0;
+                width: 80mm;
+                max-height: 120mm;
                 border: 0;
                 border-radius: 0;
+                box-shadow: none;
+                padding: 5mm;
+                font-size: 9px;
+                overflow: hidden;
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+
+            .receipt-head,
+            .receipt-total {
+                gap: 8px;
+                padding-bottom: 8px;
+            }
+
+            .receipt-grid {
+                grid-template-columns: 1fr;
+                gap: 6px;
+                margin-top: 8px;
+            }
+
+            .receipt-field {
+                border-radius: 4px;
+                padding: 6px 8px;
+            }
+
+            .receipt-total {
+                margin-top: 8px;
+                padding: 8px;
+            }
+
+            .receipt-total strong {
+                font-size: 18px;
+            }
+
+            .receipt-footer {
+                gap: 12px;
+                margin-top: 16px;
             }
         }
 

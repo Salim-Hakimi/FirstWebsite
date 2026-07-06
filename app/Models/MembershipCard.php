@@ -17,9 +17,11 @@ class MembershipCard extends Model
         'father_name',
         'issued_at',
         'expires_at',
-        'fee_amount',
         'payment_status',
         'paid_at',
+        'card_printed',
+        'printed_at',
+        'replacement_reason',
         'created_by',
         'notes',
     ];
@@ -29,8 +31,9 @@ class MembershipCard extends Model
         return [
             'issued_at' => 'date',
             'expires_at' => 'date',
-            'fee_amount' => 'decimal:2',
             'paid_at' => 'date',
+            'card_printed' => 'boolean',
+            'printed_at' => 'datetime',
         ];
     }
 
@@ -52,5 +55,15 @@ class MembershipCard extends Model
     public function paymentIsDueToday(): bool
     {
         return $this->expires_at?->isToday() && $this->payment_status !== 'paid';
+    }
+
+    public function isLibraryCard(): bool
+    {
+        return $this->scope === 'library';
+    }
+
+    public function isActive(): bool
+    {
+        return ! $this->isExpired();
     }
 }

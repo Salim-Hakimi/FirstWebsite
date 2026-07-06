@@ -330,8 +330,8 @@
                     <div class="student-side-divider"></div>
                     <h3 class="student-side-title">پرداخت ثبت‌نام</h3>
                     <div class="student-status-preview">
-                        <strong>مجموع ضروری: {{ number_format((int) old('guarantee_deposit_amount', $student->guarantee_deposit_amount ?? 1000) + (int) old('dorm_expense_fee_amount', $student->dorm_expense_fee_amount ?? 1000) + (int) old('registration_card_fee_amount', $student->registration_card_fee_amount ?? 50)) }} افغانی</strong>
-                        <p>ضمانت، مصارف ابتدایی لیلیه و فیس کارت هنگام ثبت‌نام توسط ادمین دریافت می‌شود.</p>
+                        <strong>مجموع ضروری: {{ number_format((int) old('guarantee_deposit_amount', $student->guarantee_deposit_amount ?? 1000) + (int) old('dorm_expense_fee_amount', $student->dorm_expense_fee_amount ?? 1000)) }} افغانی</strong>
+                        <p>ضمانت و مصارف ابتدایی لیلیه هنگام ثبت‌نام توسط ادمین دریافت می‌شود.</p>
                     </div>
                     <div class="student-form-grid compact">
                         <div class="form-group">
@@ -362,22 +362,9 @@
                             @error('registration_paid_at') <span class="text-danger small">{{ $message }}</span> @enderror
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label>فیس کارت لیلیه</label>
-                        <input class="form-control @error('registration_card_fee_amount') is-invalid @enderror" name="registration_card_fee_amount" type="number" min="0" value="{{ old('registration_card_fee_amount', $student->registration_card_fee_amount ?? 50) }}">
-                        <small class="text-muted">فیس پیش‌فرض کارت ۵۰ افغانی است و روی کارت چاپی دیده می‌شود.</small>
-                        @error('registration_card_fee_amount') <span class="text-danger small">{{ $message }}</span> @enderror
-                    </div>
-
                     @unless ($student->exists)
                         <div class="student-side-divider"></div>
                         <h3 class="student-side-title">کارت لیلیه</h3>
-                        <div class="form-group">
-                            <label>فیس کارت</label>
-                            <input class="form-control @error('card_fee') is-invalid @enderror" name="card_fee" type="number" min="0" step="0.01" value="{{ old('card_fee', $student->registration_card_fee_amount ?? 50) }}">
-                            <small class="text-muted">این فیس ۵۰ افغانی روی کارت چاپی ذخیره می‌شود.</small>
-                            @error('card_fee') <span class="text-danger small">{{ $message }}</span> @enderror
-                        </div>
                         <div class="form-group">
                             <label>وضعیت پرداخت</label>
                             <select class="form-control @error('card_payment_status') is-invalid @enderror" name="card_payment_status">

@@ -109,7 +109,7 @@
                 <div>
                     <span>درآمد ثبت‌نام</span>
                     <strong>{{ Locale::money($monthRegistrationRevenue) }}</strong>
-                    <small>فقط مصارف لیلیه و فیس کارت؛ ضمانت شامل درآمد نیست</small>
+                    <small>فقط مصارف لیلیه؛ ضمانت شامل درآمد نیست</small>
                 </div>
                 <span class="dashboard-stat-icon is-purple"><x-ds.icon name="cash" /></span>
             </article>

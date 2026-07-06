@@ -32,7 +32,7 @@
         ];
         $statusClass = $badgeClasses[$student->status] ?? 'badge-outline-secondary';
         $roomLabel = $student->status === 'active' ? ($student->room?->room_number ?: ($student->room_number ?: 'ثبت نشده')) : 'در انتظار';
-        $registrationTotal = (int) ($student->guarantee_deposit_amount ?? 1000) + (int) ($student->dorm_expense_fee_amount ?? 1000) + (int) ($student->registration_card_fee_amount ?? 50);
+        $registrationTotal = (int) ($student->guarantee_deposit_amount ?? 1000) + (int) ($student->dorm_expense_fee_amount ?? 1000);
         $registrationPaymentStatus = $student->registration_payment_status ?? 'paid';
     @endphp
 
@@ -92,7 +92,7 @@
         <article class="student-insight-card">
             <span>کارت لیلیه</span>
             <strong>{{ $latestCard?->card_number ?: 'ندارد' }}</strong>
-            <p>{{ $latestCard ? number_format((float) $latestCard->fee_amount, 0).' افغانی فیس کارت' : 'کارت فعال ثبت نشده' }}</p>
+            <p>{{ $latestCard ? 'اعتبار تا '.$latestCard->expires_at?->format('Y-m-d') : 'کارت فعال ثبت نشده' }}</p>
         </article>
     </section>
 
@@ -131,7 +131,6 @@
             <div class="student-detail-grid mt-3">
                 <div><span>ضمانت</span><strong>{{ number_format((int) ($student->guarantee_deposit_amount ?? 1000)) }} افغانی</strong></div>
                 <div><span>مصارف لیلیه</span><strong>{{ number_format((int) ($student->dorm_expense_fee_amount ?? 1000)) }} افغانی</strong></div>
-                <div><span>فیس کارت لیلیه</span><strong>{{ number_format((int) ($student->registration_card_fee_amount ?? 50)) }} افغانی</strong></div>
                 <div><span>مجموع ثبت‌نام</span><strong>{{ number_format($registrationTotal) }} افغانی</strong></div>
                 <div><span>وضعیت پرداخت</span><strong>{{ ['paid' => 'پرداخت شده', 'partial' => 'قسمی', 'unpaid' => 'پرداخت نشده'][$registrationPaymentStatus] ?? $registrationPaymentStatus }}</strong></div>
             </div>
@@ -168,7 +167,7 @@
                     <div>
                         @if ($latestCard)
                             <strong>کارت {{ $latestCard->card_number }}</strong>
-                            <p>اعتبار تا {{ $latestCard->expires_at?->format('Y-m-d') }} - {{ number_format((float) $latestCard->fee_amount, 0) }} افغانی - {{ $latestCard->payment_status === 'paid' ? 'پرداخت شده' : 'پرداخت نشده' }}</p>
+                            <p>اعتبار تا {{ $latestCard->expires_at?->format('Y-m-d') }} - کارت بدون فیس صادر شده است</p>
                         @else
                             <strong>کارت لیلیه ندارد</strong>
                             <p>وقتی شاگرد فعال شد، از همین بخش کارت صادر کنید.</p>

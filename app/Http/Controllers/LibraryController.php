@@ -31,6 +31,8 @@ class LibraryController extends Controller
 
         $filters = $this->validateMemberFilters($request);
         $financeFilters = $this->validateLibraryFinanceFilters($request);
+        $librarySection = $request->route('library_section')
+            ?? ($request->routeIs('library.finance.*') ? 'finance' : 'overview');
 
         $members = $this->libraryMembersQuery($filters)
             ->latest()
@@ -60,6 +62,7 @@ class LibraryController extends Controller
         $this->applyLibraryFinanceFilters($categorySummaryQuery, array_merge($financeFilters, ['finance_category' => null]));
 
         return view('library.index', [
+            'librarySection' => $librarySection,
             'members' => $members,
             'filters' => $filters,
             'libraryFinanceFilters' => $financeFilters,
@@ -281,6 +284,26 @@ class LibraryController extends Controller
             ->orderBy('copy_code')
             ->get();
 
+        $inventoryBooks = $copies
+            ->groupBy('book_id')
+            ->map(function ($bookCopies) {
+                $book = $bookCopies->first()->book;
+
+                return [
+                    'book' => $book,
+                    'matching_copies' => $bookCopies->count(),
+                    'available' => $bookCopies->where('status', 'available')->count(),
+                    'on_loan' => $bookCopies->where('status', 'on_loan')->count(),
+                    'damaged' => $bookCopies->where('status', 'damaged')->count(),
+                    'lost' => $bookCopies->where('status', 'lost')->count(),
+                    'archived' => $bookCopies->where('status', 'archived')->count(),
+                    'shelves' => $bookCopies->pluck('shelf_code')->filter()->unique()->values(),
+                    'value' => (int) $bookCopies->sum('purchase_price'),
+                ];
+            })
+            ->sortBy(fn ($row) => $row['book']?->title ?? '')
+            ->values();
+
         $problemCopies = BookCopy::query()
             ->with('book')
             ->whereIn('status', ['damaged', 'lost'])
@@ -297,6 +320,7 @@ class LibraryController extends Controller
         return view('library.inventory.report', [
             'filters' => $filters,
             'copies' => $copies,
+            'inventoryBooks' => $inventoryBooks,
             'statusCounts' => $statusCounts,
             'problemCopies' => $problemCopies,
             'emptyBooks' => $emptyBooks,
@@ -459,7 +483,6 @@ class LibraryController extends Controller
         $joinedAt = $validated['joined_at'] ?? now()->toDateString();
         $paymentStatus = $validated['payment_status'] ?? 'unpaid';
         $validated['profile_photo_path'] = $this->storeProfilePhoto($request);
-        $validated['card_fee_amount'] = $validated['card_fee_amount'] ?? 50;
         $validated['monthly_fee_daily_fine'] = $validated['monthly_fee_daily_fine'] ?? 20;
         $validated['monthly_fee_fine_amount'] = $paymentStatus === 'paid' ? 0 : ($validated['monthly_fee_fine_amount'] ?? 0);
         unset($validated['issue_card'], $validated['profile_photo'], $validated['remove_profile_photo']);
@@ -517,6 +540,26 @@ class LibraryController extends Controller
 
     public function issueMemberCard(Request $request, LibraryMember $member): RedirectResponse
     {
+        $activeCard = $this->activeLibraryCard($member);
+
+        if ($activeCard && ! $request->boolean('replace_card')) {
+            if (! $activeCard->card_printed) {
+                return redirect()
+                    ->route('membership-cards.print', $activeCard)
+                    ->with('status', 'برای این عضو کارت فعال وجود دارد؛ همان کارت برای چاپ آماده شد.');
+            }
+
+            return redirect()
+                ->route('library.members.show', $member)
+                ->with('error', 'این عضو تا '.$activeCard->expires_at?->format('Y/m/d').' کارت فعال دارد. در این مدت کارت جدید چاپ نمی‌شود؛ فقط بیل ماهانه صادر کنید.');
+        }
+
+        if ($request->boolean('replace_card') && ! $request->user()->canAccessAdmin()) {
+            return redirect()
+                ->route('library.members.show', $member)
+                ->with('error', 'چاپ کارت بدل فقط توسط مدیر سیستم انجام می‌شود.');
+        }
+
         $card = $this->issueLibraryCard($member, $request);
 
         return redirect()->route('membership-cards.print', $card);
@@ -530,7 +573,7 @@ class LibraryController extends Controller
         $feeAmount = (int) $member->membership_fee;
         $fineAmount = max((int) $member->monthly_fee_fine_amount, $member->calculatedMonthlyFine());
 
-        if ($this->hasLibraryMonthlyPayment($member, $paidAt)) {
+        if ($this->libraryMonthlyPaymentTransaction($member, $paidAt)) {
             session([
                 'library_monthly_receipt' => [
                     'member_id' => $member->id,
@@ -565,8 +608,13 @@ class LibraryController extends Controller
             ],
         ]);
 
-        if ($feeAmount > 0) {
-            $this->recordLibraryFinance('income', 'فیس ماهانه کتابخانه', $feeAmount, $member->full_name, 'پرداخت ماهانه عضو کتابخانه: '.$member->member_code, $request, $paidAt->toDateString());
+        if ($feeAmount > 0 || $fineAmount > 0) {
+            $transaction = $this->recordLibraryFinance('income', 'فیس ماهانه کتابخانه', $feeAmount + $fineAmount, $member->full_name, 'پرداخت ماهانه عضو کتابخانه: '.$member->member_code, $request, $paidAt->toDateString(), 'cash', $this->libraryMonthlyReceiptNumber($member, $paidAt));
+
+            session([
+                'library_monthly_receipt.transaction_id' => $transaction->id,
+                'library_monthly_receipt.receipt_number' => $transaction->receipt_number,
+            ]);
         }
 
         return redirect()
@@ -577,22 +625,28 @@ class LibraryController extends Controller
     public function monthlyPaymentReceipt(LibraryMember $member): View
     {
         $receipt = session('library_monthly_receipt');
+        $receiptDate = Carbon::parse($receipt['paid_at'] ?? today());
+        $monthlyPayment = $this->libraryMonthlyPaymentTransaction($member, $receiptDate);
+
+        if (! $monthlyPayment) {
+            abort(404, 'برای این ماه پرداخت ثبت‌شده وجود ندارد. اول فیس ماهانه را ثبت کنید، بعد رسید چاپ می‌شود.');
+        }
 
         if (($receipt['member_id'] ?? null) !== $member->id) {
             $receipt = [
                 'member_id' => $member->id,
-                'paid_at' => $member->last_paid_at?->toDateString() ?? today()->toDateString(),
-                'fee_amount' => (int) $member->membership_fee,
+                'paid_at' => $monthlyPayment->transaction_date?->toDateString() ?? today()->toDateString(),
+                'fee_amount' => (int) $monthlyPayment->amount,
                 'fine_amount' => 0,
-                'total_amount' => (int) $member->membership_fee,
-                'recorded_by' => auth()->user()?->name,
+                'total_amount' => (int) $monthlyPayment->amount,
+                'recorded_by' => $monthlyPayment->recordedBy?->name ?: auth()->user()?->name,
             ];
         }
 
         return view('library.receipts.monthly-payment', [
             'member' => $member,
             'receipt' => $receipt,
-            'receiptNumber' => 'LIB-FEE-'.str_pad((string) $member->id, 6, '0', STR_PAD_LEFT).'-'.now()->format('Ymd'),
+            'receiptNumber' => $monthlyPayment->receipt_number ?: 'LIB-FEE-'.str_pad((string) $member->id, 6, '0', STR_PAD_LEFT).'-'.now()->format('Ymd'),
         ]);
     }
 
@@ -886,6 +940,7 @@ class LibraryController extends Controller
     {
         return LibraryMember::query()
             ->with(['membershipCards' => fn ($query) => $query->where('scope', 'library')->latest('expires_at')])
+            ->withCount(['loans as active_loans_count' => fn ($query) => $query->whereIn('status', ['borrowed', 'late'])])
             ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
             ->when($filters['q'] ?? null, function ($query, $search) {
                 $query->where(function ($query) use ($search) {
@@ -913,7 +968,6 @@ class LibraryController extends Controller
             'department_or_grade' => ['nullable', 'string', 'max:160'],
             'address' => ['nullable', 'string', 'max:220'],
             'membership_fee' => ['nullable', 'integer', 'min:0'],
-            'card_fee_amount' => ['nullable', 'integer', 'min:0'],
             'monthly_fee_daily_fine' => ['nullable', 'integer', 'min:0'],
             'monthly_fee_fine_amount' => ['nullable', 'integer', 'min:0'],
             'payment_status' => ['nullable', Rule::in(['paid', 'unpaid'])],
@@ -1112,7 +1166,6 @@ class LibraryController extends Controller
     {
         $issuedAt = now();
         $paymentStatus = $request->input('payment_status', 'unpaid');
-        $cardFee = (int) ($member->card_fee_amount ?? 50);
 
         $card = $member->membershipCards()->create([
             'scope' => 'library',
@@ -1121,15 +1174,10 @@ class LibraryController extends Controller
             'father_name' => $member->father_name,
             'issued_at' => $issuedAt,
             'expires_at' => $issuedAt->copy()->addMonths(6),
-            'fee_amount' => $cardFee,
             'payment_status' => $paymentStatus,
             'paid_at' => $paymentStatus === 'paid' ? $issuedAt : null,
             'created_by' => $request->user()->id,
         ]);
-
-        if ($paymentStatus === 'paid' && $cardFee > 0) {
-            $this->recordLibraryFinance('income', 'قیمت کارت کتابخانه', $cardFee, $member->full_name, 'صدور کارت کتابخانه: '.$card->card_number, $request);
-        }
 
         $member->update([
             'membership_expires_at' => $card->expires_at,
@@ -1300,6 +1348,8 @@ class LibraryController extends Controller
         string $paymentMethod = 'cash',
         ?string $receiptNumber = null
     ): FinanceTransaction {
+        $transactionDate = Carbon::parse($date ?: today());
+
         $category = FinanceCategory::firstOrCreate(
             ['name' => 'کتابخانه - '.$categoryLabel, 'type' => $type],
             ['color' => $type === 'income' ? '#0ea5a4' : '#ef4444', 'is_active' => true]
@@ -1311,7 +1361,7 @@ class LibraryController extends Controller
             'finance_category_id' => $category->id,
             'expected_amount' => $amount,
             'amount' => $amount,
-            'transaction_date' => $date ?: today()->toDateString(),
+            'transaction_date' => $transactionDate->toDateString(),
             'source_or_payee' => $person,
             'payer_name' => $type === 'income' ? $person : null,
             'payee_name' => $type === 'expense' ? $person : null,
@@ -1321,6 +1371,8 @@ class LibraryController extends Controller
             'description' => $description,
             'notes' => 'ثبت مالی کتابخانه',
             'attachment_required' => false,
+            'payment_month' => $transactionDate->month,
+            'payment_year' => $transactionDate->year,
             'recorded_by' => $request->user()->id,
         ]);
 
@@ -1338,6 +1390,48 @@ class LibraryController extends Controller
     {
         return FinanceTransaction::query()
             ->whereHas('category', fn ($query) => $query->where('name', 'like', 'کتابخانه -%'));
+    }
+
+    private function activeLibraryCard(LibraryMember $member): ?MembershipCard
+    {
+        return $member->membershipCards()
+            ->where('scope', 'library')
+            ->whereDate('expires_at', '>=', today())
+            ->latest('expires_at')
+            ->first();
+    }
+
+    private function libraryMonthlyPaymentTransaction(LibraryMember $member, Carbon|string $date): ?FinanceTransaction
+    {
+        $paidAt = $date instanceof Carbon ? $date : Carbon::parse($date);
+
+        return $this->libraryFinanceTransactions()
+            ->where('type', 'income')
+            ->where('status', 'paid')
+            ->where(function ($query) use ($paidAt): void {
+                $query
+                    ->where(function ($query) use ($paidAt): void {
+                        $query->where('payment_month', $paidAt->month)
+                            ->where('payment_year', $paidAt->year);
+                    })
+                    ->orWhereBetween('transaction_date', [
+                        $paidAt->copy()->startOfMonth()->toDateString(),
+                        $paidAt->copy()->endOfMonth()->toDateString(),
+                    ]);
+            })
+            ->where(function ($query) use ($member, $paidAt): void {
+                $query->where('receipt_number', $this->libraryMonthlyReceiptNumber($member, $paidAt))
+                    ->orWhere('description', 'like', '%'.$member->member_code.'%');
+            })
+            ->latest('transaction_date')
+            ->first();
+    }
+
+    private function libraryMonthlyReceiptNumber(LibraryMember $member, Carbon|string $date): string
+    {
+        $paidAt = $date instanceof Carbon ? $date : Carbon::parse($date);
+
+        return 'LIB-MONTHLY-'.$member->id.'-'.$paidAt->format('Y-m');
     }
 
     private function libraryFinanceCategoryOptions()
@@ -1376,7 +1470,6 @@ class LibraryController extends Controller
     private function libraryFinanceCategoryLabels(): array
     {
         return [
-            'card_fee' => ['type' => 'income', 'label' => 'قیمت کارت کتابخانه'],
             'monthly_fee' => ['type' => 'income', 'label' => 'فیس ماهانه کتابخانه'],
             'donation' => ['type' => 'income', 'label' => 'کمک برای کتابخانه'],
             'other_income' => ['type' => 'income', 'label' => 'درآمد متفرقه کتابخانه'],
@@ -1419,7 +1512,6 @@ class LibraryController extends Controller
     {
         $validated['monthly_fee_daily_fine'] = $validated['monthly_fee_daily_fine'] ?? $member->monthly_fee_daily_fine ?? 20;
         $validated['monthly_fee_fine_amount'] = $validated['monthly_fee_fine_amount'] ?? $member->monthly_fee_fine_amount ?? 0;
-        $validated['card_fee_amount'] = $validated['card_fee_amount'] ?? $member->card_fee_amount ?? 50;
 
         if (($validated['payment_status'] ?? $member->payment_status) === 'paid') {
             $paidAt = now();

@@ -1,259 +1,291 @@
-@extends('admin.layout')
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>بیل ماهانه {{ $member->full_name }}</title>
+    @php
+        use App\Support\Locale;
 
-@section('title', 'Library Payment Receipt - Fanous Admin')
-
-@section('content')
+        $paidDate = \Illuminate\Support\Carbon::parse($receipt['paid_at']);
+    @endphp
     <style>
-        .receipt-actions {
-            display: flex;
-            justify-content: space-between;
-            gap: 12px;
-            margin-bottom: 20px;
+        @font-face {
+            font-family: 'Vazir';
+            src: url('{{ asset('font/vazir-font-v16.1.0/Vazir.woff2') }}') format('woff2');
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
         }
 
-        .receipt-paper {
-            position: relative;
-            overflow: hidden;
-            border: 1px solid rgba(108, 114, 147, .18);
-            border-radius: 8px;
-            background: #f8fafc;
-            color: #111827;
-            padding: 34px;
+        @font-face {
+            font-family: 'Vazir';
+            src: url('{{ asset('font/vazir-font-v16.1.0/Vazir-Bold.woff2') }}') format('woff2');
+            font-weight: 700;
+            font-style: normal;
+            font-display: swap;
         }
 
-        .receipt-paper::before {
-            content: "";
-            position: absolute;
-            inset: 0 0 auto;
-            height: 6px;
-            background: linear-gradient(90deg, #0090e7, #00d25b);
+        * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
         }
 
-        .receipt-head,
-        .receipt-total,
-        .receipt-actions,
-        .receipt-line {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+        html,
+        body {
+            margin: 0;
+            background: #eef3f7;
+            color: #0f172a;
+            font-family: 'Vazir', Tahoma, Arial, sans-serif;
         }
 
-        .receipt-head {
-            gap: 24px;
-            border-bottom: 1px solid #d1d5db;
-            padding-bottom: 22px;
-        }
-
-        .receipt-brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .receipt-mark {
-            width: 58px;
-            height: 58px;
+        body {
+            min-height: 100vh;
             display: grid;
             place-items: center;
+            padding: 18px;
+        }
+
+        .bill-shell {
+            display: grid;
+            gap: 10px;
+            justify-items: center;
+        }
+
+        .bill-actions {
+            width: 58mm;
+            display: flex;
+            justify-content: space-between;
+            gap: 6px;
+        }
+
+        .btn {
+            min-height: 30px;
+            border: 1px solid #0f766e;
             border-radius: 8px;
-            background: #111827;
-            color: #00d25b;
-            font-size: 26px;
-            font-weight: 900;
+            background: #0f766e;
+            color: #fff;
+            padding: 5px 9px;
+            font: inherit;
+            font-size: 11px;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
         }
 
-        .receipt-brand h1,
-        .receipt-number strong,
-        .receipt-total strong {
-            margin: 0;
-            line-height: 1.3;
+        .btn.secondary {
+            background: #fff;
+            color: #0f766e;
         }
 
-        .receipt-brand span,
-        .receipt-number span,
-        .receipt-field span,
-        .receipt-signature span,
-        .receipt-line span {
-            display: block;
-            color: #6b7280;
-            font-size: 13px;
+        .monthly-bill {
+            width: 58mm;
+            overflow: hidden;
+            border: 1px solid #c8d8df;
+            border-radius: 8px;
+            background: #ffffff;
+            padding: 8px;
+            box-shadow: 0 16px 38px rgba(15, 23, 42, .16);
+            font-size: 9.4px;
+            line-height: 1.55;
+        }
+
+        .bill-head {
+            display: grid;
+            gap: 2px;
+            text-align: center;
+            border-bottom: 1px dashed #9fb5c1;
+            padding-bottom: 5px;
+            margin-bottom: 4px;
+        }
+
+        .bill-head strong {
+            font-size: 12px;
             font-weight: 700;
         }
 
-        .receipt-number {
-            text-align: right;
+        .bill-head span {
+            color: #64748b;
+            font-size: 8.2px;
+            font-weight: 700;
         }
 
-        .receipt-number strong {
-            display: block;
-            margin-top: 4px;
-            font-size: 22px;
+        .bill-row,
+        .bill-total {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            border-bottom: 1px dashed #d7e3ea;
+            padding: 3px 0;
         }
 
-        .receipt-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 14px;
-            margin-top: 24px;
+        .bill-row span {
+            color: #64748b;
+            font-weight: 700;
+            white-space: nowrap;
         }
 
-        .receipt-field,
-        .receipt-lines {
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            background: #ffffff;
-            padding: 14px 16px;
-        }
-
-        .receipt-field strong,
-        .receipt-line strong {
-            display: block;
-            margin-top: 4px;
-            color: #111827;
-            font-size: 16px;
+        .bill-row strong {
+            color: #0f172a;
+            font-weight: 700;
+            text-align: left;
             overflow-wrap: anywhere;
         }
 
-        .receipt-lines {
-            display: grid;
-            gap: 12px;
-            grid-column: 1 / -1;
+        .bill-lines {
+            margin-top: 4px;
+            border-top: 1px solid #dbe7ef;
+            border-bottom: 1px solid #dbe7ef;
+            padding-block: 2px;
         }
 
-        .receipt-line {
-            border-bottom: 1px solid #eef2f7;
-            padding-bottom: 10px;
-        }
-
-        .receipt-line:last-child {
-            border-bottom: 0;
-            padding-bottom: 0;
-        }
-
-        .receipt-total {
-            gap: 18px;
-            margin-top: 22px;
-            border-radius: 8px;
-            background: #111827;
+        .bill-total {
+            align-items: center;
+            margin-top: 5px;
+            border: 0;
+            border-radius: 7px;
+            background: #0f766e;
             color: #ffffff;
-            padding: 20px;
+            padding: 6px 7px;
         }
 
-        .receipt-total span {
-            color: rgba(255, 255, 255, .72);
+        .bill-total span,
+        .bill-total strong {
+            color: #ffffff;
             font-weight: 700;
         }
 
-        .receipt-total strong {
-            font-size: 32px;
+        .bill-total strong {
+            font-size: 14px;
         }
 
-        .receipt-footer {
+        .bill-note {
+            margin: 6px 0 0;
+            color: #64748b;
+            font-size: 7.8px;
+            line-height: 1.65;
+            text-align: center;
+        }
+
+        .bill-signatures {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 28px;
-            margin-top: 34px;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 12px;
         }
 
-        .receipt-signature {
-            border-top: 1px solid #9ca3af;
-            padding-top: 10px;
+        .bill-signatures div {
+            border-top: 1px solid #94a3b8;
+            padding-top: 3px;
+            color: #334155;
+            font-size: 8.3px;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .ltr-text {
+            direction: ltr;
+            unicode-bidi: plaintext;
+            text-align: left;
         }
 
         @media print {
-            .sidebar,
-            .navbar,
-            .footer,
-            .receipt-actions {
-                display: none !important;
+            @page {
+                size: 58mm 92mm;
+                margin: 0;
             }
 
-            .page-body-wrapper,
-            .main-panel,
-            .content-wrapper {
-                width: 100% !important;
+            html,
+            body {
+                width: 58mm;
+                height: 92mm;
+                min-width: 58mm;
+                min-height: 0 !important;
                 margin: 0 !important;
                 padding: 0 !important;
+                overflow: hidden !important;
                 background: #ffffff !important;
             }
 
-            .receipt-paper {
+            body {
+                display: block !important;
+            }
+
+            .bill-shell {
+                position: fixed;
+                inset: 0 auto auto 0;
+                display: block;
+                width: 58mm;
+                height: 92mm;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: hidden !important;
+            }
+
+            .bill-actions {
+                display: none !important;
+            }
+
+            .monthly-bill {
+                width: 58mm;
+                height: 92mm;
                 border: 0;
                 border-radius: 0;
-            }
-        }
-
-        @media (max-width: 680px) {
-            .receipt-head,
-            .receipt-total,
-            .receipt-actions,
-            .receipt-line {
-                align-items: stretch;
-                flex-direction: column;
-            }
-
-            .receipt-number {
-                text-align: left;
-            }
-
-            .receipt-grid,
-            .receipt-footer {
-                grid-template-columns: 1fr;
+                box-shadow: none;
+                padding: 4mm;
+                break-inside: avoid;
+                page-break-inside: avoid;
             }
         }
     </style>
-
-    <div class="receipt-actions">
-        <div>
-            <button class="btn btn-primary mr-2" type="button" onclick="window.print()">Print receipt</button>
-            <a class="btn btn-dark" href="{{ route('library.members.show', $member) }}">Member profile</a>
-        </div>
-        <a class="btn btn-outline-secondary" href="{{ route('library.index') }}">Back to library</a>
-    </div>
-
-    <article class="receipt-paper">
-        <div class="receipt-head">
-            <div class="receipt-brand">
-                <div class="receipt-mark">F</div>
-                <div>
-                    <h1>Library Monthly Payment</h1>
-                    <span>Fanous library membership fee receipt</span>
-                </div>
-            </div>
-            <div class="receipt-number">
-                <span>Receipt number</span>
-                <strong>{{ $receiptNumber }}</strong>
-            </div>
+</head>
+<body>
+    <main class="bill-shell">
+        <div class="bill-actions">
+            <button class="btn" type="button" onclick="window.print()">چاپ بیل</button>
+            <a class="btn secondary" href="{{ route('library.members.show', $member) }}">برگشت</a>
         </div>
 
-        <div class="receipt-grid">
-            <div class="receipt-field"><span>Member</span><strong>{{ $member->full_name }}</strong></div>
-            <div class="receipt-field"><span>Member code</span><strong>{{ $member->member_code ?: 'N/A' }}</strong></div>
-            <div class="receipt-field"><span>Phone</span><strong>{{ $member->phone ?: 'N/A' }}</strong></div>
-            <div class="receipt-field"><span>Paid date</span><strong>{{ $receipt['paid_at'] }}</strong></div>
-            <div class="receipt-field"><span>Next due</span><strong>{{ $member->next_payment_due_at?->format('Y-m-d') ?: 'N/A' }}</strong></div>
-            <div class="receipt-field"><span>Recorded by</span><strong>{{ $receipt['recorded_by'] ?: 'Librarian' }}</strong></div>
+        <article class="monthly-bill">
+            <header class="bill-head">
+                <strong>بیل ماهانه کتاب‌خانه فانوس</strong>
+                <span>رسید فیس ماهانه، کارت جدید نیست</span>
+                <span class="ltr-text">{{ $receiptNumber }}</span>
+            </header>
 
-            <div class="receipt-lines">
-                <div class="receipt-line"><span>Monthly fee</span><strong>{{ number_format((int) $receipt['fee_amount']) }} AFN</strong></div>
-                <div class="receipt-line"><span>Late fine</span><strong>{{ number_format((int) $receipt['fine_amount']) }} AFN</strong></div>
-            </div>
-        </div>
+            <div class="bill-row"><span>نام</span><strong>{{ $member->full_name }}</strong></div>
+            <div class="bill-row"><span>کد</span><strong class="ltr-text">{{ $member->member_code ?: 'ثبت نشده' }}</strong></div>
+            <div class="bill-row"><span>واتساپ</span><strong class="ltr-text">{{ $member->phone ?: 'ثبت نشده' }}</strong></div>
+            <div class="bill-row"><span>ماه</span><strong>{{ Locale::number($paidDate->format('Y/m')) }}</strong></div>
+            <div class="bill-row"><span>تاریخ</span><strong>{{ Locale::number($paidDate->format('Y/m/d')) }}</strong></div>
+            <div class="bill-row"><span>موعد بعدی</span><strong>{{ $member->next_payment_due_at ? Locale::number($member->next_payment_due_at->format('Y/m/d')) : 'ثبت نشده' }}</strong></div>
 
-        <div class="receipt-total">
-            <span>Total paid</span>
-            <strong>{{ number_format((int) $receipt['total_amount']) }} AFN</strong>
-        </div>
+            <div class="bill-lines">
+                <div class="bill-row"><span>فیس ماهانه</span><strong>{{ Locale::money((int) $receipt['fee_amount']) }}</strong></div>
+                <div class="bill-row"><span>جریمه</span><strong>{{ Locale::money((int) $receipt['fine_amount']) }}</strong></div>
+            </div>
 
-        <div class="receipt-footer">
-            <div class="receipt-signature">
-                <strong>Librarian signature</strong>
-                <span>{{ $receipt['recorded_by'] ?: 'Librarian' }}</span>
+            <div class="bill-total">
+                <span>مجموع</span>
+                <strong>{{ Locale::money((int) $receipt['total_amount']) }}</strong>
             </div>
-            <div class="receipt-signature">
-                <strong>Member signature</strong>
-                <span>{{ $member->full_name }}</span>
+
+            <p class="bill-note">این بیل فقط برای پرداخت ماهانه است. کارت عضویت هر شش ماه یک‌بار تمدید می‌شود.</p>
+
+            <div class="bill-row"><span>ثبت‌کننده</span><strong>{{ $receipt['recorded_by'] ?: 'کتابدار' }}</strong></div>
+
+            <div class="bill-signatures">
+                <div>امضای کتابدار</div>
+                <div>امضای عضو</div>
             </div>
-        </div>
-    </article>
-@endsection
+        </article>
+    </main>
+
+    <script>
+        window.addEventListener('load', () => {
+            setTimeout(() => window.print(), 300);
+        });
+    </script>
+</body>
+</html>

@@ -87,7 +87,6 @@
 
                     <div class="student-form-grid three">
                         <div class="form-group"><label data-i18n="monthlyFee">فیس ماهانه</label><input class="form-control" name="membership_fee" type="number" min="0" value="{{ old('membership_fee', $member->membership_fee) }}"></div>
-                        <div class="form-group"><label>قیمت کارت</label><input class="form-control" name="card_fee_amount" type="number" min="0" value="{{ old('card_fee_amount', $member->card_fee_amount ?? 50) }}"></div>
                         <div class="form-group">
                             <label data-i18n="paymentStatus">وضعیت پرداخت</label>
                             <select class="form-control" name="payment_status">
@@ -143,11 +142,19 @@
                         @csrf
                     </form>
 
+                    @php
+                        $hasActiveLibraryCard = $latestLibraryCard && $latestLibraryCard->expires_at && $latestLibraryCard->expires_at->isFuture();
+                    @endphp
+
                     <div class="student-save-panel">
                         <button class="btn btn-primary" type="submit" form="library-member-form" data-i18n="saveChanges">فقط ذخیره معلومات</button>
-                        <button class="btn btn-outline-primary" type="submit" form="library-card-form" data-i18n="{{ $latestLibraryCard ? 'renewCard' : 'issueNewCard' }}">{{ $latestLibraryCard ? 'ذخیره و تمدید کارت' : 'ذخیره و صدور کارت جدید' }}</button>
+                        <button class="btn btn-outline-primary" type="submit" form="library-card-form" @disabled($hasActiveLibraryCard)>{{ $hasActiveLibraryCard ? 'کارت فعال دارد' : 'صدور کارت شش‌ماهه' }}</button>
                         @if ($latestLibraryCard)
-                            <a class="btn btn-outline-secondary" href="{{ route('membership-cards.print', $latestLibraryCard) }}" data-i18n="printCard">چاپ کارت فعلی</a>
+                            @if ($latestLibraryCard->card_printed && $latestLibraryCard->expires_at?->isFuture())
+                                <span class="btn btn-outline-secondary disabled">کارت قبلاً چاپ شده</span>
+                            @else
+                                <a class="btn btn-outline-secondary" href="{{ route('membership-cards.print', $latestLibraryCard) }}" data-i18n="printCard">چاپ کارت فعلی</a>
+                            @endif
                         @endif
                         <a class="btn btn-dark" href="{{ route('library.members.show', $member) }}" data-i18n="cancel">لغو</a>
                     </div>

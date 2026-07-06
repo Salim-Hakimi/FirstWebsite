@@ -133,7 +133,7 @@
                     <div>
                         <span class="dashboard-section-kicker">خلاصه پرداخت ثبت‌نام</span>
                         <h2>درآمد ثبت‌نام این ماه</h2>
-                        <p>ضمانت فقط امانت شاگرد است و در درآمد لیلیه حساب نمی‌شود؛ فقط فیس مصارف لیلیه و فیس کارت درآمد است.</p>
+                        <p>ضمانت فقط امانت شاگرد است و در درآمد لیلیه حساب نمی‌شود؛ فقط فیس مصارف لیلیه درآمد است.</p>
                     </div>
                     <x-ds.badge tone="success">{{ Locale::number($monthlyRegistrationCount) }} پرداخت</x-ds.badge>
                 </div>
@@ -146,10 +146,6 @@
                     <div class="dashboard-payment-item">
                         <span>فیس مصارف لیلیه</span>
                         <strong>{{ Locale::money($monthlyDormRegistrationFees) }}</strong>
-                    </div>
-                    <div class="dashboard-payment-item">
-                        <span>فیس کارت</span>
-                        <strong>{{ Locale::money($monthlyDormCardFees) }}</strong>
                     </div>
                 </div>
 

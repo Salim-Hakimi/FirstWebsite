@@ -61,7 +61,7 @@
             .id-card {
                 position: relative;
                 width: 86mm;
-                min-height: 54mm;
+                height: 54mm;
                 display: grid;
                 grid-template-rows: auto 1fr auto;
                 overflow: hidden;
@@ -105,8 +105,8 @@
                 align-items: center;
                 justify-content: space-between;
                 gap: 10px;
-                min-height: 14mm;
-                padding: 8px 11px;
+                min-height: 10.5mm;
+                padding: 5px 9px;
                 background: linear-gradient(135deg, var(--card-green), var(--card-green-2));
                 color: #fff;
             }
@@ -119,8 +119,8 @@
             }
 
             .brand-logo {
-                width: 10mm;
-                height: 10mm;
+                width: 8.5mm;
+                height: 8.5mm;
                 flex-shrink: 0;
                 border-radius: 9px;
                 object-fit: contain;
@@ -134,14 +134,14 @@
             }
 
             .brand-text strong {
-                font-size: 13px;
+                font-size: 11px;
                 line-height: 1.2;
                 font-weight: 700;
                 white-space: nowrap;
             }
 
             .brand-text span {
-                font-size: 8px;
+                font-size: 7px;
                 opacity: .78;
                 white-space: nowrap;
             }
@@ -152,25 +152,26 @@
                 justify-content: center;
                 border: 1px solid rgba(255, 255, 255, .24);
                 border-radius: 999px;
-                padding: 5px 9px;
+                padding: 3px 7px;
                 background: rgba(255, 255, 255, .12);
-                font-size: 9px;
+                font-size: 7.5px;
                 font-weight: 700;
                 white-space: nowrap;
             }
 
             .card-body {
                 display: grid;
-                grid-template-columns: 24mm minmax(0, 1fr);
-                gap: 10px;
-                padding: 10px 11px 7px;
+                grid-template-columns: 22mm minmax(0, 1fr);
+                gap: 7px;
+                padding: 5px 9px 4px;
+                min-height: 0;
             }
 
             .photo-box {
                 display: grid;
                 place-items: center;
-                width: 24mm;
-                height: 31mm;
+                width: 22mm;
+                height: 26mm;
                 overflow: hidden;
                 border: 1px dashed rgba(8, 127, 91, .55);
                 border-radius: 10px;
@@ -192,27 +193,27 @@
             .details {
                 display: grid;
                 align-content: start;
-                gap: 4px;
+                gap: 2px;
                 min-width: 0;
-                font-size: 9.5px;
-                line-height: 1.45;
+                font-size: 8px;
+                line-height: 1.25;
             }
 
             .details h1 {
-                margin: 0 0 2px;
+                margin: 0 0 1px;
                 color: var(--card-green);
-                font-size: 15.5px;
-                line-height: 1.3;
+                font-size: 12.5px;
+                line-height: 1.2;
                 font-weight: 700;
             }
 
             .row {
                 display: grid;
-                grid-template-columns: 21mm minmax(0, 1fr);
-                gap: 6px;
+                grid-template-columns: 18mm minmax(0, 1fr);
+                gap: 4px;
                 align-items: center;
                 border-bottom: 1px solid var(--card-line);
-                padding-bottom: 2px;
+                padding-bottom: 1px;
             }
 
             .row span {
@@ -240,11 +241,11 @@
                 align-items: center;
                 justify-content: space-between;
                 gap: 8px;
-                min-height: 9mm;
+                min-height: 6.5mm;
                 border-top: 1px solid rgba(15, 81, 56, .13);
-                padding: 6px 11px 8px;
+                padding: 4px 9px;
                 background: linear-gradient(90deg, rgba(238, 250, 244, .92), rgba(255, 253, 246, .96));
-                font-size: 9px;
+                font-size: 7.5px;
             }
 
             .price {
@@ -305,14 +306,26 @@
                 html,
                 body {
                     width: 86mm;
-                    min-height: 54mm;
+                    height: 54mm;
+                    min-width: 86mm;
+                    min-height: 0 !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    overflow: hidden !important;
                     background: #ffffff !important;
                 }
 
                 .print-shell {
+                    position: fixed;
+                    inset: 0 auto auto 0;
+                    display: block;
                     width: 86mm;
-                    min-height: 54mm;
-                    padding: 0;
+                    height: 54mm;
+                    min-height: 0;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    overflow: hidden !important;
+                    page-break-after: avoid;
                 }
 
                 .actions {
@@ -321,9 +334,12 @@
 
                 .id-card {
                     width: 86mm;
-                    min-height: 54mm;
+                    height: 54mm;
+                    min-height: 0;
                     border-radius: 0;
                     box-shadow: none;
+                    break-inside: avoid;
+                    page-break-inside: avoid;
                 }
             }
         </style>
@@ -338,7 +354,6 @@
             $scopeLabel = $isDorm ? 'کارت لیلیه' : 'کارت کتابخانه';
             $brandLabel = $isDorm ? 'لیلیه فانوس' : 'کتابخانه فانوس';
             $brandSubLabel = $isDorm ? 'کارت رسمی محصل' : 'کارت عضویت کتابخانه';
-            $paymentLabel = $card->payment_status === 'paid' ? 'پرداخت شده' : 'پرداخت نشده';
             $phone = $subject?->phone ?: 'ثبت نشده';
             $printedAt = now();
         @endphp
@@ -371,21 +386,13 @@
                         <div class="row"><span>{{ $isDorm ? 'آی‌دی کارت' : 'کد عضویت' }}</span><strong class="ltr-text">{{ $isDorm ? $card->card_number : ($subject?->member_code ?: $card->card_number) }}</strong></div>
                         <div class="row"><span>تاریخ صدور</span><strong>{{ $card->issued_at ? Locale::number($card->issued_at->format('Y/m/d')) : 'ثبت نشده' }}</strong></div>
                         <div class="row"><span>اعتبار تا</span><strong>{{ $card->expires_at ? Locale::number($card->expires_at->format('Y/m/d')) : 'ثبت نشده' }}</strong></div>
-                        <div class="row"><span>زمان چاپ</span><strong>{{ Locale::number($printedAt->format('H:i:s')) }}</strong></div>
-
-                        @if ($isDorm)
-                            <div class="row"><span>اتاق</span><strong>{{ $subject?->room_number ?: 'ثبت نشده' }}</strong></div>
-                        @else
-                            <div class="row"><span>بخش</span><strong>{{ $subject?->department_or_grade ?: 'کتابخانه' }}</strong></div>
-                        @endif
-
                         <div class="row"><span>تماس</span><strong class="ltr-text">{{ $phone }}</strong></div>
                     </div>
                 </div>
 
                 <footer class="card-foot">
-                    <span class="price">قیمت کارت: {{ Locale::money(50) }}</span>
-                    <span class="status {{ $card->payment_status === 'paid' ? '' : 'is-unpaid' }}">{{ $paymentLabel }}</span>
+                    <span class="price">{{ $isDorm ? 'کارت هویت لیلیه' : 'کارت هویت کتاب‌خانه' }}</span>
+                    <span class="status">اعتبار شش‌ماهه</span>
                 </footer>
             </section>
 

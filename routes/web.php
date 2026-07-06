@@ -183,6 +183,9 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('role:'.implode(',', User::libraryViewerRoles()))->group(function () {
         Route::get('/library', [LibraryController::class, 'index'])->name('library.index');
+        Route::get('/library/members', [LibraryController::class, 'index'])->defaults('library_section', 'members')->name('library.members.index');
+        Route::get('/library/books', [LibraryController::class, 'index'])->defaults('library_section', 'books')->name('library.books.index');
+        Route::get('/library/loans', [LibraryController::class, 'index'])->defaults('library_section', 'loans')->name('library.loans.index');
         Route::get('/library/inventory', [LibraryController::class, 'inventoryReport'])->name('library.inventory.report');
         Route::get('/library/inventory/export', [LibraryController::class, 'inventoryExport'])->name('library.inventory.export');
         Route::get('/library/fee-reminders', [LibraryController::class, 'feeReminders'])->name('library.fee-reminders.index');

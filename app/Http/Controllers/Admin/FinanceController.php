@@ -42,7 +42,7 @@ class FinanceController extends Controller
             ->whereNotIn('status', ['waiting', 'on_hold', 'rejected']);
         $registrationRevenue = (int) (clone $registrationRevenueQuery)
             ->get()
-            ->sum(fn (DormStudent $student) => (int) ($student->dorm_expense_fee_amount ?? 1000) + (int) ($student->registration_card_fee_amount ?? 50));
+            ->sum(fn (DormStudent $student) => (int) ($student->dorm_expense_fee_amount ?? 1000));
         $monthRegistrationRevenue = (int) (clone $registrationRevenueQuery)
             ->where(function ($query) {
                 $query
@@ -54,7 +54,7 @@ class FinanceController extends Controller
                     });
             })
             ->get()
-            ->sum(fn (DormStudent $student) => (int) ($student->dorm_expense_fee_amount ?? 1000) + (int) ($student->registration_card_fee_amount ?? 50));
+            ->sum(fn (DormStudent $student) => (int) ($student->dorm_expense_fee_amount ?? 1000));
 
         $monthlyChart = $this->ledgerTransactionsQuery()
             ->selectRaw("DATE_FORMAT(transaction_date, '%Y-%m') as month_key")
@@ -549,7 +549,7 @@ class FinanceController extends Controller
                     });
             })
             ->get()
-            ->sum(fn (DormStudent $student) => (int) ($student->dorm_expense_fee_amount ?? 1000) + (int) ($student->registration_card_fee_amount ?? 50));
+            ->sum(fn (DormStudent $student) => (int) ($student->dorm_expense_fee_amount ?? 1000));
     }
 
     private function libraryFinanceTransactionsQuery()

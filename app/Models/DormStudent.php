@@ -42,7 +42,6 @@ class DormStudent extends Model
         'eligibility_notes',
         'guarantee_deposit_amount',
         'dorm_expense_fee_amount',
-        'registration_card_fee_amount',
         'registration_payment_status',
         'registration_paid_at',
         'admitted_at',

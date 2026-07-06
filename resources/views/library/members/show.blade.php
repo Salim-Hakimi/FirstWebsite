@@ -1,20 +1,22 @@
 @extends('admin.layout')
 
-@section('title', 'Library Member Profile - Fanous Admin')
+@section('title', 'پروفایل عضو کتابخانه - ادمین فانوس')
 
 @section('content')
     @php
+        use App\Support\Locale;
+
         $latestCard = $member->membershipCards->first();
         $memberStatusMeta = [
-            'active' => ['key' => 'statusActive', 'label' => 'Active'],
-            'suspended' => ['key' => 'statusSuspended', 'label' => 'Suspended'],
-            'left' => ['key' => 'statusLeft', 'label' => 'Left'],
+            'active' => ['key' => 'statusActive', 'label' => 'فعال'],
+            'suspended' => ['key' => 'statusSuspended', 'label' => 'مسدود'],
+            'left' => ['key' => 'statusLeft', 'label' => 'خارج شده'],
         ];
         $loanStatusMeta = [
-            'borrowed' => ['key' => 'loanBorrowed', 'label' => 'Borrowed'],
-            'returned' => ['key' => 'loanReturned', 'label' => 'Returned'],
-            'lost' => ['key' => 'loanLost', 'label' => 'Lost'],
-            'late' => ['key' => 'loanLate', 'label' => 'Late'],
+            'borrowed' => ['key' => 'loanBorrowed', 'label' => 'در امانت'],
+            'returned' => ['key' => 'loanReturned', 'label' => 'برگشت شده'],
+            'lost' => ['key' => 'loanLost', 'label' => 'گم شده'],
+            'late' => ['key' => 'loanLate', 'label' => 'ناوقت'],
         ];
         $statusMeta = $memberStatusMeta[$member->status] ?? ['key' => 'statusUnknown', 'label' => $member->status];
         $monthlyFine = $monthlyFeeFine ?? max((int) $member->monthly_fee_fine_amount, $member->calculatedMonthlyFine());
@@ -24,6 +26,7 @@
         if (str_starts_with($whatsappDigits, '0')) {
             $whatsappDigits = '93'.substr($whatsappDigits, 1);
         }
+        $hasCurrentMonthBill = $member->last_paid_at && $member->last_paid_at->isSameMonth(today());
     @endphp
 
     <section class="student-profile-hero">
@@ -31,30 +34,34 @@
             @if ($member->profile_photo_path)
                 <img class="student-profile-photo" src="{{ asset('storage/'.$member->profile_photo_path) }}" alt="{{ $member->full_name }}">
             @else
-                <div class="student-profile-photo student-profile-photo-empty">{{ strtoupper(substr($member->full_name ?: 'M', 0, 1)) }}</div>
+                <div class="student-profile-photo student-profile-photo-empty">{{ mb_substr($member->full_name ?: 'ع', 0, 1) }}</div>
             @endif
 
             <div>
                 <span class="badge badge-outline-primary" data-i18n="{{ $statusMeta['key'] }}">{{ $statusMeta['label'] }}</span>
                 <h1>{{ $member->full_name }}</h1>
-                <p>{{ $member->member_code ?: 'N/A' }} · {{ $member->education_place ?: 'Education not recorded' }}</p>
+                <p>{{ $member->member_code ?: 'ثبت نشده' }} · {{ $member->education_place ?: 'محل تحصیل ثبت نشده' }}</p>
                 <div class="student-profile-actions">
                     @if ($canWriteLibrary)
-                        <a class="btn btn-primary btn-sm" href="{{ route('library.members.edit', $member) }}" data-fanous-page-modal data-modal-title="ویرایش عضو کتابخانه" data-i18n="editMember">Edit member</a>
+                        <a class="btn btn-primary btn-sm" href="{{ route('library.members.edit', $member) }}" data-fanous-page-modal data-modal-title="ویرایش عضو کتابخانه">ویرایش عضو</a>
                     @endif
                     @if ($latestCard)
-                        <a class="btn btn-outline-secondary btn-sm" href="{{ route('membership-cards.print', $latestCard) }}" data-i18n="printCard">Print card</a>
+                        @if ($latestCard->card_printed && $latestCard->expires_at?->isFuture())
+                            <span class="btn btn-outline-secondary btn-sm disabled">کارت قبلاً چاپ شده</span>
+                        @else
+                            <a class="btn btn-outline-secondary btn-sm" href="{{ route('membership-cards.print', $latestCard) }}">چاپ کارت</a>
+                        @endif
                     @endif
-                    <a class="btn btn-dark btn-sm" href="{{ route('library.index') }}" data-i18n="back">Back</a>
+                    <a class="btn btn-dark btn-sm" href="{{ route('library.index') }}">برگشت</a>
                 </div>
             </div>
         </div>
 
         <div class="student-profile-snapshot">
-            <span><strong>{{ $member->membership_expires_at?->format('Y-m-d') ?: 'N/A' }}</strong><span data-i18n="membershipExpiry">Membership expiry</span></span>
-            <span><strong data-i18n="{{ $member->payment_status === 'paid' ? 'paid' : 'unpaid' }}">{{ $member->payment_status === 'paid' ? 'Paid' : 'Unpaid' }}</strong><span data-i18n="payment">Payment</span></span>
-            <span><strong>{{ $activeLoanCount }}</strong><span data-i18n="activeLoans">Active loans</span></span>
-            <span><strong>{{ number_format($monthlyBalance) }}</strong><span>Fee balance</span></span>
+            <span><strong>{{ $member->membership_expires_at ? Locale::number($member->membership_expires_at->format('Y/m/d')) : 'ثبت نشده' }}</strong><span>اعتبار عضویت</span></span>
+            <span><strong>{{ Locale::number($activeLoanCount) }}</strong><span>امانت‌های فعال</span></span>
+            <span><strong>{{ $member->last_paid_at ? Locale::number($member->last_paid_at->format('Y/m/d')) : 'ثبت نشده' }}</strong><span>آخرین بیل ماهانه</span></span>
+            <span><strong>{{ $member->next_payment_due_at ? Locale::number($member->next_payment_due_at->format('Y/m/d')) : 'ثبت نشده' }}</strong><span>موعد بیل بعدی</span></span>
         </div>
     </section>
 
@@ -62,7 +69,7 @@
         <section class="student-workspace-panel">
             <div class="user-access-note">
                 <div class="preview-thumbnail"><div class="preview-icon bg-primary"><span>i</span></div></div>
-                <p class="text-muted mb-0" data-i18n="libraryViewOnlyNotice">View-only mode is active. Admin users can review the library database, while create, edit, loan, return, and card actions are reserved for the Librarian account.</p>
+                <p class="text-muted mb-0">حالت مشاهده فعال است. مدیر می‌تواند معلومات کتابخانه را ببیند، اما ثبت، ویرایش، امانت، برگشت و کارت مخصوص حساب کتابدار است.</p>
             </div>
         </section>
     @endunless
@@ -71,38 +78,38 @@
         <div class="student-workspace-panel">
             <div class="student-panel-head">
                 <div>
-                    <span class="student-panel-label" data-i18n="memberDetails">Member details</span>
+                    <span class="student-panel-label">جزئیات عضو</span>
                     <h2>{{ $member->full_name }}</h2>
-                    <p data-i18n="memberDetailsDescription">Identity, education, contact, and registration information.</p>
+                    <p>معلومات هویتی، تحصیلی، تماس و ثبت.</p>
                 </div>
             </div>
 
             <div class="student-detail-grid">
-                <div><span data-i18n="fatherName">Father name</span><strong>{{ $member->father_name }}</strong></div>
-                <div><span data-i18n="phoneNumber">واتساپ</span><strong>{{ $member->phone }}</strong></div>
-                <div><span data-i18n="emailAddress">Email address</span><strong>{{ $member->email ?: __('No email') }}</strong></div>
-                <div><span data-i18n="idTazkira">ID / Tazkira</span><strong>{{ $member->tazkira_number ?: 'N/A' }}</strong></div>
-                <div><span data-i18n="educationPlace">Education place</span><strong>{{ $member->education_place ?: 'N/A' }}</strong></div>
-                <div><span data-i18n="departmentGrade">Department / grade</span><strong>{{ $member->department_or_grade ?: 'N/A' }}</strong></div>
-                <div><span data-i18n="address">Address</span><strong>{{ $member->address ?: 'N/A' }}</strong></div>
-                <div><span data-i18n="joinedAt">Joined at</span><strong>{{ $member->joined_at?->format('Y-m-d') ?: 'N/A' }}</strong></div>
-                <div><span>تاریخ خروج</span><strong>{{ $member->left_at?->format('Y-m-d') ?: 'ثبت نشده' }}</strong></div>
-                <div><span data-i18n="registeredBy">Registered by</span><strong>{{ $member->registeredBy?->name ?: __('Unknown') }}</strong></div>
-                <div><span data-i18n="notes">Notes</span><strong>{{ $member->notes ?: 'N/A' }}</strong></div>
+                <div><span>نام پدر</span><strong>{{ $member->father_name ?: 'ثبت نشده' }}</strong></div>
+                <div><span>واتساپ</span><strong>{{ $member->phone ?: 'ثبت نشده' }}</strong></div>
+                <div><span>ایمیل</span><strong>{{ $member->email ?: 'ایمیل ثبت نشده' }}</strong></div>
+                <div><span>تذکره / ID</span><strong>{{ $member->tazkira_number ?: 'ثبت نشده' }}</strong></div>
+                <div><span>محل تحصیل</span><strong>{{ $member->education_place ?: 'ثبت نشده' }}</strong></div>
+                <div><span>رشته / صنف</span><strong>{{ $member->department_or_grade ?: 'ثبت نشده' }}</strong></div>
+                <div><span>آدرس</span><strong>{{ $member->address ?: 'ثبت نشده' }}</strong></div>
+                <div><span>تاریخ ثبت</span><strong>{{ $member->joined_at ? Locale::number($member->joined_at->format('Y/m/d')) : 'ثبت نشده' }}</strong></div>
+                <div><span>تاریخ خروج</span><strong>{{ $member->left_at ? Locale::number($member->left_at->format('Y/m/d')) : 'ثبت نشده' }}</strong></div>
+                <div><span>ثبت‌کننده</span><strong>{{ $member->registeredBy?->name ?: 'نامشخص' }}</strong></div>
+                <div><span>یادداشت</span><strong>{{ $member->notes ?: 'ثبت نشده' }}</strong></div>
             </div>
         </div>
 
         <aside class="student-workspace-panel">
             <div class="student-panel-head">
                 <div>
-                    <span class="student-panel-label" data-i18n="cardsAndPayments">Cards and payments</span>
-                    <h2 data-i18n="libraryCardStatus">Library card status</h2>
-                    <p data-i18n="cardsAndPaymentsDescription">Library card status and monthly fee tracking.</p>
+                    <span class="student-panel-label">کارت و بیل ماهانه</span>
+                    <h2>کارت شش‌ماهه و رسیدهای ماهانه</h2>
+                    <p>کارت فقط برای هویت و اعتبار عضویت است؛ فیس ماهانه با رسید جداگانه ثبت و چاپ می‌شود.</p>
                 </div>
                 @if ($canWriteLibrary)
                     <form method="POST" action="{{ route('library.members.card.issue', $member) }}">
                         @csrf
-                        <button class="btn btn-primary btn-sm" type="submit" data-i18n="issueNewCard">Issue new card</button>
+                        <button class="btn btn-primary btn-sm" type="submit">صدور کارت تازه</button>
                     </form>
                 @endif
             </div>
@@ -111,61 +118,70 @@
                 @if ($canWriteLibrary)
                     <form method="POST" action="{{ route('library.members.monthly-payment.store', $member) }}" class="student-timeline-item">
                         @csrf
-                        <span class="student-timeline-icon">P</span>
+                        <span class="student-timeline-icon">پ</span>
                         <div>
-                            <strong>Record monthly payment</strong>
-                            <p>Collect {{ number_format($monthlyBalance) }} AFN, clear the monthly fine, and move the next due date one month forward.</p>
+                            <strong>ثبت بیل ماهانه و چاپ رسید</strong>
+                            <p>دریافت {{ Locale::money($monthlyBalance) }}، پاک‌کردن جریمه ماهانه و انتقال موعد بعدی به یک ماه بعد.</p>
                         </div>
-                        <button class="btn btn-primary btn-sm" type="submit">Pay & receipt</button>
+                        <div class="student-timeline-actions">
+                            <button class="btn btn-primary btn-sm" type="submit">{{ $hasCurrentMonthBill ? 'نمایش بیل ماه جاری' : 'ثبت و چاپ بیل' }}</button>
+                            @if ($hasCurrentMonthBill)
+                                <a class="btn btn-outline-secondary btn-sm" href="{{ route('library.members.monthly-payment.receipt', $member) }}">چاپ بیل</a>
+                            @endif
+                        </div>
                     </form>
                 @endif
 
                 <div class="student-timeline-item">
-                    <span class="student-timeline-icon">F</span>
+                        <span class="student-timeline-icon">ف</span>
+                        <div>
+                            <strong>مبلغ بیل این ماه</strong>
+                            <p>{{ Locale::money($monthlyBalance) }} شامل فیس ماهانه و جریمه دیرکرد</p>
+                        </div>
+                </div>
+
+                <div class="student-timeline-item">
+                        <span class="student-timeline-icon">م</span>
+                        <div>
+                            <strong>موعد بیل بعدی</strong>
+                            <p>{{ $member->next_payment_due_at ? Locale::number($member->next_payment_due_at->format('Y/m/d')) : 'ثبت نشده' }}</p>
+                        </div>
+                </div>
+
+                <div class="student-timeline-item">
+                    <span class="student-timeline-icon">ج</span>
                     <div>
-                        <strong data-i18n="monthlyFee">Monthly fee</strong>
-                        <p>{{ number_format((int) $member->membership_fee) }} AFN</p>
+                        <strong>جریمه روزانه دیرکرد</strong>
+                        <p>{{ Locale::money((int) ($member->monthly_fee_daily_fine ?? 20)) }} در روز بعد از موعد - جریمه فعلی {{ Locale::money($monthlyFine) }}</p>
                     </div>
                 </div>
 
                 <div class="student-timeline-item">
-                    <span class="student-timeline-icon">D</span>
+                    <span class="student-timeline-icon">و</span>
                     <div>
-                        <strong data-i18n="nextDue">Next due</strong>
-                        <p>{{ $member->next_payment_due_at?->format('Y-m-d') ?: 'N/A' }}</p>
-                    </div>
-                </div>
-
-                <div class="student-timeline-item">
-                    <span class="student-timeline-icon">20</span>
-                    <div>
-                        <strong>Daily late fine</strong>
-                        <p>{{ number_format((int) ($member->monthly_fee_daily_fine ?? 20)) }} AFN per day after due date - current fine {{ number_format($monthlyFine) }} AFN</p>
-                    </div>
-                </div>
-
-                <div class="student-timeline-item">
-                    <span class="student-timeline-icon">W</span>
-                    <div>
-                        <strong>WhatsApp reminder</strong>
+                        <strong>یادآوری واتساپ</strong>
                         <p>{{ $reminderText }}</p>
                     </div>
                     @if ($whatsappDigits)
-                        <a class="btn btn-outline-secondary btn-sm" href="https://wa.me/{{ $whatsappDigits }}?text={{ rawurlencode($reminderText) }}" target="_blank" rel="noopener">Send</a>
+                        <a class="btn btn-outline-secondary btn-sm" href="https://wa.me/{{ $whatsappDigits }}?text={{ rawurlencode($reminderText) }}" target="_blank" rel="noopener">ارسال</a>
                     @endif
                 </div>
 
                 @forelse ($member->membershipCards as $card)
                     <div class="student-timeline-item">
-                        <span class="student-timeline-icon">C</span>
+                        <span class="student-timeline-icon">ک</span>
                         <div>
                             <strong>{{ $card->card_number }}</strong>
-                            <p>{{ $card->issued_at?->format('Y-m-d') }} <span data-i18n="to">to</span> {{ $card->expires_at?->format('Y-m-d') }} · <span data-i18n="{{ $card->payment_status === 'paid' ? 'paid' : 'unpaid' }}">{{ $card->payment_status === 'paid' ? 'Paid' : 'Unpaid' }}</span></p>
+                            <p>{{ $card->issued_at ? Locale::number($card->issued_at->format('Y/m/d')) : 'ثبت نشده' }} تا {{ $card->expires_at ? Locale::number($card->expires_at->format('Y/m/d')) : 'ثبت نشده' }} · کارت هویت شش‌ماهه</p>
                         </div>
-                        <a class="btn btn-outline-secondary btn-sm" href="{{ route('membership-cards.print', $card) }}" data-i18n="printCard">Print card</a>
+                        @if ($card->card_printed && $card->expires_at?->isFuture())
+                            <span class="btn btn-outline-secondary btn-sm disabled">چاپ شده</span>
+                        @else
+                            <a class="btn btn-outline-secondary btn-sm" href="{{ route('membership-cards.print', $card) }}">چاپ کارت</a>
+                        @endif
                     </div>
                 @empty
-                    <div class="student-directory-empty" data-i18n="noLibraryCard">No library card has been issued for this member.</div>
+                    <div class="student-directory-empty">برای این عضو هنوز کارت کتابخانه صادر نشده است.</div>
                 @endforelse
             </div>
         </aside>
@@ -174,9 +190,9 @@
     <section class="student-workspace-panel">
         <div class="student-panel-head">
             <div>
-                <span class="student-panel-label" data-i18n="loanHistory">Book loan history</span>
-                <h2 data-i18n="recentLoans">Recent loans</h2>
-                <p>{{ $returnedLoanCount }} <span data-i18n="returnedLoans">returned loans</span> · {{ $activeLoanCount }} <span data-i18n="activeLoans">active loans</span></p>
+                <span class="student-panel-label">تاریخچه امانت کتاب</span>
+                <h2>امانت‌های اخیر</h2>
+                <p>{{ Locale::number($returnedLoanCount) }} امانت برگشت‌شده · {{ Locale::number($activeLoanCount) }} امانت فعال</p>
             </div>
         </div>
 
@@ -187,20 +203,20 @@
                     $isLateLoan = in_array($loan->status, ['borrowed', 'late'], true) && $loan->due_at && $loan->due_at->isPast();
                 @endphp
                 <div class="student-timeline-item library-loan-row">
-                    <span class="student-timeline-icon">{{ $isLateLoan ? '!' : 'L' }}</span>
+                    <span class="student-timeline-icon">{{ $isLateLoan ? '!' : 'ا' }}</span>
                     <div>
                         <strong>
                             @if ($loan->book)
                                 {{ $loan->book->title }}
                             @else
-                                <span data-i18n="deletedBook">Deleted book</span>
+                                <span>کتاب حذف شده</span>
                             @endif
                         </strong>
                         <p>
-                            <span data-i18n="loanCode">Loan code</span>: {{ $loan->loan_code ?: 'N/A' }} ·
-                            Copy: {{ $loan->copy?->copy_code ?: 'N/A' }} ·
-                            {{ $loan->borrowed_at?->format('Y-m-d') }} <span data-i18n="to">to</span> {{ $loan->due_at?->format('Y-m-d') ?? 'N/A' }} ·
-                            <span data-i18n="{{ $loanStatus['key'] }}">{{ $isLateLoan ? 'Late' : $loanStatus['label'] }}</span>
+                            کد امانت: {{ $loan->loan_code ?: 'ثبت نشده' }} ·
+                            نسخه: {{ $loan->copy?->copy_code ?: 'ثبت نشده' }} ·
+                            {{ $loan->borrowed_at ? Locale::number($loan->borrowed_at->format('Y/m/d')) : 'ثبت نشده' }} تا {{ $loan->due_at ? Locale::number($loan->due_at->format('Y/m/d')) : 'ثبت نشده' }} ·
+                            {{ $isLateLoan ? 'ناوقت' : $loanStatus['label'] }}
                         </p>
 
                         @if ($canWriteLibrary && in_array($loan->status, ['borrowed', 'late'], true))
@@ -224,15 +240,15 @@
 
                     <div class="student-profile-actions">
                         @if ((int) $loan->fine_amount > 0)
-                            <span class="badge badge-outline-warning">{{ number_format((int) $loan->fine_amount) }} AFN</span>
+                            <span class="badge badge-outline-warning">{{ Locale::money((int) $loan->fine_amount) }}</span>
                         @endif
                         @if ($canWriteLibrary)
-                            <a class="btn btn-outline-secondary btn-sm" href="{{ route('library.loans.edit', $loan) }}" data-fanous-page-modal data-modal-title="ویرایش امانت کتاب" data-i18n="edit">Edit</a>
+                            <a class="btn btn-outline-secondary btn-sm" href="{{ route('library.loans.edit', $loan) }}" data-fanous-page-modal data-modal-title="ویرایش امانت کتاب">ویرایش</a>
                         @endif
                     </div>
                 </div>
             @empty
-                <div class="student-directory-empty" data-i18n="noMemberLoans">No loans have been registered for this member.</div>
+                <div class="student-directory-empty">برای این عضو هنوز امانتی ثبت نشده است.</div>
             @endforelse
         </div>
     </section>

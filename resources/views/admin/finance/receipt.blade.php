@@ -14,7 +14,65 @@
         .signature { flex: 1; border-top: 1px solid #111827; padding-top: 8px; text-align: center; }
         .actions { max-width: 760px; margin: 16px auto; display: flex; gap: 8px; }
         .btn { padding: 10px 14px; border: 1px solid #111827; color: #111827; text-decoration: none; background: #fff; cursor: pointer; }
-        @media print { .actions { display: none; } body { margin: 0; } .receipt { border: 0; } }
+        @media print {
+            @page {
+                size: 80mm 130mm;
+                margin: 0;
+            }
+
+            html,
+            body {
+                width: 80mm;
+                min-height: 0;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: hidden;
+                background: #ffffff;
+            }
+
+            .actions {
+                display: none;
+            }
+
+            .receipt {
+                position: fixed;
+                inset: 0 auto auto 0;
+                width: 80mm;
+                max-width: none;
+                max-height: 130mm;
+                border: 0;
+                padding: 5mm;
+                overflow: hidden;
+                font-size: 9px;
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+
+            .header {
+                display: block;
+                margin-bottom: 8px;
+                padding-bottom: 8px;
+            }
+
+            .title {
+                font-size: 15px;
+            }
+
+            table {
+                margin-top: 6px;
+            }
+
+            th,
+            td {
+                padding: 5px;
+                font-size: 9px;
+            }
+
+            .signatures {
+                gap: 12px;
+                margin-top: 18px;
+            }
+        }
     </style>
 </head>
 <body>

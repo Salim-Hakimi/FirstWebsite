@@ -150,9 +150,9 @@
         <section class="dashboard-panel">
             <div class="dashboard-panel-header">
                 <div>
-                    <span class="dashboard-section-kicker">نسخه‌ها</span>
-                    <h2>نسخه‌های فیزیکی مطابق فیلتر</h2>
-                    <p>{{ Locale::number($copies->count()) }} نسخه فیزیکی پیدا شد؛ اگر یک کتاب چند نسخه داشته باشد، هر نسخه در یک ردیف جدا نمایش داده می‌شود.</p>
+                    <span class="dashboard-section-kicker">کتاب‌ها</span>
+                    <h2>کتاب‌های مطابق فیلتر</h2>
+                    <p>{{ Locale::number($inventoryBooks->count()) }} عنوان کتاب پیدا شد؛ در مجموع {{ Locale::number($copies->count()) }} نسخه فیزیکی با این فیلترها ثبت شده است.</p>
                 </div>
             </div>
 
@@ -161,37 +161,57 @@
                     <thead>
                         <tr>
                             <th>کتاب</th>
-                            <th>کد نسخه</th>
-                            <th>بارکد</th>
+                            <th>مشخصات</th>
                             <th>قفسه</th>
-                            <th>وضعیت</th>
+                            <th>تعداد نسخه‌ها</th>
+                            <th>وضعیت نسخه‌ها</th>
                             <th>ارزش</th>
                             <th>عملیات</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse ($copies as $copy)
-                            @php $meta = $statusMeta[$copy->status] ?? ['label' => $copy->status, 'tone' => 'default']; @endphp
+                        @forelse ($inventoryBooks as $row)
+                            @php
+                                $book = $row['book'];
+                                $shelfText = $row['shelves']->isNotEmpty()
+                                    ? $row['shelves']->join('، ')
+                                    : ($book?->shelf_code ?: 'ثبت نشده');
+                            @endphp
                             <tr>
                                 <td>
-                                    <strong>{{ $copy->book?->title ?: 'کتاب نامشخص' }}</strong>
-                                    <small>{{ $copy->book?->author ?: 'نویسنده نامشخص' }}</small>
+                                    <strong>{{ $book?->title ?: 'کتاب نامشخص' }}</strong>
+                                    <small>{{ $book?->author ?: 'نویسنده نامشخص' }}</small>
                                 </td>
-                                <td class="ltr-text">{{ $copy->copy_code }}</td>
-                                <td class="ltr-text">{{ $copy->barcode ?: 'N/A' }}</td>
-                                <td class="ltr-text">{{ $copy->shelf_code ?: 'N/A' }}</td>
-                                <td><x-ds.badge :tone="$meta['tone']">{{ $meta['label'] }}</x-ds.badge></td>
-                                <td>{{ Locale::money((int) $copy->purchase_price) }}</td>
                                 <td>
-                                    @if ($canWriteLibrary && $copy->book)
-                                        <x-ds.button variant="outline" size="sm" :href="route('library.books.edit', $copy->book)" data-fanous-page-modal data-modal-title="ویرایش کتاب">مدیریت</x-ds.button>
+                                    <div class="fanous-record-meta">
+                                        <span>ISBN: <span class="ltr-text">{{ $book?->isbn ?: 'ثبت نشده' }}</span></span>
+                                        <span>دسته‌بندی: {{ $book?->category ?: 'ثبت نشده' }}</span>
+                                        <span>ناشر: {{ $book?->publisher ?: 'ثبت نشده' }}</span>
+                                    </div>
+                                </td>
+                                <td class="ltr-text">{{ $shelfText }}</td>
+                                <td>
+                                    <strong>{{ Locale::number((int) ($book?->total_copies ?? $row['matching_copies'])) }}</strong>
+                                    <small>{{ Locale::number($row['matching_copies']) }} نسخه مطابق فیلتر</small>
+                                </td>
+                                <td>
+                                    <div class="fanous-record-meta">
+                                        <span>موجود: {{ Locale::number($row['available']) }}</span>
+                                        <span>در امانت: {{ Locale::number($row['on_loan']) }}</span>
+                                        <span>خراب/گم‌شده: {{ Locale::number($row['damaged'] + $row['lost']) }}</span>
+                                    </div>
+                                </td>
+                                <td>{{ Locale::money($row['value']) }}</td>
+                                <td>
+                                    @if ($canWriteLibrary && $book)
+                                        <x-ds.button variant="outline" size="sm" :href="route('library.books.edit', $book)" data-fanous-page-modal data-modal-title="ویرایش کتاب">مدیریت</x-ds.button>
                                     @else
                                         <span>ندارد</span>
                                     @endif
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="7"><div class="dashboard-empty">هیچ نسخه‌ای با فیلتر فعلی پیدا نشد.</div></td></tr>
+                            <tr><td colspan="7"><div class="dashboard-empty">هیچ کتابی با فیلتر فعلی پیدا نشد.</div></td></tr>
                         @endforelse
                     </tbody>
                 </table>

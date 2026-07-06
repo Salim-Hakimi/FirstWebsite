@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Book;
 use App\Models\BookLoan;
+use App\Models\FinanceTransaction;
 use App\Models\FoodFinance;
 use App\Models\LibraryMember;
-use App\Models\MembershipCard;
 use App\Models\StudentCollection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -80,16 +80,16 @@ class TransparencyController extends Controller
 
     private function libraryRevenue(array $filters): int
     {
-        if (! Schema::hasTable('membership_cards')) {
+        if (! Schema::hasTable('finance_transactions') || ! Schema::hasTable('finance_categories')) {
             return 0;
         }
 
-        return (int) MembershipCard::query()
-            ->where('scope', 'library')
-            ->where('payment_status', 'paid')
-            ->when($filters['date_from'] ?? null, fn ($query, $date) => $query->whereDate('paid_at', '>=', $date))
-            ->when($filters['date_to'] ?? null, fn ($query, $date) => $query->whereDate('paid_at', '<=', $date))
-            ->sum('fee_amount');
+        return (int) FinanceTransaction::query()
+            ->where('type', 'income')
+            ->whereHas('category', fn ($query) => $query->where('name', 'like', 'کتابخانه -%'))
+            ->when($filters['date_from'] ?? null, fn ($query, $date) => $query->whereDate('transaction_date', '>=', $date))
+            ->when($filters['date_to'] ?? null, fn ($query, $date) => $query->whereDate('transaction_date', '<=', $date))
+            ->sum('amount');
     }
 
     private function libraryStats(array $filters): array

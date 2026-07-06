@@ -131,7 +131,6 @@ class DormStudentController extends Controller
                 'application_date' => now(),
                 'guarantee_deposit_amount' => 1000,
                 'dorm_expense_fee_amount' => 1000,
-                'registration_card_fee_amount' => 50,
                 'registration_payment_status' => 'paid',
                 'registration_paid_at' => now(),
             ]),
@@ -197,7 +196,6 @@ class DormStudentController extends Controller
         $latestCard = $student->membershipCards->first();
         $guaranteeDeposit = (int) ($student->guarantee_deposit_amount ?? 1000);
         $dormExpenseFee = (int) ($student->dorm_expense_fee_amount ?? 1000);
-        $cardFee = (int) ($student->registration_card_fee_amount ?? $latestCard?->fee_amount ?? 50);
 
         return view('dorm.receipts.registration', [
             'student' => $student,
@@ -206,9 +204,8 @@ class DormStudentController extends Controller
             'lineItems' => [
                 ['label' => 'پول ضمانت', 'amount' => $guaranteeDeposit],
                 ['label' => 'مصارف ابتدایی لیلیه', 'amount' => $dormExpenseFee],
-                ['label' => 'فیس کارت لیلیه', 'amount' => $cardFee],
             ],
-            'totalAmount' => $guaranteeDeposit + $dormExpenseFee + $cardFee,
+            'totalAmount' => $guaranteeDeposit + $dormExpenseFee,
             'paymentStatus' => $student->registration_payment_status ?? 'paid',
             'paidAt' => $student->registration_paid_at,
             'backRoute' => route('dorm.students.show', $student),
@@ -321,7 +318,6 @@ class DormStudentController extends Controller
             'eligibility_notes' => ['nullable', 'string', 'max:1000'],
             'guarantee_deposit_amount' => ['nullable', 'integer', 'min:0'],
             'dorm_expense_fee_amount' => ['nullable', 'integer', 'min:0'],
-            'registration_card_fee_amount' => ['nullable', 'integer', 'min:0'],
             'registration_payment_status' => ['nullable', Rule::in(['paid', 'unpaid', 'partial'])],
             'registration_paid_at' => ['nullable', 'date'],
             'joined_at' => ['nullable', 'date'],
@@ -340,7 +336,6 @@ class DormStudentController extends Controller
             'remove_documents' => ['nullable', 'array'],
             'remove_documents.*' => ['integer', 'min:0'],
             'issue_card' => ['nullable', 'boolean'],
-            'card_fee' => ['nullable', 'numeric', 'min:0', 'max:999999999.99'],
             'card_payment_status' => ['nullable', Rule::in(['paid', 'unpaid'])],
         ]);
 
@@ -444,7 +439,6 @@ class DormStudentController extends Controller
     {
         $validated['guarantee_deposit_amount'] = (int) ($validated['guarantee_deposit_amount'] ?? $student?->guarantee_deposit_amount ?? 1000);
         $validated['dorm_expense_fee_amount'] = (int) ($validated['dorm_expense_fee_amount'] ?? $student?->dorm_expense_fee_amount ?? 1000);
-        $validated['registration_card_fee_amount'] = (int) ($validated['registration_card_fee_amount'] ?? $student?->registration_card_fee_amount ?? 50);
         $validated['registration_payment_status'] = $validated['registration_payment_status'] ?? $student?->registration_payment_status ?? 'paid';
 
         if ($validated['registration_payment_status'] === 'paid') {
@@ -611,11 +605,10 @@ class DormStudentController extends Controller
             'father_name' => $student->father_name,
             'issued_at' => $issuedAt,
             'expires_at' => $issuedAt->copy()->addMonths(6),
-            'fee_amount' => 50,
             'payment_status' => $paymentStatus,
             'paid_at' => $paymentStatus === 'paid' ? $issuedAt : null,
             'created_by' => $request->user()->id,
-            'notes' => 'فیس کارت لیلیه: ۵۰ افغانی',
+            'notes' => 'کارت لیلیه بدون فیس صادر شد.',
         ]);
     }
 

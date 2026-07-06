@@ -17,7 +17,8 @@
         $overdueLoans = $overdueLoans ?? collect();
         $followUpCount = $expiringMembers->count() + $expiredCards->count() + $overdueLoans->count();
         $hasMemberFilters = filled($filters['q'] ?? null) || filled($filters['status'] ?? null);
-        $isLibraryFinancePage = request()->routeIs('library.finance.*');
+        $librarySection = $librarySection ?? (request()->routeIs('library.finance.*') ? 'finance' : 'overview');
+        $isLibraryFinancePage = $librarySection === 'finance' || request()->routeIs('library.finance.*');
         $financeTypeLabels = ['income' => 'درآمد', 'expense' => 'مصرف'];
         $libraryFinanceBalance = $libraryIncomeTotal - $libraryExpenseTotal;
         $libraryMonthBalance = $libraryMonthIncome - $libraryMonthExpense;
@@ -105,13 +106,22 @@
             </article>
         </section>
 
+        <nav class="fanous-library-section-tabs" aria-label="بخش‌های کتابخانه">
+            <a class="{{ $librarySection === 'overview' ? 'is-active' : '' }}" href="{{ route('library.index') }}">خلاصه</a>
+            <a class="{{ $librarySection === 'members' ? 'is-active' : '' }}" href="{{ route('library.members.index') }}">اعضا</a>
+            <a class="{{ $librarySection === 'books' ? 'is-active' : '' }}" href="{{ route('library.books.index') }}">کتاب‌ها و موجودی</a>
+            <a class="{{ $librarySection === 'loans' ? 'is-active' : '' }}" href="{{ route('library.loans.index') }}">امانت‌ها</a>
+            <a class="{{ $librarySection === 'finance' ? 'is-active' : '' }}" href="{{ route('library.finance.index') }}">مالی</a>
+            <a href="{{ route('library.inventory.report') }}">گزارش موجودی</a>
+        </nav>
+
         @if ($isLibraryFinancePage)
         <section class="dashboard-stat-grid" aria-label="خلاصه مالی کتابخانه">
             <article class="dashboard-stat">
                 <div>
                     <span>درآمد کتابخانه</span>
                     <strong>{{ Locale::money($libraryIncomeTotal) }}</strong>
-                    <small>فیس ماهانه، قیمت کارت و دریافت‌های کتابخانه</small>
+                    <small>فیس ماهانه و دریافت‌های کتابخانه</small>
                 </div>
                 <span class="dashboard-stat-icon"><x-ds.icon name="cash" /></span>
             </article>
@@ -149,7 +159,7 @@
                 <div>
                     <span class="dashboard-section-kicker">دفتر مالی کتابخانه</span>
                     <h2>گزارش درآمد و مصرف کتابخانه</h2>
-                    <p>درآمد کارت، فیس ماهانه، کمک‌ها، خرید کتاب، ترمیم و مصارف عمومی کتابخانه در همین دفتر جداگانه مدیریت می‌شود.</p>
+                    <p>فیس ماهانه، کمک‌ها، خرید کتاب، ترمیم و مصارف عمومی کتابخانه در همین دفتر جداگانه مدیریت می‌شود.</p>
                 </div>
                 <div class="fanous-filter-actions">
                     <x-ds.button size="sm" variant="outline" :href="route('library.finance.export', request()->query())">خروجی CSV</x-ds.button>
@@ -298,7 +308,7 @@
                     <button class="fanous-library-action" type="button" data-library-panel-trigger="new-library-member" aria-controls="new-library-member" aria-expanded="false">
                         <span><x-ds.icon name="user" /></span>
                         <strong>ثبت عضو جدید</strong>
-                        <small>پروفایل، فیس و کارت کتابخانه</small>
+                        <small>پروفایل، عضویت و کارت کتابخانه</small>
                     </button>
                     <button class="fanous-library-action" type="button" data-library-panel-trigger="new-library-book" aria-controls="new-library-book" aria-expanded="false">
                         <span><x-ds.icon name="book" /></span>
@@ -329,7 +339,7 @@
                         <button class="fanous-library-action" type="button" data-library-panel-trigger="library-finance-record" aria-controls="library-finance-record" aria-expanded="false">
                             <span><x-ds.icon name="cash" /></span>
                             <strong>ثبت مالی کتابخانه</strong>
-                            <small>درآمد یا مصرف خارج از فیس و کارت</small>
+                            <small>درآمد یا مصرف خارج از فیس ماهانه</small>
                         </button>
                     @endif
                 </div>
@@ -349,7 +359,7 @@
                         <div>
                             <span class="dashboard-section-kicker">مالی کتابخانه</span>
                             <h2>ثبت درآمد یا مصرف کتابخانه</h2>
-                            <p>فیس ماهانه و قیمت کارت به صورت اتومات ثبت می‌شود؛ این فرم برای درآمد و مصرف‌های اضافی کتابخانه است.</p>
+                            <p>فیس ماهانه به صورت اتومات ثبت می‌شود؛ این فرم برای درآمد و مصرف‌های اضافی کتابخانه است.</p>
                         </div>
                         <x-ds.button variant="outline" size="sm" type="button" data-library-panel-close>بستن</x-ds.button>
                     </div>
@@ -401,7 +411,7 @@
                         <x-ds.button variant="outline" size="sm" type="button" data-library-panel-close>بستن</x-ds.button>
                     </div>
 
-                    <form method="POST" action="{{ route('library.members.store') }}" enctype="multipart/form-data" class="fanous-library-form fanous-guarded-card-form" data-card-required-form data-card-required-message="برای ثبت عضو و محاسبه مالی، فیلدهای ضروری را تکمیل کرده و از دکمه ذخیره و چاپ کارت استفاده کنید.">
+                    <form method="POST" action="{{ route('library.members.store') }}" enctype="multipart/form-data" class="fanous-library-form fanous-guarded-card-form">
                         @csrf
                         <label><span>کد عضویت</span><input class="form-control ltr-text" name="member_code" placeholder="خودکار اگر خالی باشد"></label>
                         <label><span>نام کامل</span><input class="form-control" name="full_name" required></label>
@@ -413,7 +423,6 @@
                         <label><span>محل تحصیل</span><input class="form-control" name="education_place"></label>
                         <label><span>دیپارتمنت / صنف</span><input class="form-control" name="department_or_grade"></label>
                         <label><span>فیس ماهانه</span><input class="form-control" name="membership_fee" type="number" min="0" value="0"></label>
-                        <label><span>قیمت کارت</span><input class="form-control" name="card_fee_amount" type="number" min="0" value="50"></label>
                         <label>
                             <span>وضعیت پرداخت</span>
                             <select class="form-control" name="payment_status">
@@ -433,8 +442,8 @@
                         <label class="fanous-form-wide"><span>آدرس</span><input class="form-control" name="address"></label>
                         <label class="fanous-form-wide"><span>یادداشت</span><textarea class="form-control" name="notes" rows="3"></textarea></label>
                         <div class="fanous-form-actions">
-                            <x-ds.button type="submit" data-disabled-until-card disabled>ذخیره عضو</x-ds.button>
-                            <x-ds.button variant="outline" name="issue_card" value="1" type="submit" data-card-submit disabled>ذخیره و چاپ کارت</x-ds.button>
+                            <x-ds.button type="submit">ذخیره عضو</x-ds.button>
+                            <x-ds.button variant="outline" name="issue_card" value="1" type="submit">ذخیره و چاپ کارت</x-ds.button>
                         </div>
                     </form>
                 </article>
@@ -569,7 +578,7 @@
                 <div>
                     <span class="dashboard-section-kicker">دفتر مالی کتابخانه</span>
                     <h2>آخرین ثبت‌های مالی کتابخانه</h2>
-                    <p>درآمدهای اتومات از فیس و کارت، همراه با درآمد و مصرف‌های دستی کتابدار.</p>
+                    <p>درآمدهای اتومات از فیس ماهانه، همراه با درآمد و مصرف‌های دستی کتابدار.</p>
                 </div>
                 @if ($canWriteLibrary)
                     <x-ds.button size="sm" type="button" data-library-panel-trigger="library-finance-record" aria-controls="library-finance-record" aria-expanded="false">ثبت مالی جدید</x-ds.button>
@@ -615,8 +624,11 @@
         </section>
         @endif
 
-        <section class="fanous-library-layout">
+        @if (! $isLibraryFinancePage)
+        <section class="fanous-library-layout {{ $librarySection === 'books' ? 'is-books-only' : '' }}">
+            @if (in_array($librarySection, ['overview', 'members', 'loans'], true))
             <div class="fanous-library-main">
+                @if (in_array($librarySection, ['overview', 'members'], true))
                 <article class="dashboard-panel" id="library-members-panel">
                     <div class="dashboard-panel-header">
                         <div>
@@ -644,37 +656,46 @@
                         </div>
                     </form>
 
-                    <div class="fanous-library-member-grid">
+                    <div class="fanous-student-grid fanous-library-member-grid">
                         @forelse ($members as $member)
                             @php
                                 $card = $member->membershipCards->first();
                                 $statusMeta = $memberStatusMeta[$member->status] ?? ['label' => $member->status, 'tone' => 'primary'];
-                                $paymentTone = $member->payment_status === 'paid' ? 'success' : 'warning';
+                                $cardExpiry = $member->membership_expires_at ?: $card?->expires_at;
+                                $monthlyDue = ! $member->last_paid_at || ($member->next_payment_due_at && $member->next_payment_due_at->lte(today()));
+                                $monthlyTone = $monthlyDue ? 'warning' : 'success';
+                                $monthlyLabel = $monthlyDue ? 'نیازمند بیل ماهانه' : 'بیل ماهانه منظم';
                             @endphp
-                            <article class="fanous-library-member-card">
-                                <div class="fanous-library-member-head">
+                            <article class="fanous-student-card fanous-library-member-card">
+                                <div class="fanous-student-head fanous-library-member-head">
                                     @if ($member->profile_photo_path)
-                                        <img class="fanous-library-avatar" src="{{ asset('storage/'.$member->profile_photo_path) }}" alt="{{ $member->full_name }}">
+                                        <img class="fanous-student-avatar fanous-library-avatar" src="{{ asset('storage/'.$member->profile_photo_path) }}" alt="{{ $member->full_name }}">
                                     @else
-                                        <span class="fanous-library-avatar">{{ mb_substr($member->full_name, 0, 1) }}</span>
+                                        <span class="fanous-student-avatar fanous-library-avatar">{{ mb_substr($member->full_name, 0, 1) }}</span>
                                     @endif
                                     <div>
                                         <strong>{{ $member->full_name }}</strong>
-                                        <span class="ltr-text">{{ $member->member_code ?: 'N/A' }}</span>
+                                        <span>نام پدر: {{ $member->father_name ?: 'ثبت نشده' }}</span>
+                                        <small class="ltr-text">{{ $member->member_code ?: 'ثبت نشده' }}</small>
                                     </div>
                                     <x-ds.badge :tone="$statusMeta['tone']">{{ $statusMeta['label'] }}</x-ds.badge>
                                 </div>
 
-                                <div class="fanous-library-member-meta">
+                                <div class="fanous-student-info fanous-library-member-meta">
                                     <div><span>واتساپ</span><strong class="ltr-text">{{ $member->phone }}</strong></div>
-                                    <div><span>فیس ماهانه</span><strong>{{ Locale::money((int) $member->membership_fee) }}</strong></div>
-                                    <div><span>باقی فیس</span><strong>{{ Locale::money((int) $member->monthlyFeeBalance()) }}</strong></div>
-                                    <div><span>پرداخت</span><strong><x-ds.badge :tone="$paymentTone">{{ $member->payment_status === 'paid' ? 'پرداخت شده' : 'پرداخت نشده' }}</x-ds.badge></strong></div>
-                                    <div><span>تاریخ ثبت</span><strong>{{ $member->joined_at ? Locale::number($member->joined_at->format('Y/m/d')) : 'ثبت نشده' }}</strong></div>
-                                    <div><span>اعتبار کارت</span><strong>{{ $member->membership_expires_at ? Locale::number($member->membership_expires_at->format('Y/m/d')) : ($card?->expires_at ? Locale::number($card->expires_at->format('Y/m/d')) : 'ندارد') }}</strong></div>
+                                    <div><span>کد عضویت</span><strong class="ltr-text">{{ $member->member_code ?: 'ثبت نشده' }}</strong></div>
+                                    <div><span>اعتبار کارت</span><strong>{{ $cardExpiry ? Locale::number($cardExpiry->format('Y/m/d')) : 'ندارد' }}</strong></div>
+                                    <div><span>آخرین بیل</span><strong>{{ $member->last_paid_at ? Locale::number($member->last_paid_at->format('Y/m/d')) : 'ثبت نشده' }}</strong></div>
+                                    <div><span>موعد بیل بعدی</span><strong>{{ $member->next_payment_due_at ? Locale::number($member->next_payment_due_at->format('Y/m/d')) : 'ثبت نشده' }}</strong></div>
+                                    <div><span>امانت فعال</span><strong>{{ Locale::number((int) ($member->active_loans_count ?? 0)) }} مورد</strong></div>
                                 </div>
 
-                                <div class="fanous-library-member-actions">
+                                <div class="fanous-library-member-billing">
+                                    <x-ds.badge :tone="$monthlyTone">{{ $monthlyLabel }}</x-ds.badge>
+                                    <span>جزئیات فیس فقط در پروفایل و رسید ماهانه ثبت می‌شود.</span>
+                                </div>
+
+                                <div class="fanous-student-actions fanous-library-member-actions">
                                     <x-ds.button size="sm" :href="route('library.members.show', $member)">مشاهده</x-ds.button>
                                     @if ($canWriteLibrary)
                                         <x-ds.button variant="outline" size="sm" :href="route('library.members.edit', $member)" data-fanous-page-modal data-modal-title="ویرایش عضو کتابخانه">ویرایش</x-ds.button>
@@ -692,7 +713,9 @@
                         </div>
                     @endif
                 </article>
+                @endif
 
+                @if (in_array($librarySection, ['overview', 'loans'], true))
                 <article class="dashboard-panel" id="recent-library-loans">
                     <div class="dashboard-panel-header">
                         <div>
@@ -721,7 +744,7 @@
                                     <div class="fanous-record-meta">
                                         <span>امانت: {{ $loan->borrowed_at ? Locale::number($loan->borrowed_at->format('Y/m/d')) : 'ثبت نشده' }}</span>
                                         <span>برگشت: {{ $loan->due_at ? Locale::number($loan->due_at->format('Y/m/d')) : 'ندارد' }}</span>
-                                        <span class="ltr-text">Copy {{ $loan->copy?->copy_code ?: 'N/A' }}</span>
+                                        <span>نسخه: <span class="ltr-text">{{ $loan->copy?->copy_code ?: 'ثبت نشده' }}</span></span>
                                     </div>
 
                                     @if ($canWriteLibrary && $loan->status !== 'returned')
@@ -760,8 +783,11 @@
                         @endforelse
                     </div>
                 </article>
+                @endif
             </div>
+            @endif
 
+            @if (in_array($librarySection, ['overview', 'books'], true))
             <aside class="fanous-library-sidebar">
                 <article class="dashboard-panel">
                     <div class="dashboard-panel-header">
@@ -795,7 +821,7 @@
                                 <span class="fanous-record-icon">ک</span>
                                 <div>
                                     <strong>{{ $book->title }}</strong>
-                                    <small>{{ $book->author ?: 'نویسنده نامشخص' }} · قفسه: <span class="ltr-text">{{ $book->shelf_code ?: 'N/A' }}</span></small>
+                                    <small>{{ $book->author ?: 'نویسنده نامشخص' }} · قفسه: <span class="ltr-text">{{ $book->shelf_code ?: 'ثبت نشده' }}</span></small>
                                     <small>{{ Locale::number($book->available_copies) }}/{{ Locale::number($book->total_copies) }} موجود · {{ Locale::number($book->copies_count ?? 0) }} نسخه فزیکی</small>
                                 </div>
                                 <div class="fanous-row-actions">
@@ -847,7 +873,9 @@
                     </div>
                 </article>
             </aside>
+            @endif
         </section>
+        @endif
     </div>
 
     @if ($canWriteLibrary)
