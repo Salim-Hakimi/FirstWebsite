@@ -803,13 +803,6 @@
                 function submitWithOriginalButton(form, submitter) {
                     form.dataset.fanousAlertConfirmed = 'true';
 
-                    if (submitter) {
-                        submitter.dataset.originalText = submitter.dataset.originalText || submitter.textContent;
-                        submitter.textContent = 'در حال ذخیره...';
-                        submitter.disabled = true;
-                        submitter.setAttribute('aria-busy', 'true');
-                    }
-
                     const existingSubmitValue = Array.from(form.querySelectorAll('input[type="hidden"][data-fanous-submit-value]')).some(function (field) {
                         return field.dataset.fanousSubmitValue === submitter?.name;
                     });
@@ -823,11 +816,14 @@
                         form.appendChild(hidden);
                     }
 
-                    if (typeof form.requestSubmit === 'function') {
-                        form.requestSubmit(submitter || undefined);
-                    } else {
-                        form.submit();
+                    if (submitter) {
+                        submitter.dataset.originalText = submitter.dataset.originalText || submitter.textContent;
+                        submitter.textContent = 'در حال ذخیره...';
+                        submitter.disabled = true;
+                        submitter.setAttribute('aria-busy', 'true');
                     }
+
+                    HTMLFormElement.prototype.submit.call(form);
 
                     window.setTimeout(function () {
                         if (document.body.contains(form)) {
