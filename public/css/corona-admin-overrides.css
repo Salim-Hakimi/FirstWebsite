@@ -6286,12 +6286,19 @@ body.fanous-library-modal-open::after {
 body.fanous-library-modal-open .fanous-library-form-panel.is-active {
     width: min(1040px, calc(100vw - 44px));
     max-height: min(820px, calc(100vh - 44px));
+    inset-block-start: 50% !important;
+    inset-inline-start: 50% !important;
+    inset-inline-end: auto !important;
+    left: 50% !important;
+    right: auto !important;
+    margin: 0 !important;
     padding: 0;
     border: 1px solid color-mix(in srgb, var(--ds-primary) 26%, var(--ds-border));
     border-radius: 18px;
     background:
         linear-gradient(180deg, color-mix(in srgb, var(--ds-card-bg) 96%, var(--ds-primary) 4%), var(--ds-card-bg));
     box-shadow: 0 34px 100px rgba(0, 0, 0, .42);
+    transform: translate(-50%, -50%) !important;
 }
 
 body.fanous-library-modal-open #return-library-copy.is-active {
@@ -6308,7 +6315,7 @@ body.fanous-library-modal-open #new-library-book.is-active {
 }
 
 body.fanous-library-modal-open #new-library-member.is-active {
-    width: min(1080px, calc(100vw - 44px));
+    width: min(960px, calc(100vw - 44px));
 }
 
 body.fanous-library-modal-open .fanous-library-form-panel.is-active .dashboard-panel-header {

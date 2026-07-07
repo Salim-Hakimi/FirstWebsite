@@ -723,9 +723,6 @@
                             <h2>امانت‌های اخیر</h2>
                             <p>کتاب‌های امانت گرفته‌شده، تاریخ برگشت و وضعیت هر ثبت.</p>
                         </div>
-                        @if ($canWriteLibrary)
-                            <x-ds.button size="sm" type="button" data-library-panel-trigger="new-library-loan" aria-controls="new-library-loan" aria-expanded="false">ثبت امانت جدید</x-ds.button>
-                        @endif
                     </div>
 
                     <div class="fanous-library-loan-list">
@@ -776,9 +773,6 @@
                         @empty
                             <div class="dashboard-empty">
                                 <strong>هنوز امانت ثبت نشده است</strong>
-                                @if ($canWriteLibrary)
-                                    <x-ds.button size="sm" type="button" data-library-panel-trigger="new-library-loan" aria-controls="new-library-loan" aria-expanded="false">ثبت امانت جدید</x-ds.button>
-                                @endif
                             </div>
                         @endforelse
                     </div>
@@ -989,20 +983,21 @@
                         }
 
                         disabledUntilCard.forEach((button) => {
-                            button.disabled = true;
-                            button.setAttribute('aria-disabled', 'true');
-                            button.title = message;
+                            button.disabled = !complete;
+                            button.setAttribute('aria-disabled', String(!complete));
+                            button.title = complete ? '' : message;
                         });
                     };
 
                     form.addEventListener('keydown', (event) => {
                         if (event.key === 'Enter' && event.target instanceof HTMLElement && event.target.tagName !== 'TEXTAREA') {
+                            window.FanousFormNavigator?.move(form, event.target, event.shiftKey ? -1 : 1);
                             event.preventDefault();
                         }
                     });
 
                     form.addEventListener('submit', (event) => {
-                        if (event.submitter !== cardSubmit || !isComplete()) {
+                        if (event.submitter === cardSubmit && !isComplete()) {
                             event.preventDefault();
                             form.reportValidity();
                         }

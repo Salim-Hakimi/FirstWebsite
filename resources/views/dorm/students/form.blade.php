@@ -385,7 +385,7 @@
                     @endunless
 
                     <div class="student-save-panel">
-                        <button class="btn btn-primary" type="submit" @unless($student->exists) data-disabled-until-card disabled @endunless>ذخیره معلومات</button>
+                        <button class="btn btn-primary" type="submit">ذخیره معلومات</button>
                         @if ($student->exists)
                             @if ($student->status === 'active')
                                 <button class="btn btn-outline-primary" type="submit" form="issue-card-form">{{ $latestDormCard ? 'تمدید کارت' : 'صدور کارت' }}</button>
@@ -443,20 +443,21 @@
                     }
 
                     disabledUntilCard.forEach((button) => {
-                        button.disabled = true;
-                        button.setAttribute('aria-disabled', 'true');
-                        button.title = message;
+                        button.disabled = !complete;
+                        button.setAttribute('aria-disabled', String(!complete));
+                        button.title = complete ? '' : message;
                     });
                 };
 
                 form.addEventListener('keydown', (event) => {
                     if (event.key === 'Enter' && event.target instanceof HTMLElement && event.target.tagName !== 'TEXTAREA') {
+                        window.FanousFormNavigator?.move(form, event.target, event.shiftKey ? -1 : 1);
                         event.preventDefault();
                     }
                 });
 
                 form.addEventListener('submit', (event) => {
-                    if (event.submitter !== cardSubmit || !isComplete()) {
+                    if (event.submitter === cardSubmit && !isComplete()) {
                         event.preventDefault();
                         form.reportValidity();
                     }

@@ -641,6 +641,77 @@
                     });
                 }
 
+                function navigableFields(form) {
+                    return Array.from(form.querySelectorAll('input, select, textarea, button')).filter(function (field) {
+                        const type = String(field.type || '').toLowerCase();
+
+                        return !field.disabled
+                            && type !== 'hidden'
+                            && type !== 'submit'
+                            && type !== 'button'
+                            && type !== 'reset'
+                            && field.offsetParent !== null;
+                    });
+                }
+
+                function moveFormFocus(form, currentField, direction) {
+                    const fields = navigableFields(form);
+                    const currentIndex = fields.indexOf(currentField);
+
+                    if (currentIndex === -1 || fields.length < 2) {
+                        return false;
+                    }
+
+                    const nextIndex = (currentIndex + direction + fields.length) % fields.length;
+                    const nextField = fields[nextIndex];
+
+                    nextField.focus({ preventScroll: true });
+
+                    if (typeof nextField.select === 'function' && ['text', 'email', 'number', 'tel', 'search', 'url'].includes(String(nextField.type || '').toLowerCase())) {
+                        nextField.select();
+                    }
+
+                    return true;
+                }
+
+                function setupFormKeyboardNavigation(form) {
+                    if (form.dataset.fanousKeyboardNavigation === 'ready') {
+                        return;
+                    }
+
+                    form.dataset.fanousKeyboardNavigation = 'ready';
+                    form.addEventListener('keydown', function (event) {
+                        if (event.defaultPrevented) {
+                            return;
+                        }
+
+                        const target = event.target;
+
+                        if (! (target instanceof HTMLElement) || ! target.matches('input, select, textarea')) {
+                            return;
+                        }
+
+                        const isTextarea = target.matches('textarea');
+                        const isEnterMove = event.key === 'Enter' && !isTextarea;
+                        const isArrowMove = event.key === 'ArrowDown' || event.key === 'ArrowUp';
+
+                        if (! isEnterMove && ! isArrowMove) {
+                            return;
+                        }
+
+                        const direction = event.shiftKey || event.key === 'ArrowUp' ? -1 : 1;
+
+                        if (moveFormFocus(form, target, direction)) {
+                            event.preventDefault();
+                        }
+                    });
+                }
+
+                window.FanousFormNavigator = {
+                    move: moveFormFocus,
+                    fields: navigableFields
+                };
+
                 function updateFormState(form) {
                     const fields = requiredFields(form);
 
@@ -661,6 +732,8 @@
                 }
 
                 document.querySelectorAll('form').forEach(function (form) {
+                    setupFormKeyboardNavigation(form);
+
                     if (requiredFields(form).length === 0) {
                         return;
                     }
