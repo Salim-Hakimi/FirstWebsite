@@ -44,7 +44,35 @@ class SecurityRules
 
     public static function safeDocument(): array
     {
-        return ['file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120'];
+        return [
+            'file',
+            'max:10240',
+            function (string $attribute, mixed $value, \Closure $fail): void {
+                $extension = strtolower((string) ($value?->getClientOriginalExtension() ?: $value?->extension()));
+                $mime = strtolower((string) ($value?->getMimeType() ?: $value?->getClientMimeType()));
+
+                $allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'];
+                $allowedMimes = [
+                    'application/pdf',
+                    'application/x-pdf',
+                    'application/octet-stream',
+                    'image/jpeg',
+                    'image/png',
+                    'application/msword',
+                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                ];
+
+                if (! in_array($extension, $allowedExtensions, true)) {
+                    $fail('فقط فایل‌های PDF، عکس و Word قابل قبول است.');
+
+                    return;
+                }
+
+                if ($mime !== '' && ! in_array($mime, $allowedMimes, true)) {
+                    $fail('نوع فایل قابل قبول نیست. لطفاً PDF، عکس یا Word ارسال کنید.');
+                }
+            },
+        ];
     }
 
     public static function financeAttachment(): array

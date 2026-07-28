@@ -16,6 +16,7 @@ class Book extends Model
         'publisher',
         'language',
         'edition',
+        'identity_key',
         'published_year',
         'pages',
         'category',

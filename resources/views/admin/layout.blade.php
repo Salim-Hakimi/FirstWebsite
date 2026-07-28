@@ -571,7 +571,7 @@
                                 return NodeFilter.FILTER_REJECT;
                             }
 
-                            return /\b20\d{2}-\d{2}-\d{2}\b/.test(node.nodeValue || '')
+                            return /\b20\d{2}[-\/]\d{2}[-\/]\d{2}\b/.test(node.nodeValue || '')
                                 ? NodeFilter.FILTER_ACCEPT
                                 : NodeFilter.FILTER_REJECT;
                         }
@@ -584,20 +584,47 @@
                     }
 
                     nodes.forEach(function (node) {
-                        node.nodeValue = node.nodeValue.replace(/\b(20\d{2})-(\d{2})-(\d{2})\b/g, function (_, year, month, day) {
+                        node.nodeValue = node.nodeValue.replace(/\b(20\d{2})[-\/](\d{2})[-\/](\d{2})\b/g, function (_, year, month, day) {
                             return solarDateText(year, month, day);
                         });
                     });
                 }
 
-                window.FanousDate = { solarDateText, localizeVisibleDates };
+                function enhanceDateInputs(root) {
+                    (root || document).querySelectorAll?.('input[type="date"]').forEach(function (input) {
+                        if (input.dataset.fanousSolarDate === 'ready') {
+                            return;
+                        }
+
+                        input.dataset.fanousSolarDate = 'ready';
+
+                        const preview = document.createElement('small');
+                        preview.className = 'fanous-date-preview text-muted';
+                        preview.setAttribute('aria-live', 'polite');
+                        input.insertAdjacentElement('afterend', preview);
+
+                        function syncPreview() {
+                            const match = String(input.value || '').match(/^(20\d{2})-(\d{2})-(\d{2})$/);
+                            preview.textContent = match ? solarDateText(match[1], match[2], match[3]) : '';
+                            preview.hidden = !match;
+                        }
+
+                        input.addEventListener('input', syncPreview);
+                        input.addEventListener('change', syncPreview);
+                        syncPreview();
+                    });
+                }
+
+                window.FanousDate = { solarDateText, localizeVisibleDates, enhanceDateInputs };
                 localizeVisibleDates(document.body);
+                enhanceDateInputs(document.body);
 
                 new MutationObserver(function (mutations) {
                     mutations.forEach(function (mutation) {
                         mutation.addedNodes.forEach(function (node) {
                             if (node.nodeType === Node.ELEMENT_NODE) {
                                 localizeVisibleDates(node);
+                                enhanceDateInputs(node);
                             }
                         });
                     });
@@ -674,6 +701,12 @@
                     return true;
                 }
 
+                function isSearchForm(form) {
+                    return String(form.method || 'GET').toUpperCase() === 'GET'
+                        || form.dataset.searchForm === 'true'
+                        || form.matches('[role="search"], .fanous-student-filters, .fanous-filter-form, .fanous-filter-grid');
+                }
+
                 function setupFormKeyboardNavigation(form) {
                     if (form.dataset.fanousKeyboardNavigation === 'ready') {
                         return;
@@ -692,7 +725,7 @@
                         }
 
                         const isTextarea = target.matches('textarea');
-                        const isEnterMove = event.key === 'Enter' && !isTextarea;
+                        const isEnterMove = event.key === 'Enter' && !isTextarea && !isSearchForm(form);
                         const isArrowMove = event.key === 'ArrowDown' || event.key === 'ArrowUp';
 
                         if (! isEnterMove && ! isArrowMove) {
@@ -724,6 +757,15 @@
                     });
 
                     submitButtons(form).forEach(function (button) {
+                        if (button.matches('[data-allow-partial-submit]')) {
+                            button.disabled = false;
+                            button.dataset.validationLocked = 'false';
+                            button.setAttribute('aria-disabled', 'false');
+                            button.title = '';
+
+                            return;
+                        }
+
                         button.disabled = !complete;
                         button.dataset.validationLocked = complete ? 'false' : 'true';
                         button.setAttribute('aria-disabled', complete ? 'false' : 'true');

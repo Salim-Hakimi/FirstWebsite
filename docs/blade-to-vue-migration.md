@@ -1,4 +1,4 @@
-# Blade to Vue Migration Plan
+![alt text](image.png)# Blade to Vue Migration Plan
 
 This project is moving from Blade-heavy pages to a Vue-first frontend in small, safe phases.
 

@@ -406,12 +406,12 @@
                         <div>
                             <span class="dashboard-section-kicker">عضویت</span>
                             <h2>ثبت عضو کتابخانه</h2>
-                            <p>پروفایل عضو را بسازید و در صورت نیاز کارت ماهانه چاپ کنید.</p>
+                            <p>پروفایل عضو را بسازید و کارت شش‌ماهه کتابخانه را چاپ کنید.</p>
                         </div>
                         <x-ds.button variant="outline" size="sm" type="button" data-library-panel-close>بستن</x-ds.button>
                     </div>
 
-                    <form method="POST" action="{{ route('library.members.store') }}" enctype="multipart/form-data" class="fanous-library-form fanous-guarded-card-form">
+                    <form method="POST" action="{{ route('library.members.store') }}" enctype="multipart/form-data" class="fanous-library-form fanous-guarded-card-form" data-card-required-form data-card-required-message="برای ثبت عضو، فیلدهای ضروری را تکمیل کرده و کارت کتابخانه را چاپ کنید.">
                         @csrf
                         <label><span>کد عضویت</span><input class="form-control ltr-text" name="member_code" placeholder="خودکار اگر خالی باشد"></label>
                         <label><span>نام کامل</span><input class="form-control" name="full_name" required></label>
@@ -442,8 +442,7 @@
                         <label class="fanous-form-wide"><span>آدرس</span><input class="form-control" name="address"></label>
                         <label class="fanous-form-wide"><span>یادداشت</span><textarea class="form-control" name="notes" rows="3"></textarea></label>
                         <div class="fanous-form-actions">
-                            <x-ds.button type="submit">ذخیره عضو</x-ds.button>
-                            <x-ds.button variant="outline" name="issue_card" value="1" type="submit">ذخیره و چاپ کارت</x-ds.button>
+                            <x-ds.button name="issue_card" value="1" type="submit" data-card-submit disabled>ذخیره و چاپ کارت</x-ds.button>
                         </div>
                     </form>
                 </article>
@@ -603,7 +602,7 @@
                     <tbody>
                         @forelse ($libraryFinanceRecords as $record)
                             <tr>
-                                <td>{{ $record->transaction_date ? Locale::number($record->transaction_date->format('Y/m/d')) : 'ثبت نشده' }}</td>
+                                <td>{{ $record->transaction_date ? Locale::date($record->transaction_date) : 'ثبت نشده' }}</td>
                                 <td><x-ds.badge :tone="$record->type === 'income' ? 'success' : 'danger'">{{ $record->type === 'income' ? 'درآمد' : 'مصرف' }}</x-ds.badge></td>
                                 <td>{{ $record->category?->name ? str_replace('کتابخانه - ', '', $record->category->name) : 'کتابخانه' }}</td>
                                 <td>{{ $record->source_or_payee ?: $record->payer_name ?: $record->payee_name ?: 'کتابخانه فانوس' }}</td>
@@ -684,9 +683,9 @@
                                 <div class="fanous-student-info fanous-library-member-meta">
                                     <div><span>واتساپ</span><strong class="ltr-text">{{ $member->phone }}</strong></div>
                                     <div><span>کد عضویت</span><strong class="ltr-text">{{ $member->member_code ?: 'ثبت نشده' }}</strong></div>
-                                    <div><span>اعتبار کارت</span><strong>{{ $cardExpiry ? Locale::number($cardExpiry->format('Y/m/d')) : 'ندارد' }}</strong></div>
-                                    <div><span>آخرین بیل</span><strong>{{ $member->last_paid_at ? Locale::number($member->last_paid_at->format('Y/m/d')) : 'ثبت نشده' }}</strong></div>
-                                    <div><span>موعد بیل بعدی</span><strong>{{ $member->next_payment_due_at ? Locale::number($member->next_payment_due_at->format('Y/m/d')) : 'ثبت نشده' }}</strong></div>
+                                    <div><span>اعتبار کارت</span><strong>{{ $cardExpiry ? Locale::date($cardExpiry) : 'ندارد' }}</strong></div>
+                                    <div><span>پرداخت اخیر</span><strong>{{ $member->last_paid_at ? Locale::date($member->last_paid_at) : 'ثبت نشده' }}</strong></div>
+                                    <div><span>موعد پرداخت بعدی</span><strong>{{ $member->next_payment_due_at ? Locale::date($member->next_payment_due_at) : 'ثبت نشده' }}</strong></div>
                                     <div><span>امانت فعال</span><strong>{{ Locale::number((int) ($member->active_loans_count ?? 0)) }} مورد</strong></div>
                                 </div>
 
@@ -696,10 +695,7 @@
                                 </div>
 
                                 <div class="fanous-student-actions fanous-library-member-actions">
-                                    <x-ds.button size="sm" :href="route('library.members.show', $member)">مشاهده</x-ds.button>
-                                    @if ($canWriteLibrary)
-                                        <x-ds.button variant="outline" size="sm" :href="route('library.members.edit', $member)" data-fanous-page-modal data-modal-title="ویرایش عضو کتابخانه">ویرایش</x-ds.button>
-                                    @endif
+                                    <x-ds.button size="sm" :href="route('library.members.show', $member)">پروفایل</x-ds.button>
                                 </div>
                             </article>
                         @empty
@@ -739,8 +735,8 @@
                                         <span>{{ $loan->book?->title ?: 'کتاب نامشخص' }}</span>
                                     </div>
                                     <div class="fanous-record-meta">
-                                        <span>امانت: {{ $loan->borrowed_at ? Locale::number($loan->borrowed_at->format('Y/m/d')) : 'ثبت نشده' }}</span>
-                                        <span>برگشت: {{ $loan->due_at ? Locale::number($loan->due_at->format('Y/m/d')) : 'ندارد' }}</span>
+                                        <span>امانت: {{ $loan->borrowed_at ? Locale::date($loan->borrowed_at) : 'ثبت نشده' }}</span>
+                                        <span>برگشت: {{ $loan->due_at ? Locale::date($loan->due_at) : 'ندارد' }}</span>
                                         <span>نسخه: <span class="ltr-text">{{ $loan->copy?->copy_code ?: 'ثبت نشده' }}</span></span>
                                     </div>
 
@@ -844,7 +840,7 @@
                         @forelse ($overdueLoans->take(4) as $loan)
                             <div class="fanous-follow-row">
                                 <strong>{{ $loan->member?->full_name ?: 'عضو نامشخص' }}</strong>
-                                <span>{{ $loan->book?->title ?: 'کتاب نامشخص' }} · تاریخ برگشت: {{ $loan->due_at ? Locale::number($loan->due_at->format('Y/m/d')) : 'ندارد' }}</span>
+                                <span>{{ $loan->book?->title ?: 'کتاب نامشخص' }} · تاریخ برگشت: {{ $loan->due_at ? Locale::date($loan->due_at) : 'ندارد' }}</span>
                             </div>
                         @empty
                             <div class="dashboard-empty">فعلاً امانت دیرشده وجود ندارد.</div>
@@ -857,7 +853,7 @@
                             @endphp
                             <div class="fanous-follow-row">
                                 <strong>{{ $member->full_name }}</strong>
-                                <span>سررسید: {{ $member->next_payment_due_at ? Locale::number($member->next_payment_due_at->format('Y/m/d')) : 'ندارد' }} · باقی: {{ Locale::money($feeBalance) }}</span>
+                                <span>سررسید: {{ $member->next_payment_due_at ? Locale::date($member->next_payment_due_at) : 'ندارد' }} · باقی: {{ Locale::money($feeBalance) }}</span>
                             </div>
                         @endforeach
                     </div>

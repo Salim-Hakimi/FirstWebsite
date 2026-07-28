@@ -73,6 +73,33 @@ class Locale
         return self::toPersianDigits(sprintf('%04d/%02d/%02d ه.ش', $jy, $jm, $jd));
     }
 
+    public static function month(DateTimeInterface|string|null $value): string
+    {
+        if (! $value) {
+            return 'ثبت نشده';
+        }
+
+        if ($value instanceof CarbonInterface || $value instanceof DateTimeInterface) {
+            $year = (int) $value->format('Y');
+            $month = (int) $value->format('m');
+            $day = (int) $value->format('d');
+        } else {
+            $timestamp = strtotime($value);
+
+            if ($timestamp === false) {
+                return (string) $value;
+            }
+
+            $year = (int) date('Y', $timestamp);
+            $month = (int) date('m', $timestamp);
+            $day = (int) date('d', $timestamp);
+        }
+
+        [$jy, $jm] = self::gregorianToJalali($year, $month, $day);
+
+        return self::monthNames()[$jm].' '.self::toPersianDigits((string) $jy).' ه.ش';
+    }
+
     public static function percent(int|float|string|null $value): string
     {
         return self::number($value).'٪';
@@ -310,6 +337,24 @@ class Locale
         }
 
         return [$jy, $i + 1, $jDayNo + 1];
+    }
+
+    private static function monthNames(): array
+    {
+        return [
+            1 => 'حمل',
+            2 => 'ثور',
+            3 => 'جوزا',
+            4 => 'سرطان',
+            5 => 'اسد',
+            6 => 'سنبله',
+            7 => 'میزان',
+            8 => 'عقرب',
+            9 => 'قوس',
+            10 => 'جدی',
+            11 => 'دلو',
+            12 => 'حوت',
+        ];
     }
 
     private static function normalizeText(string $text): string

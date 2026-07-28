@@ -26,7 +26,11 @@
         if (str_starts_with($whatsappDigits, '0')) {
             $whatsappDigits = '93'.substr($whatsappDigits, 1);
         }
-        $hasCurrentMonthBill = $member->last_paid_at && $member->last_paid_at->isSameMonth(today());
+        $monthlyBillRows = collect($monthlyBillRows ?? []);
+        $openBillRow = $monthlyBillRows->firstWhere('is_open', true) ?? $monthlyBillRows->first();
+        $hasOpenMonthBill = (bool) ($openBillRow['paid'] ?? false);
+        $openMonthLabel = $openBillRow['month_label'] ?? Locale::month($openBillingMonth ?? today());
+        $openMonthKey = $openBillRow['month_key'] ?? ($openBillingMonth ?? today())->format('Y-m');
     @endphp
 
     <section class="student-profile-hero">
@@ -58,10 +62,10 @@
         </div>
 
         <div class="student-profile-snapshot">
-            <span><strong>{{ $member->membership_expires_at ? Locale::number($member->membership_expires_at->format('Y/m/d')) : 'ثبت نشده' }}</strong><span>اعتبار عضویت</span></span>
+            <span><strong>{{ $member->membership_expires_at ? Locale::date($member->membership_expires_at) : 'ثبت نشده' }}</strong><span>اعتبار عضویت</span></span>
             <span><strong>{{ Locale::number($activeLoanCount) }}</strong><span>امانت‌های فعال</span></span>
-            <span><strong>{{ $member->last_paid_at ? Locale::number($member->last_paid_at->format('Y/m/d')) : 'ثبت نشده' }}</strong><span>آخرین بیل ماهانه</span></span>
-            <span><strong>{{ $member->next_payment_due_at ? Locale::number($member->next_payment_due_at->format('Y/m/d')) : 'ثبت نشده' }}</strong><span>موعد بیل بعدی</span></span>
+            <span><strong>{{ $member->last_paid_at ? Locale::date($member->last_paid_at) : 'ثبت نشده' }}</strong><span>پرداخت اخیر</span></span>
+            <span><strong>{{ $member->next_payment_due_at ? Locale::date($member->next_payment_due_at) : 'ثبت نشده' }}</strong><span>موعد پرداخت بعدی</span></span>
         </div>
     </section>
 
@@ -92,8 +96,8 @@
                 <div><span>محل تحصیل</span><strong>{{ $member->education_place ?: 'ثبت نشده' }}</strong></div>
                 <div><span>رشته / صنف</span><strong>{{ $member->department_or_grade ?: 'ثبت نشده' }}</strong></div>
                 <div><span>آدرس</span><strong>{{ $member->address ?: 'ثبت نشده' }}</strong></div>
-                <div><span>تاریخ ثبت</span><strong>{{ $member->joined_at ? Locale::number($member->joined_at->format('Y/m/d')) : 'ثبت نشده' }}</strong></div>
-                <div><span>تاریخ خروج</span><strong>{{ $member->left_at ? Locale::number($member->left_at->format('Y/m/d')) : 'ثبت نشده' }}</strong></div>
+                <div><span>تاریخ ثبت</span><strong>{{ $member->joined_at ? Locale::date($member->joined_at) : 'ثبت نشده' }}</strong></div>
+                <div><span>تاریخ خروج</span><strong>{{ $member->left_at ? Locale::date($member->left_at) : 'ثبت نشده' }}</strong></div>
                 <div><span>ثبت‌کننده</span><strong>{{ $member->registeredBy?->name ?: 'نامشخص' }}</strong></div>
                 <div><span>یادداشت</span><strong>{{ $member->notes ?: 'ثبت نشده' }}</strong></div>
             </div>
@@ -102,9 +106,9 @@
         <aside class="student-workspace-panel">
             <div class="student-panel-head">
                 <div>
-                    <span class="student-panel-label">کارت و بیل ماهانه</span>
-                    <h2>کارت شش‌ماهه و رسیدهای ماهانه</h2>
-                    <p>کارت فقط برای هویت و اعتبار عضویت است؛ فیس ماهانه با رسید جداگانه ثبت و چاپ می‌شود.</p>
+                    <span class="student-panel-label">پرداخت و کارت</span>
+                    <h2>بیل ماهانه و کارت شش‌ماهه</h2>
+                    <p>بیل برای پرداخت ماهانه است؛ کارت فقط سند هویت و اعتبار عضویت شش‌ماهه می‌باشد.</p>
                 </div>
                 @if ($canWriteLibrary)
                     <form method="POST" action="{{ route('library.members.card.issue', $member) }}">
@@ -118,15 +122,17 @@
                 @if ($canWriteLibrary)
                     <form method="POST" action="{{ route('library.members.monthly-payment.store', $member) }}" class="student-timeline-item">
                         @csrf
+                        <input type="hidden" name="billing_month" value="{{ $openMonthKey }}">
                         <span class="student-timeline-icon">پ</span>
                         <div>
-                            <strong>ثبت بیل ماهانه و چاپ رسید</strong>
-                            <p>دریافت {{ Locale::money($monthlyBalance) }}، پاک‌کردن جریمه ماهانه و انتقال موعد بعدی به یک ماه بعد.</p>
+                            <strong>پرداخت {{ $openMonthLabel }}</strong>
+                            <p>دریافت {{ Locale::money((int) ($openBillRow['amount'] ?? $monthlyBalance)) }}، صدور رسید کوچک و انتقال موعد بعدی به ماه بعد.</p>
                         </div>
                         <div class="student-timeline-actions">
-                            <button class="btn btn-primary btn-sm" type="submit">{{ $hasCurrentMonthBill ? 'نمایش بیل ماه جاری' : 'ثبت و چاپ بیل' }}</button>
-                            @if ($hasCurrentMonthBill)
-                                <a class="btn btn-outline-secondary btn-sm" href="{{ route('library.members.monthly-payment.receipt', $member) }}">چاپ بیل</a>
+                            @if ($hasOpenMonthBill)
+                                <a class="btn btn-primary btn-sm" href="{{ route('library.members.monthly-payment.receipt', ['member' => $member, 'billing_month' => $openMonthKey]) }}">چاپ بیل {{ $openMonthLabel }}</a>
+                            @else
+                                <button class="btn btn-primary btn-sm" type="submit">ثبت پرداخت {{ $openMonthLabel }}</button>
                             @endif
                         </div>
                     </form>
@@ -135,7 +141,7 @@
                 <div class="student-timeline-item">
                         <span class="student-timeline-icon">ف</span>
                         <div>
-                            <strong>مبلغ بیل این ماه</strong>
+                            <strong>مبلغ قابل پرداخت</strong>
                             <p>{{ Locale::money($monthlyBalance) }} شامل فیس ماهانه و جریمه دیرکرد</p>
                         </div>
                 </div>
@@ -144,8 +150,30 @@
                         <span class="student-timeline-icon">م</span>
                         <div>
                             <strong>موعد بیل بعدی</strong>
-                            <p>{{ $member->next_payment_due_at ? Locale::number($member->next_payment_due_at->format('Y/m/d')) : 'ثبت نشده' }}</p>
+                            <p>{{ $member->next_payment_due_at ? Locale::date($member->next_payment_due_at) : 'ثبت نشده' }}</p>
                         </div>
+                </div>
+
+                <div class="student-timeline-item">
+                    <span class="student-timeline-icon">ب</span>
+                    <div>
+                        <strong>دفتر بیل‌های ماهانه</strong>
+                        <p>هر ماه جدا ثبت می‌شود و از همین‌جا قابل چاپ است.</p>
+                        <div class="student-detail-grid mt-3">
+                            @forelse ($monthlyBillRows as $billRow)
+                                <div>
+                                    <span>{{ $billRow['month_label'] }}</span>
+                                    <strong>{{ Locale::money((int) $billRow['amount']) }}</strong>
+                                    <small class="d-block mt-1">{{ $billRow['status_label'] }}</small>
+                                    @if ($billRow['receipt_url'])
+                                        <a class="btn btn-outline-secondary btn-sm mt-2" href="{{ $billRow['receipt_url'] }}">چاپ بیل</a>
+                                    @endif
+                                </div>
+                            @empty
+                                <div><span>بیل ماهانه</span><strong>هنوز بیلی ساخته نشده است</strong></div>
+                            @endforelse
+                        </div>
+                    </div>
                 </div>
 
                 <div class="student-timeline-item">
@@ -172,7 +200,7 @@
                         <span class="student-timeline-icon">ک</span>
                         <div>
                             <strong>{{ $card->card_number }}</strong>
-                            <p>{{ $card->issued_at ? Locale::number($card->issued_at->format('Y/m/d')) : 'ثبت نشده' }} تا {{ $card->expires_at ? Locale::number($card->expires_at->format('Y/m/d')) : 'ثبت نشده' }} · کارت هویت شش‌ماهه</p>
+                            <p>{{ $card->issued_at ? Locale::date($card->issued_at) : 'ثبت نشده' }} تا {{ $card->expires_at ? Locale::date($card->expires_at) : 'ثبت نشده' }} · کارت هویت شش‌ماهه</p>
                         </div>
                         @if ($card->card_printed && $card->expires_at?->isFuture())
                             <span class="btn btn-outline-secondary btn-sm disabled">چاپ شده</span>
@@ -215,7 +243,7 @@
                         <p>
                             کد امانت: {{ $loan->loan_code ?: 'ثبت نشده' }} ·
                             نسخه: {{ $loan->copy?->copy_code ?: 'ثبت نشده' }} ·
-                            {{ $loan->borrowed_at ? Locale::number($loan->borrowed_at->format('Y/m/d')) : 'ثبت نشده' }} تا {{ $loan->due_at ? Locale::number($loan->due_at->format('Y/m/d')) : 'ثبت نشده' }} ·
+                            {{ $loan->borrowed_at ? Locale::date($loan->borrowed_at) : 'ثبت نشده' }} تا {{ $loan->due_at ? Locale::date($loan->due_at) : 'ثبت نشده' }} ·
                             {{ $isLateLoan ? 'ناوقت' : $loanStatus['label'] }}
                         </p>
 

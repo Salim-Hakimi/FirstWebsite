@@ -123,7 +123,7 @@
                                 <div>
                                     <strong>{{ $applicant->full_name }}</strong>
                                     <span class="ltr-text">{{ $applicant->whatsapp ?: $applicant->phone }}</span>
-                                    <small>تاریخ درخواست: {{ $applicant->application_date ? Locale::number($applicant->application_date->format('Y/m/d')) : 'ثبت نشده' }}</small>
+                                    <small>تاریخ درخواست: {{ $applicant->application_date ? Locale::date($applicant->application_date) : 'ثبت نشده' }}</small>
                                 </div>
                             </div>
 
@@ -225,11 +225,11 @@
                             <div><span>واتساپ</span><strong class="ltr-text">{{ $student->whatsapp ?: $student->phone }}</strong></div>
                             <div><span>اتاق</span><strong>{{ $roomLabel }}</strong></div>
                             <div><span>تخت</span><strong>{{ $student->bed_number ?: 'ثبت نشده' }}</strong></div>
-                            <div><span>تاریخ ثبت</span><strong>{{ $student->created_at ? Locale::number($student->created_at->format('Y/m/d')) : 'ثبت نشده' }}</strong></div>
+                            <div><span>تاریخ ثبت</span><strong>{{ $student->created_at ? Locale::date($student->created_at) : 'ثبت نشده' }}</strong></div>
                             <div><span>اسناد</span><strong>{{ Locale::number($documentTotal) }} فایل</strong></div>
                             <div>
                                 <span>{{ $student->status === 'active' ? 'کارت' : 'امتیاز' }}</span>
-                                <strong>{{ $student->status === 'active' ? ($cardExpiry ? Locale::number($cardExpiry->format('Y/m/d')) : 'ندارد') : Locale::number($student->eligibility_score ?? 'ثبت نشده') }}</strong>
+                                <strong>{{ $student->status === 'active' ? ($cardExpiry ? Locale::date($cardExpiry) : 'ندارد') : Locale::number($student->eligibility_score ?? 'ثبت نشده') }}</strong>
                             </div>
                         </div>
 

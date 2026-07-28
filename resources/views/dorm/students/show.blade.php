@@ -77,22 +77,22 @@
         <article class="student-insight-card is-primary">
             <span>وضعیت لیلیه</span>
             <strong>{{ $statusNames[$student->status] ?? $student->status }}</strong>
-            <p>تاریخ شمولیت: {{ $student->joined_at?->format('Y-m-d') ?: 'ثبت نشده' }}</p>
+            <p>تاریخ شمولیت: {{ $student->joined_at ? \App\Support\Locale::date($student->joined_at) : 'ثبت نشده' }}</p>
         </article>
         <article class="student-insight-card">
             <span>درخواست</span>
-            <strong>{{ $student->application_date?->format('Y-m-d') ?? 'ثبت نشده' }}</strong>
-            <p>پذیرفته شده: {{ $student->admitted_at?->format('Y-m-d') ?? 'تا هنوز نه' }}</p>
+            <strong>{{ $student->application_date ? \App\Support\Locale::date($student->application_date) : 'ثبت نشده' }}</strong>
+            <p>پذیرفته شده: {{ $student->admitted_at ? \App\Support\Locale::date($student->admitted_at) : 'تا هنوز نه' }}</p>
         </article>
         <article class="student-insight-card">
             <span>پرداخت ثبت‌نام</span>
             <strong>{{ number_format($registrationTotal) }} افغانی</strong>
-            <p>{{ ['paid' => 'پرداخت شده', 'partial' => 'قسمی', 'unpaid' => 'پرداخت نشده'][$registrationPaymentStatus] ?? $registrationPaymentStatus }}{{ $student->registration_paid_at ? ' در '.$student->registration_paid_at->format('Y-m-d') : '' }}</p>
+            <p>{{ ['paid' => 'پرداخت شده', 'partial' => 'قسمی', 'unpaid' => 'پرداخت نشده'][$registrationPaymentStatus] ?? $registrationPaymentStatus }}{{ $student->registration_paid_at ? ' در '.\App\Support\Locale::date($student->registration_paid_at) : '' }}</p>
         </article>
         <article class="student-insight-card">
             <span>کارت لیلیه</span>
             <strong>{{ $latestCard?->card_number ?: 'ندارد' }}</strong>
-            <p>{{ $latestCard ? 'اعتبار تا '.$latestCard->expires_at?->format('Y-m-d') : 'کارت فعال ثبت نشده' }}</p>
+            <p>{{ $latestCard ? 'اعتبار تا '.($latestCard->expires_at ? \App\Support\Locale::date($latestCard->expires_at) : 'ثبت نشده') : 'کارت فعال ثبت نشده' }}</p>
         </article>
     </section>
 
@@ -124,7 +124,7 @@
                 <div><span>شغل ضامن</span><strong>{{ $student->guarantor_job ?: 'ثبت نشده' }}</strong></div>
                 <div><span>سکونت اصلی ضامن</span><strong>{{ $student->guarantor_permanent_address ?: 'ثبت نشده' }}</strong></div>
                 <div><span>سکونت فعلی ضامن</span><strong>{{ $student->guarantor_current_address ?: 'ثبت نشده' }}</strong></div>
-                <div><span>تاریخ درخواست</span><strong>{{ $student->application_date?->format('Y-m-d') ?: 'ثبت نشده' }}</strong></div>
+                <div><span>تاریخ درخواست</span><strong>{{ $student->application_date ? \App\Support\Locale::date($student->application_date) : 'ثبت نشده' }}</strong></div>
                 <div><span>تصمیم توسط</span><strong>{{ $student->admissionDecisionBy?->name ?: 'تصمیم نشده' }}</strong></div>
             </div>
 
@@ -167,7 +167,7 @@
                     <div>
                         @if ($latestCard)
                             <strong>کارت {{ $latestCard->card_number }}</strong>
-                            <p>اعتبار تا {{ $latestCard->expires_at?->format('Y-m-d') }} - کارت بدون فیس صادر شده است</p>
+                            <p>اعتبار تا {{ $latestCard->expires_at ? \App\Support\Locale::date($latestCard->expires_at) : 'ثبت نشده' }} - کارت بدون فیس صادر شده است</p>
                         @else
                             <strong>کارت لیلیه ندارد</strong>
                             <p>وقتی شاگرد فعال شد، از همین بخش کارت صادر کنید.</p>
@@ -251,7 +251,7 @@
                         <span class="student-timeline-icon">ن</span>
                         <div>
                             <strong>{{ $collectionNames[$collection->type] ?? $collection->type }} - {{ number_format($collection->amount) }} افغانی</strong>
-                            <p>{{ $collection->collected_at?->format('Y-m-d') }} - {{ $collection->period ?: 'دوره ندارد' }} - {{ $collection->notes ?: 'یادداشت ندارد' }}</p>
+                            <p>{{ $collection->collected_at ? \App\Support\Locale::date($collection->collected_at) : 'ثبت نشده' }} - {{ $collection->period ?: 'دوره ندارد' }} - {{ $collection->notes ?: 'یادداشت ندارد' }}</p>
                         </div>
                         @if (in_array(auth()->user()->role, \App\Models\User::studentRepresentativeRoles(), true))
                             <a class="btn btn-outline-secondary btn-sm" href="{{ route('representative.collections.receipt', $collection) }}">رسید</a>
@@ -273,7 +273,7 @@
                         <span class="student-timeline-icon">خ</span>
                         <div>
                             <strong>{{ $foodNames[$record->type] ?? $record->type }} - {{ number_format($record->amount) }} افغانی</strong>
-                            <p>{{ $record->recorded_at?->format('Y-m-d') }} - {{ $record->period ?: 'دوره ندارد' }} - {{ $record->description ?: 'توضیح ندارد' }}</p>
+                            <p>{{ $record->recorded_at ? \App\Support\Locale::date($record->recorded_at) : 'ثبت نشده' }} - {{ $record->period ?: 'دوره ندارد' }} - {{ $record->description ?: 'توضیح ندارد' }}</p>
                         </div>
                         @if (in_array(auth()->user()->role, \App\Models\User::purchaserRoles(), true))
                             <a class="btn btn-outline-secondary btn-sm" href="{{ route('purchaser.records.receipt', $record) }}">رسید</a>

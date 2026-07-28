@@ -143,14 +143,9 @@ class DormStudentController extends Controller
     {
         $validated = $this->validateStudent($request);
         $issueCard = $request->boolean('issue_card');
+        $saveOnly = $request->boolean('save_only') && ! $issueCard;
 
-        if (($validated['status'] ?? null) === 'active' && ! $issueCard && in_array($validated['registration_payment_status'] ?? 'paid', ['paid', 'partial'], true)) {
-            throw ValidationException::withMessages([
-                'issue_card' => 'برای ثبت پرداخت و محاسبه مالی، ابتدا کارت لیلیه را صادر کنید.',
-            ]);
-        }
-
-        $this->normalizeAdmissionState($validated);
+        $this->normalizeAdmissionState($validated, null, $saveOnly);
         $this->ensureRoomCanAccept($validated);
         $this->syncRoomNumber($validated);
         $this->normalizeRegistrationPayment($validated);
@@ -288,6 +283,8 @@ class DormStudentController extends Controller
 
     private function validateStudent(Request $request, ?DormStudent $student = null): array
     {
+        $saveOnly = $request->boolean('save_only') && ! $request->boolean('issue_card');
+
         $validated = $request->validate([
             'full_name' => ['required', 'string', 'max:120'],
             'father_name' => ['required', 'string', 'max:120'],
@@ -301,9 +298,9 @@ class DormStudentController extends Controller
             'school_graduation_year' => ['nullable', 'integer', 'min:1300', 'max:1500'],
             'province' => ['nullable', 'string', 'max:80'],
             'district' => ['nullable', 'string', 'max:100'],
-            'dorm_room_id' => [Rule::requiredIf(fn () => $request->input('status') === 'active'), 'nullable', 'exists:dorm_rooms,id'],
+            'dorm_room_id' => [Rule::requiredIf(fn () => $request->input('status') === 'active' && ! $saveOnly), 'nullable', 'exists:dorm_rooms,id'],
             'room_number' => ['nullable', 'string', 'max:40'],
-            'bed_number' => [Rule::requiredIf(fn () => $request->input('status') === 'active'), 'nullable', 'integer', 'min:1'],
+            'bed_number' => [Rule::requiredIf(fn () => $request->input('status') === 'active' && ! $saveOnly), 'nullable', 'integer', 'min:1'],
             'guarantor_name' => ['nullable', 'string', 'max:120'],
             'guarantor_relation' => ['nullable', 'string', 'max:80'],
             'guarantor_phone' => SecurityRules::phone(false),
@@ -335,6 +332,7 @@ class DormStudentController extends Controller
             'guarantor_documents.*' => SecurityRules::safeDocument(),
             'remove_documents' => ['nullable', 'array'],
             'remove_documents.*' => ['integer', 'min:0'],
+            'save_only' => ['nullable', 'boolean'],
             'issue_card' => ['nullable', 'boolean'],
             'card_payment_status' => ['nullable', Rule::in(['paid', 'unpaid'])],
         ]);
@@ -415,9 +413,13 @@ class DormStudentController extends Controller
         }
     }
 
-    private function normalizeAdmissionState(array &$validated, ?DormStudent $student = null): void
+    private function normalizeAdmissionState(array &$validated, ?DormStudent $student = null, bool $saveOnly = false): void
     {
         $validated['application_date'] = $validated['application_date'] ?? $student?->application_date?->toDateString() ?? now()->toDateString();
+
+        if ($saveOnly && ($validated['status'] ?? null) === 'active' && (empty($validated['dorm_room_id']) || empty($validated['bed_number']))) {
+            $validated['status'] = 'on_hold';
+        }
 
         if (($validated['status'] ?? null) !== 'active') {
             $validated['dorm_room_id'] = null;
@@ -525,6 +527,7 @@ class DormStudentController extends Controller
             $validated['remove_documents'],
             $validated['profile_photo'],
             $validated['remove_profile_photo'],
+            $validated['save_only'],
             $validated['issue_card'],
             $validated['card_fee'],
             $validated['card_payment_status']

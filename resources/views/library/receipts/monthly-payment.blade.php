@@ -8,6 +8,7 @@
         use App\Support\Locale;
 
         $paidDate = \Illuminate\Support\Carbon::parse($receipt['paid_at']);
+        $billingLabel = $billingLabel ?? ($receipt['billing_label'] ?? Locale::month($billingMonth ?? $paidDate));
     @endphp
     <style>
         @font-face {
@@ -250,16 +251,16 @@
         <article class="monthly-bill">
             <header class="bill-head">
                 <strong>بیل ماهانه کتاب‌خانه فانوس</strong>
-                <span>رسید فیس ماهانه، کارت جدید نیست</span>
+                <span>{{ $billingLabel }} - کارت جدید نیست</span>
                 <span class="ltr-text">{{ $receiptNumber }}</span>
             </header>
 
             <div class="bill-row"><span>نام</span><strong>{{ $member->full_name }}</strong></div>
             <div class="bill-row"><span>کد</span><strong class="ltr-text">{{ $member->member_code ?: 'ثبت نشده' }}</strong></div>
             <div class="bill-row"><span>واتساپ</span><strong class="ltr-text">{{ $member->phone ?: 'ثبت نشده' }}</strong></div>
-            <div class="bill-row"><span>ماه</span><strong>{{ Locale::number($paidDate->format('Y/m')) }}</strong></div>
-            <div class="bill-row"><span>تاریخ</span><strong>{{ Locale::number($paidDate->format('Y/m/d')) }}</strong></div>
-            <div class="bill-row"><span>موعد بعدی</span><strong>{{ $member->next_payment_due_at ? Locale::number($member->next_payment_due_at->format('Y/m/d')) : 'ثبت نشده' }}</strong></div>
+            <div class="bill-row"><span>ماه بیل</span><strong>{{ $billingLabel }}</strong></div>
+            <div class="bill-row"><span>تاریخ پرداخت</span><strong>{{ Locale::date($paidDate) }}</strong></div>
+            <div class="bill-row"><span>موعد بعدی</span><strong>{{ $member->next_payment_due_at ? Locale::date($member->next_payment_due_at) : 'ثبت نشده' }}</strong></div>
 
             <div class="bill-lines">
                 <div class="bill-row"><span>فیس ماهانه</span><strong>{{ Locale::money((int) $receipt['fee_amount']) }}</strong></div>

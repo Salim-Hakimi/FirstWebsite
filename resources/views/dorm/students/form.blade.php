@@ -216,24 +216,24 @@
                     <div class="student-document-upload-grid">
                         <div class="form-group">
                             <label>آپلود تذکره شاگرد</label>
-                            <input class="form-control @error('student_tazkira_document') is-invalid @enderror" name="student_tazkira_document" type="file" accept=".jpg,.jpeg,.png,.pdf">
+                            <input class="form-control @error('student_tazkira_document') is-invalid @enderror" name="student_tazkira_document" type="file" accept=".jpg,.jpeg,.png,.pdf,application/pdf">
                             @error('student_tazkira_document') <span class="text-danger small d-block">{{ $message }}</span> @enderror
                         </div>
                         <div class="form-group full">
                             <label>آپلود اسناد شاگرد</label>
-                            <input class="form-control @error('student_documents') is-invalid @enderror" name="student_documents[]" type="file" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx">
+                            <input class="form-control @error('student_documents') is-invalid @enderror" name="student_documents[]" type="file" multiple accept=".jpg,.jpeg,.png,.pdf,application/pdf,.doc,.docx">
                             @error('student_documents') <span class="text-danger small d-block">{{ $message }}</span> @enderror
                             @error('student_documents.*') <span class="text-danger small d-block">{{ $message }}</span> @enderror
                         </div>
                         <div class="form-group">
                             <label>آپلود تذکره ضامن</label>
-                            <input class="form-control @error('guarantor_tazkira_document') is-invalid @enderror" name="guarantor_tazkira_document" type="file" accept=".jpg,.jpeg,.png,.pdf">
+                            <input class="form-control @error('guarantor_tazkira_document') is-invalid @enderror" name="guarantor_tazkira_document" type="file" accept=".jpg,.jpeg,.png,.pdf,application/pdf">
                             @error('guarantor_tazkira_document') <span class="text-danger small d-block">{{ $message }}</span> @enderror
                         </div>
                         <div class="form-group full">
                             <label>آپلود اسناد ضامن</label>
-                            <input class="form-control @error('guarantor_documents') is-invalid @enderror" name="guarantor_documents[]" type="file" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx">
-                            <small class="text-muted">مجاز: عکس، PDF و Word. حداکثر ۵MB برای هر فایل.</small>
+                            <input class="form-control @error('guarantor_documents') is-invalid @enderror" name="guarantor_documents[]" type="file" multiple accept=".jpg,.jpeg,.png,.pdf,application/pdf,.doc,.docx">
+                            <small class="text-muted">مجاز: عکس، PDF و Word. حداکثر ۱۰MB برای هر فایل.</small>
                             @error('guarantor_documents') <span class="text-danger small d-block">{{ $message }}</span> @enderror
                             @error('guarantor_documents.*') <span class="text-danger small d-block">{{ $message }}</span> @enderror
                         </div>
@@ -379,13 +379,13 @@
                             <span class="student-timeline-icon">ک</span>
                             <div>
                                 <strong>{{ $latestDormCard ? 'کارت فعلی' : 'کارت لیلیه ندارد' }}</strong>
-                                <p>{{ $latestDormCard?->expires_at?->format('Y-m-d') ?? 'بعد از پذیرش کارت صادر کنید.' }} - {{ $latestDormCard?->payment_status === 'paid' ? 'پرداخت شده' : 'پرداخت نشده' }}</p>
+                                <p>{{ $latestDormCard?->expires_at ? \App\Support\Locale::date($latestDormCard->expires_at) : 'بعد از پذیرش کارت صادر کنید.' }} - {{ $latestDormCard?->payment_status === 'paid' ? 'پرداخت شده' : 'پرداخت نشده' }}</p>
                             </div>
                         </div>
                     @endunless
 
                     <div class="student-save-panel">
-                        <button class="btn btn-primary" type="submit">ذخیره معلومات</button>
+                        <button class="btn btn-primary" type="submit" name="save_only" value="1" data-allow-partial-submit>ذخیره معلومات</button>
                         @if ($student->exists)
                             @if ($student->status === 'active')
                                 <button class="btn btn-outline-primary" type="submit" form="issue-card-form">{{ $latestDormCard ? 'تمدید کارت' : 'صدور کارت' }}</button>
