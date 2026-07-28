@@ -346,15 +346,27 @@
                         </div>
                     </div>
                     <div class="student-form-grid compact">
+                        @php
+                            $registrationStatus = old('registration_payment_status', $student->registration_payment_status ?? 'paid');
+                            $registrationPaidAmount = old(
+                                'registration_paid_amount',
+                                $student->registration_paid_amount ?? ($registrationStatus === 'paid' ? ($student->dorm_expense_fee_amount ?? 1000) : 0)
+                            );
+                        @endphp
                         <div class="form-group">
                             <label>وضعیت پرداخت</label>
                             <select class="form-control @error('registration_payment_status') is-invalid @enderror" name="registration_payment_status">
-                                @php $registrationStatus = old('registration_payment_status', $student->registration_payment_status ?? 'paid'); @endphp
                                 <option value="paid" @selected($registrationStatus === 'paid')>پرداخت شده</option>
                                 <option value="partial" @selected($registrationStatus === 'partial')>قسمی</option>
                                 <option value="unpaid" @selected($registrationStatus === 'unpaid')>پرداخت نشده</option>
                             </select>
                             @error('registration_payment_status') <span class="text-danger small">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="form-group">
+                            <label>مبلغ پرداخت‌شده</label>
+                            <input class="form-control @error('registration_paid_amount') is-invalid @enderror" name="registration_paid_amount" type="number" min="0" value="{{ $registrationPaidAmount }}">
+                            <small class="text-muted">برای پرداخت قسمی، مبلغ واقعی دریافت‌شده از مصارف لیلیه را وارد کنید.</small>
+                            @error('registration_paid_amount') <span class="text-danger small">{{ $message }}</span> @enderror
                         </div>
                         <div class="form-group">
                             <label>تاریخ پرداخت</label>

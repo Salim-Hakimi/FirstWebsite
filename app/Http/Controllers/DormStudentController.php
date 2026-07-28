@@ -191,6 +191,7 @@ class DormStudentController extends Controller
         $latestCard = $student->membershipCards->first();
         $guaranteeDeposit = (int) ($student->guarantee_deposit_amount ?? 1000);
         $dormExpenseFee = (int) ($student->dorm_expense_fee_amount ?? 1000);
+        $registrationPaidAmount = $this->registrationIncomeAmount($student);
 
         return view('dorm.receipts.registration', [
             'student' => $student,
@@ -200,7 +201,7 @@ class DormStudentController extends Controller
                 ['label' => 'پول ضمانت', 'amount' => $guaranteeDeposit],
                 ['label' => 'مصارف ابتدایی لیلیه', 'amount' => $dormExpenseFee],
             ],
-            'totalAmount' => $guaranteeDeposit + $dormExpenseFee,
+            'totalAmount' => ($student->registration_payment_status === 'unpaid') ? 0 : $guaranteeDeposit + $registrationPaidAmount,
             'paymentStatus' => $student->registration_payment_status ?? 'paid',
             'paidAt' => $student->registration_paid_at,
             'backRoute' => route('dorm.students.show', $student),
@@ -316,6 +317,7 @@ class DormStudentController extends Controller
             'guarantee_deposit_amount' => ['nullable', 'integer', 'min:0'],
             'dorm_expense_fee_amount' => ['nullable', 'integer', 'min:0'],
             'registration_payment_status' => ['nullable', Rule::in(['paid', 'unpaid', 'partial'])],
+            'registration_paid_amount' => [Rule::requiredIf(fn () => $request->input('registration_payment_status') === 'partial'), 'nullable', 'integer', 'min:1', 'lte:dorm_expense_fee_amount'],
             'registration_paid_at' => ['nullable', 'date'],
             'joined_at' => ['nullable', 'date'],
             'left_at' => ['nullable', 'date', 'after_or_equal:joined_at'],
@@ -442,12 +444,30 @@ class DormStudentController extends Controller
         $validated['guarantee_deposit_amount'] = (int) ($validated['guarantee_deposit_amount'] ?? $student?->guarantee_deposit_amount ?? 1000);
         $validated['dorm_expense_fee_amount'] = (int) ($validated['dorm_expense_fee_amount'] ?? $student?->dorm_expense_fee_amount ?? 1000);
         $validated['registration_payment_status'] = $validated['registration_payment_status'] ?? $student?->registration_payment_status ?? 'paid';
+        $paidAmount = (int) ($validated['registration_paid_amount'] ?? $student?->registration_paid_amount ?? 0);
+        $feeAmount = (int) $validated['dorm_expense_fee_amount'];
 
         if ($validated['registration_payment_status'] === 'paid') {
+            $validated['registration_paid_amount'] = $feeAmount;
+            $validated['registration_paid_at'] = $validated['registration_paid_at'] ?? $student?->registration_paid_at?->toDateString() ?? now()->toDateString();
+        } elseif ($validated['registration_payment_status'] === 'partial') {
+            $validated['registration_paid_amount'] = min($feeAmount, max(0, $paidAmount));
             $validated['registration_paid_at'] = $validated['registration_paid_at'] ?? $student?->registration_paid_at?->toDateString() ?? now()->toDateString();
         } elseif (($validated['registration_payment_status'] ?? null) === 'unpaid') {
+            $validated['registration_paid_amount'] = 0;
             $validated['registration_paid_at'] = null;
         }
+    }
+
+    private function registrationIncomeAmount(DormStudent $student): int
+    {
+        $feeAmount = (int) ($student->dorm_expense_fee_amount ?? 1000);
+
+        return match ($student->registration_payment_status) {
+            'paid' => $feeAmount,
+            'partial' => min($feeAmount, max(0, (int) ($student->registration_paid_amount ?? 0))),
+            default => 0,
+        };
     }
 
     private function roomsForAdmission()

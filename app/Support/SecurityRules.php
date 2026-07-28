@@ -51,13 +51,14 @@ class SecurityRules
                 $extension = strtolower((string) ($value?->getClientOriginalExtension() ?: $value?->extension()));
                 $mime = strtolower((string) ($value?->getMimeType() ?: $value?->getClientMimeType()));
 
-                $allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'];
+                $allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'doc', 'docx'];
                 $allowedMimes = [
                     'application/pdf',
                     'application/x-pdf',
                     'application/octet-stream',
                     'image/jpeg',
                     'image/png',
+                    'image/webp',
                     'application/msword',
                     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                 ];
@@ -77,6 +78,6 @@ class SecurityRules
 
     public static function financeAttachment(): array
     {
-        return ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp,doc,docx', 'max:5120'];
+        return ['nullable', ...self::safeDocument()];
     }
 }

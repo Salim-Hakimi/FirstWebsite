@@ -447,7 +447,7 @@ class LibraryController extends Controller
             'transaction_date' => ['required', 'date'],
             'payment_method' => ['required', Rule::in(array_keys($this->libraryPaymentMethods()))],
             'source_or_payee' => ['nullable', 'string', 'max:180'],
-            'receipt_number' => ['nullable', 'string', 'max:80'],
+            'receipt_number' => ['nullable', 'string', 'max:80', Rule::unique('finance_transactions', 'receipt_number')],
             'description' => ['nullable', 'string', 'max:1000'],
         ]);
 
@@ -463,8 +463,8 @@ class LibraryController extends Controller
             $validated['type'],
             $category['label'],
             (int) $validated['amount'],
-            $validated['source_or_payee'] ?: 'کتابخانه فانوس',
-            $validated['description'] ?: $category['label'],
+            $validated['source_or_payee'] ?? 'کتابخانه فانوس',
+            $validated['description'] ?? $category['label'],
             $request,
             $validated['transaction_date'],
             $validated['payment_method'],

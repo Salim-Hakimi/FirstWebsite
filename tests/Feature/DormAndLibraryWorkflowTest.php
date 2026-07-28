@@ -5,6 +5,7 @@ use App\Models\BookCopy;
 use App\Models\BookLoan;
 use App\Models\DormRoom;
 use App\Models\DormStudent;
+use App\Models\FinanceCategory;
 use App\Models\FinanceTransaction;
 use App\Models\LibraryMember;
 use App\Models\MembershipCard;
@@ -389,6 +390,124 @@ test('library monthly bills are tracked by billing month and are not duplicated'
 
     expect(FinanceTransaction::where('receipt_number', 'LIB-MONTHLY-'.$member->id.'-2026-08')->count())->toBe(1);
     expect($member->fresh()->next_payment_due_at?->toDateString())->toBe('2026-09-05');
+});
+
+test('admin finance totals use actual dorm registration income and library expenses', function () {
+    $admin = fanousAdmin();
+    $generalExpense = FinanceCategory::create([
+        'type' => 'expense',
+        'name' => 'مصرف عمومی',
+        'slug' => 'test-general-expense',
+        'is_active' => true,
+    ]);
+    $libraryIncomeCategory = FinanceCategory::create([
+        'type' => 'income',
+        'name' => 'کتابخانه - فیس ماهانه کتابخانه',
+        'slug' => 'test-library-income',
+        'is_active' => true,
+    ]);
+    $libraryExpenseCategory = FinanceCategory::create([
+        'type' => 'expense',
+        'name' => 'کتابخانه - خرید کتاب',
+        'slug' => 'test-library-expense',
+        'is_active' => true,
+    ]);
+
+    DormStudent::create(array_merge(dormStudentPayload([
+        'registered_by' => $admin->id,
+        'phone' => '0788666601',
+        'whatsapp' => '0788666601',
+        'tazkira_number' => 'FIN-1001',
+        'registration_payment_status' => 'paid',
+        'registration_paid_amount' => 1000,
+    ])));
+    DormStudent::create(array_merge(dormStudentPayload([
+        'registered_by' => $admin->id,
+        'phone' => '0788666602',
+        'whatsapp' => '0788666602',
+        'tazkira_number' => 'FIN-1002',
+        'registration_payment_status' => 'partial',
+        'registration_paid_amount' => 250,
+    ])));
+    DormStudent::create(array_merge(dormStudentPayload([
+        'registered_by' => $admin->id,
+        'phone' => '0788666603',
+        'whatsapp' => '0788666603',
+        'tazkira_number' => 'FIN-1003',
+        'registration_payment_status' => 'unpaid',
+        'registration_paid_amount' => 0,
+    ])));
+
+    FinanceTransaction::create([
+        'transaction_number' => 'EXP-FIN-1',
+        'type' => 'expense',
+        'finance_category_id' => $generalExpense->id,
+        'expected_amount' => 80,
+        'amount' => 80,
+        'transaction_date' => today()->toDateString(),
+        'receipt_number' => 'EXP-FIN-1',
+        'payment_method' => 'cash',
+        'status' => 'paid',
+        'recorded_by' => $admin->id,
+    ]);
+    FinanceTransaction::create([
+        'transaction_number' => 'LIB-INC-FIN-1',
+        'type' => 'income',
+        'finance_category_id' => $libraryIncomeCategory->id,
+        'expected_amount' => 300,
+        'amount' => 300,
+        'transaction_date' => today()->toDateString(),
+        'receipt_number' => 'LIB-INC-FIN-1',
+        'payment_method' => 'cash',
+        'status' => 'paid',
+        'recorded_by' => $admin->id,
+    ]);
+    FinanceTransaction::create([
+        'transaction_number' => 'LIB-EXP-FIN-1',
+        'type' => 'expense',
+        'finance_category_id' => $libraryExpenseCategory->id,
+        'expected_amount' => 120,
+        'amount' => 120,
+        'transaction_date' => today()->toDateString(),
+        'receipt_number' => 'LIB-EXP-FIN-1',
+        'payment_method' => 'cash',
+        'status' => 'paid',
+        'recorded_by' => $admin->id,
+    ]);
+
+    $this
+        ->actingAs($admin)
+        ->get(route('admin.finance.index'))
+        ->assertOk()
+        ->assertSee(\App\Support\Locale::money(1550), false)
+        ->assertSee(\App\Support\Locale::money(200), false)
+        ->assertSee(\App\Support\Locale::money(120), false);
+});
+
+test('library finance rejects duplicate receipt numbers before saving', function () {
+    $librarian = fanousLibrarian();
+    $payload = [
+        'type' => 'income',
+        'category_key' => 'donation',
+        'amount' => 50,
+        'transaction_date' => today()->toDateString(),
+        'payment_method' => 'cash',
+        'source_or_payee' => 'کمک‌کننده تست',
+        'receipt_number' => 'LIB-DUP-RECEIPT-1',
+    ];
+
+    $this
+        ->actingAs($librarian)
+        ->post(route('library.finance.store'), $payload)
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    $this
+        ->actingAs($librarian)
+        ->post(route('library.finance.store'), $payload)
+        ->assertSessionHasErrors('receipt_number');
+
+    expect(FinanceTransaction::where('receipt_number', 'LIB-DUP-RECEIPT-1')->count())->toBe(1);
 });
 
 test('library creates copies and blocks duplicate ISBN or duplicate book identity', function () {

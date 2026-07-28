@@ -42,7 +42,7 @@ class FinanceController extends Controller
             ->whereNotIn('status', ['waiting', 'on_hold', 'rejected']);
         $registrationRevenue = (int) (clone $registrationRevenueQuery)
             ->get()
-            ->sum(fn (DormStudent $student) => (int) ($student->dorm_expense_fee_amount ?? 1000));
+            ->sum(fn (DormStudent $student) => $this->registrationIncomeAmount($student));
         $monthRegistrationRevenue = (int) (clone $registrationRevenueQuery)
             ->where(function ($query) {
                 $query
@@ -54,16 +54,10 @@ class FinanceController extends Controller
                     });
             })
             ->get()
-            ->sum(fn (DormStudent $student) => (int) ($student->dorm_expense_fee_amount ?? 1000));
+            ->sum(fn (DormStudent $student) => $this->registrationIncomeAmount($student));
 
-        $monthlyChart = $this->ledgerTransactionsQuery()
-            ->selectRaw("DATE_FORMAT(transaction_date, '%Y-%m') as month_key")
-            ->selectRaw("SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income_total")
-            ->selectRaw("SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expense_total")
-            ->where('transaction_date', '>=', now()->subMonths(5)->startOfMonth()->toDateString())
-            ->groupBy('month_key')
-            ->orderBy('month_key')
-            ->get();
+        $chartStart = now()->subMonths(5)->startOfMonth();
+        $monthlyChart = $this->monthlyTransactionRows($this->ledgerTransactionsQuery(), $chartStart);
 
         $projectRows = FinanceProject::query()
             ->withSum(['transactions as spent_total' => fn ($query) => $query->where('type', 'expense')], 'amount')
@@ -75,14 +69,29 @@ class FinanceController extends Controller
         $libraryIncomeTotal = (int) $this->libraryFinanceTransactionsQuery()
             ->where('type', 'income')
             ->sum('amount');
+        $libraryExpenseTotal = (int) $this->libraryFinanceTransactionsQuery()
+            ->where('type', 'expense')
+            ->sum('amount');
         $libraryMonthIncome = (int) $this->libraryFinanceTransactionsQuery()
             ->where('type', 'income')
+            ->whereBetween('transaction_date', [now()->startOfMonth()->toDateString(), now()->endOfMonth()->toDateString()])
+            ->sum('amount');
+        $libraryMonthExpense = (int) $this->libraryFinanceTransactionsQuery()
+            ->where('type', 'expense')
             ->whereBetween('transaction_date', [now()->startOfMonth()->toDateString(), now()->endOfMonth()->toDateString()])
             ->sum('amount');
         $libraryTodayIncome = (int) $this->libraryFinanceTransactionsQuery()
             ->where('type', 'income')
             ->whereDate('transaction_date', today()->toDateString())
             ->sum('amount');
+        $libraryTodayExpense = (int) $this->libraryFinanceTransactionsQuery()
+            ->where('type', 'expense')
+            ->whereDate('transaction_date', today()->toDateString())
+            ->sum('amount');
+        $ledgerIncomeTotal = (int) $this->ledgerTransactionsQuery()->where('type', 'income')->sum('amount');
+        $ledgerExpenseTotal = (int) $this->ledgerTransactionsQuery()->where('type', 'expense')->sum('amount');
+        $ledgerMonthIncome = (int) (clone $monthQuery)->where('type', 'income')->sum('amount');
+        $ledgerMonthExpense = (int) (clone $monthQuery)->where('type', 'expense')->sum('amount');
 
         return view('admin.finance.index', [
             'filters' => $filters,
@@ -107,12 +116,15 @@ class FinanceController extends Controller
             'monthRegistrationRevenue' => $monthRegistrationRevenue,
             'periodReports' => $periodReports,
             'libraryIncomeTotal' => $libraryIncomeTotal,
+            'libraryExpenseTotal' => $libraryExpenseTotal,
             'libraryMonthIncome' => $libraryMonthIncome,
+            'libraryMonthExpense' => $libraryMonthExpense,
             'libraryTodayIncome' => $libraryTodayIncome,
-            'totalIncome' => (int) $this->ledgerTransactionsQuery()->where('type', 'income')->sum('amount') + $registrationRevenue + $libraryIncomeTotal,
-            'totalExpense' => (int) $this->ledgerTransactionsQuery()->where('type', 'expense')->sum('amount'),
-            'monthIncome' => (int) (clone $monthQuery)->where('type', 'income')->sum('amount') + $monthRegistrationRevenue + $libraryMonthIncome,
-            'monthExpense' => (int) (clone $monthQuery)->where('type', 'expense')->sum('amount'),
+            'libraryTodayExpense' => $libraryTodayExpense,
+            'totalIncome' => $ledgerIncomeTotal + $registrationRevenue + $libraryIncomeTotal,
+            'totalExpense' => $ledgerExpenseTotal + $libraryExpenseTotal,
+            'monthIncome' => $ledgerMonthIncome + $monthRegistrationRevenue + $libraryMonthIncome,
+            'monthExpense' => $ledgerMonthExpense + $libraryMonthExpense,
             'missingDocuments' => $this->ledgerTransactionsQuery()
                 ->with(['category', 'donor', 'project', 'attachments'])
                 ->where('attachment_required', true)
@@ -120,7 +132,7 @@ class FinanceController extends Controller
                 ->latest('transaction_date')
                 ->limit(10)
                 ->get(),
-            'monthlyChart' => $monthlyChart,
+            'monthlyChart' => $this->monthlyChartRows($monthlyChart, $chartStart),
             'paymentMethods' => $this->paymentMethods(),
             'statusLabels' => $this->statusLabels(),
             'projectStatuses' => $this->projectStatuses(),
@@ -523,15 +535,87 @@ class FinanceController extends Controller
                 ->where('type', 'income')
                 ->whereBetween('transaction_date', [$period['start'], $period['end']])
                 ->sum('amount');
+            $libraryExpense = (int) $this->libraryFinanceTransactionsQuery()
+                ->where('type', 'expense')
+                ->whereBetween('transaction_date', [$period['start'], $period['end']])
+                ->sum('amount');
 
             $periods[$key]['income'] = $income + $registrationRevenue + $libraryIncome;
-            $periods[$key]['expense'] = $expense;
-            $periods[$key]['balance'] = $periods[$key]['income'] - $expense;
+            $periods[$key]['expense'] = $expense + $libraryExpense;
+            $periods[$key]['balance'] = $periods[$key]['income'] - $periods[$key]['expense'];
             $periods[$key]['library_income'] = $libraryIncome;
+            $periods[$key]['library_expense'] = $libraryExpense;
             $periods[$key]['registration_income'] = $registrationRevenue;
         }
 
         return $periods;
+    }
+
+    private function monthlyChartRows($ledgerRows, $start)
+    {
+        $months = collect(range(0, 5))->mapWithKeys(function (int $offset) use ($start): array {
+            $month = $start->copy()->addMonths($offset);
+
+            return [
+                $month->format('Y-m') => [
+                    'month_key' => $month->format('Y-m'),
+                    'income_total' => 0,
+                    'expense_total' => 0,
+                    'start' => $month->toDateString(),
+                    'end' => $month->copy()->endOfMonth()->toDateString(),
+                ],
+            ];
+        });
+
+        foreach ($ledgerRows as $row) {
+            if (! isset($months[$row->month_key])) {
+                continue;
+            }
+
+            $month = $months->get($row->month_key);
+            $month['income_total'] += (int) $row->income_total;
+            $month['expense_total'] += (int) $row->expense_total;
+            $months->put($row->month_key, $month);
+        }
+
+        $libraryRows = $this->monthlyTransactionRows($this->libraryFinanceTransactionsQuery(), $start);
+
+        foreach ($libraryRows as $row) {
+            if (! isset($months[$row->month_key])) {
+                continue;
+            }
+
+            $month = $months->get($row->month_key);
+            $month['income_total'] += (int) $row->income_total;
+            $month['expense_total'] += (int) $row->expense_total;
+            $months->put($row->month_key, $month);
+        }
+
+        return $months
+            ->map(function (array $row): object {
+                $row['income_total'] += $this->registrationRevenueBetween($row['start'], $row['end']);
+                unset($row['start'], $row['end']);
+
+                return (object) $row;
+            })
+            ->values();
+    }
+
+    private function monthlyTransactionRows($query, $start)
+    {
+        return $query
+            ->where('transaction_date', '>=', $start->toDateString())
+            ->get(['transaction_date', 'type', 'amount'])
+            ->groupBy(fn (FinanceTransaction $transaction): string => $transaction->transaction_date->format('Y-m'))
+            ->map(function ($transactions, string $monthKey): object {
+                return (object) [
+                    'month_key' => $monthKey,
+                    'income_total' => (int) $transactions->where('type', 'income')->sum('amount'),
+                    'expense_total' => (int) $transactions->where('type', 'expense')->sum('amount'),
+                ];
+            })
+            ->sortKeys()
+            ->values();
     }
 
     private function registrationRevenueBetween(string $startDate, string $endDate): int
@@ -549,7 +633,18 @@ class FinanceController extends Controller
                     });
             })
             ->get()
-            ->sum(fn (DormStudent $student) => (int) ($student->dorm_expense_fee_amount ?? 1000));
+            ->sum(fn (DormStudent $student) => $this->registrationIncomeAmount($student));
+    }
+
+    private function registrationIncomeAmount(DormStudent $student): int
+    {
+        $feeAmount = (int) ($student->dorm_expense_fee_amount ?? 1000);
+
+        return match ($student->registration_payment_status) {
+            'paid' => $feeAmount,
+            'partial' => min($feeAmount, max(0, (int) ($student->registration_paid_amount ?? 0))),
+            default => 0,
+        };
     }
 
     private function libraryFinanceTransactionsQuery()

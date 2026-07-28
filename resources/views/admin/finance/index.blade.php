@@ -118,7 +118,7 @@
                 <div>
                     <span>درآمد کتابخانه</span>
                     <strong>{{ Locale::money($libraryIncomeTotal) }}</strong>
-                    <small>امروز: {{ Locale::money($libraryTodayIncome) }} · ماه جاری: {{ Locale::money($libraryMonthIncome) }}؛ در درآمد کل لیلیه حساب شده است</small>
+                    <small>درآمد امروز: {{ Locale::money($libraryTodayIncome) }} · مصرف امروز: {{ Locale::money($libraryTodayExpense) }} · مصرف کل: {{ Locale::money($libraryExpenseTotal) }}</small>
                 </div>
                 <span class="dashboard-stat-icon is-blue"><x-ds.icon name="cash" /></span>
             </article>
@@ -138,7 +138,7 @@
                 <div>
                     <span class="dashboard-section-kicker">گزارش مالی</span>
                     <h2>درآمد و مصرف روزانه، هفته‌وار، ماهانه و سالانه</h2>
-                    <p>درآمد ثبت‌نام شاگردان و درآمد کتابخانه در مجموع درآمد لیلیه حساب می‌شود.</p>
+                    <p>درآمد ثبت‌نام شاگردان و درآمد/مصرف کتابخانه در جمع کل سیستم حساب می‌شود تا باقی‌مانده اشتباه نشود.</p>
                 </div>
             </div>
 
@@ -166,7 +166,7 @@
                         </div>
 
                         <footer>
-                            <span>کتابخانه: {{ Locale::money((int) $period['library_income']) }}</span>
+                            <span>کتابخانه: {{ Locale::money((int) $period['library_income']) }} / {{ Locale::money((int) $period['library_expense']) }}</span>
                             <span>ثبت‌نام: {{ Locale::money((int) $period['registration_income']) }}</span>
                         </footer>
                     </article>
